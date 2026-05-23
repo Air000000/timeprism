@@ -5,10 +5,18 @@
 </p>
 
 <p align="center">
-  <a href="#features">Features</a> ·
-  <a href="#how-it-works">How It Works</a> ·
-  <a href="#getting-started">Getting Started</a> ·
-  <a href="#privacy">Privacy</a> ·
+  <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white">
+  <img alt="Vue" src="https://img.shields.io/badge/Vue-3-42B883?style=for-the-badge&logo=vuedotjs&logoColor=white">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
+  <img alt="Rust" src="https://img.shields.io/badge/Rust-backend-B7410E?style=for-the-badge&logo=rust&logoColor=white">
+  <img alt="License" src="https://img.shields.io/github/license/Air000000/timeprism?style=for-the-badge">
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> |
+  <a href="#how-it-works">How It Works</a> |
+  <a href="#getting-started">Getting Started</a> |
+  <a href="#privacy">Privacy</a> |
   <a href="#roadmap">Roadmap</a>
 </p>
 
