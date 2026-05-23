@@ -1,94 +1,107 @@
-# TimePrism
+<h1 align="center">TimePrism</h1>
 
-TimePrism is a Tauri desktop app for people who want to review work-rest rhythms, manage reminders, and build a cleaner understanding of how time is actually spent on the computer.
+<p align="center">
+  A local-first desktop companion for understanding how your computer time actually flows.
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> ·
+  <a href="#how-it-works">How It Works</a> ·
+  <a href="#getting-started">Getting Started</a> ·
+  <a href="#privacy">Privacy</a> ·
+  <a href="#roadmap">Roadmap</a>
+</p>
+
+---
 
 ## Overview
 
-TimePrism centers on automatic foreground app capture and lightweight daily planning in one desktop experience.
+TimePrism is a Tauri desktop app for reviewing computer usage, work-rest rhythm, reminders, and focus signals.
 
-The app is designed to help users answer three practical questions:
+Instead of asking you to start and stop a manual timer all day, TimePrism focuses on automatic foreground app capture, local classification rules, and lightweight daily review. It helps you answer a few practical questions:
 
 - What did my computer usage actually look like today?
-- Where are my work-rest rhythms drifting over time?
-- What do I need to handle next to keep the day on track?
+- Which apps shaped my learn/rest rhythm?
+- What needs attention before future tracking becomes more accurate?
+- Which reminders or idle segments still need a quick decision?
+
+TimePrism is currently Windows-first and designed as a local-first personal desktop tool.
 
 ## Features
 
-### Automatic Usage Tracking
-- Capture foreground app usage fragments for later analytics
-- Review today's learn and rest totals at a glance
-- Track progress toward a configurable daily focus goal
+| Area | What it helps with |
+| --- | --- |
+| **Home** | See today's learn/rest totals, goal progress, reminders, and pending signals at a glance. |
+| **Insights** | Review top apps, recent logs, historical usage, heatmaps, and day composition. |
+| **Focus Guard** | Classify unknown apps, resolve idle segments, review rules, and inspect sampling diagnostics. |
+| **Reminders** | Create one-time, daily, and weekly reminders, then mark them done or snooze them locally. |
+| **Privacy Controls** | Configure browser title handling, whitelist-only capture, and local capture behavior. |
+| **Desktop Pet** | Use a lightweight floating companion for quick prompts, reminders, and mini panels. |
 
-### Daily Rhythm Insights
-- View recent seven-day rhythm patterns
-- Explore app usage history, top apps, and recent logs
-- Inspect learn heatmaps and stacked usage summaries
+## How It Works
 
-### Focus Guard Workflow
-- Review uncategorized apps and assign rules
-- Resolve idle segments after away periods
-- Audit saved rules and inspect sampling diagnostics
+```text
+Foreground window
+      |
+      v
+Privacy processing
+      |
+      v
+App rule classification
+      |
+      v
+Local SQLite storage
+      |
+      v
+Home, Insights, Guard, reminders, and pet surfaces
+```
 
-### Reminders and Planning
-- Create one-time, daily, or weekly reminders
-- Reorder and manage reminders directly from the desktop UI
-- Mark reminders done or snooze them when plans shift
-
-### Privacy Controls
-- Curtain mode to stop app logging entirely
-- Browser title privacy modes: `FULL`, `BLUR`, or `NONE`
-- Whitelist-only capture mode for stricter logging control
-
-### Desktop Companion
-- Includes a floating pet window and companion panel
-- Supports quick summon and lightweight desktop interactions
+TimePrism samples the active foreground window, applies privacy settings before storage, maps apps through local rules, and then uses the resulting records for daily summaries and review workflows.
 
 ## Tech Stack
 
 | Layer | Technology |
 | --- | --- |
-| Desktop Shell | Tauri v2 |
+| Desktop shell | Tauri v2 |
 | Frontend | Vue 3, TypeScript, Vite |
 | Backend | Rust |
-| Local Storage | SQLite |
-| UI Mode | Desktop-first, Windows-focused |
+| Storage | SQLite |
+| Target platform | Windows-first desktop |
 
 ## Getting Started
 
 ### Prerequisites
 
+Before running the project locally, install:
+
 - Node.js 18+
 - pnpm
 - Rust toolchain
-- Tauri build requirements for your platform
+- Tauri system prerequisites for your platform
 
-For Windows development, make sure the standard Tauri prerequisites are installed.
+For Windows development, follow the standard Tauri setup requirements.
 
-### Installation
+### Install
 
 ```bash
-git clone https://github.com/your-username/timeprism.git
+git clone https://github.com/Air000000/timeprism.git
 cd timeprism
 pnpm install
 ```
 
-### Environment Variables
-
-This project does not currently require a `.env` file for local development.
-
-### Run Locally
-
-Start the desktop app in development mode:
+### Run In Development
 
 ```bash
 pnpm tauri dev
 ```
 
-Start the frontend only:
+### Run Frontend Only
 
 ```bash
 pnpm dev
 ```
+
+### Build
 
 Build the frontend:
 
@@ -104,67 +117,82 @@ pnpm tauri build
 
 ## Project Structure
 
-```txt
+```text
 timeprism/
-├─ public/                 # Static assets
-├─ src/
-│  ├─ components/          # Main desktop views
-│  ├─ assets/              # Frontend assets
-│  ├─ api.ts               # Tauri command bindings
-│  ├─ App.vue              # Main desktop shell
-│  ├─ main.ts              # Frontend entry
-│  ├─ pet.ts               # Pet window entry
-│  └─ pet-panel.ts         # Pet panel entry
-├─ src-tauri/
-│  ├─ src/
-│  │  ├─ lib.rs            # Main Rust app logic and commands
-│  │  └─ main.rs           # Tauri bootstrap
-│  └─ tauri.conf.json      # Tauri configuration
-├─ index.html              # Main webview entry
-├─ pet.html                # Pet window page
-├─ pet-panel.html          # Pet panel page
-└─ README.md
+|- public/                 # Static assets
+|- src/
+|  |- components/          # Main desktop views
+|  |- api.ts               # Tauri command bindings
+|  |- App.vue              # Main desktop shell
+|  |- main.ts              # Main window entry
+|  |- pet.ts               # Pet window entry
+|  `- pet-panel.ts         # Pet panel entry
+|- src-tauri/
+|  |- src/
+|  |  |- lib.rs            # Rust commands and app logic
+|  |  `- main.rs           # Tauri bootstrap
+|  |- capabilities/        # Tauri permissions
+|  `- tauri.conf.json      # Tauri app configuration
+|- index.html              # Main webview entry
+|- pet.html                # Pet window page
+|- pet-panel.html          # Pet panel page
+`- README.md
 ```
 
-## Available Scripts
+## Privacy
 
-| Command | Description |
-| --- | --- |
-| `pnpm dev` | Start the Vite frontend dev server |
-| `pnpm build` | Type-check and build the frontend |
-| `pnpm tauri dev` | Run the desktop app in development mode |
-| `pnpm tauri build` | Build the desktop application |
+TimePrism is designed as a local-first app.
 
-## Current Views
+- Usage records are stored locally in SQLite.
+- There is no cloud sync in the current version.
+- Browser title handling can be configured as `FULL`, `BLUR`, or `NONE`.
+- Whitelist-only mode can restrict what gets stored.
+- Privacy processing happens before usage records are written.
+- Incognito/private browser windows are treated conservatively.
 
-- `Home`: daily overview, goal ring, reminders, calendar, and recent rhythm
-- `Insights`: top apps, all-time usage, and recent logs
-- `Focus Guard`: rule review, idle confirmation, and diagnostics
-- `Settings`: privacy, startup behavior, and whitelist management
+Because TimePrism records active app usage and window titles when allowed, privacy behavior is treated as a core product concern rather than an afterthought.
 
-## Known Limitations
+## Current Status
 
-- Foreground capture is currently Windows-first; non-Windows behavior is more limited.
-- The UI is still evolving and some layout polish is ongoing.
-- README screenshots and demo assets have not been added yet.
-- No external sync or cloud backup is included in the current version.
-- Backend session commands exist, but the current desktop UI is centered on automatic tracking rather than a dedicated manual timer workflow.
+TimePrism is an early desktop app and still evolving.
+
+Implemented:
+
+- Automatic foreground app capture
+- Learn/rest/ignore app rules
+- Daily overview
+- Usage insights
+- Focus Guard workflow
+- Idle confirmation flow
+- Local reminders
+- Desktop pet and pet panel
+- Privacy settings
+
+Known limitations:
+
+- Foreground capture is currently Windows-first.
+- The UI is still being refined.
+- There is no cloud sync or external account system.
+- Data export, backup, and restore flows are not fully built yet.
+- Cross-platform capture support is limited.
 
 ## Roadmap
 
-- [x] Automatic foreground capture
-- [x] Reminder system
-- [x] Focus guard workflow
-- [x] Privacy controls
-- [x] Desktop pet companion
-- [ ] README screenshots and demo media
-- [ ] Stronger cross-platform capture support
-- [ ] Additional polish for responsive desktop layouts
+Planned or under consideration:
+
+- Add polished screenshots and demo media
+- Improve replay/day timeline workflows
+- Add data export and backup tools
+- Strengthen database diagnostics and recovery flows
+- Improve cross-platform capture behavior
+- Continue refining desktop layout and interaction polish
 
 ## Contributing
 
-Contributions, issue reports, and design feedback are welcome. If you plan to make a larger change, please open an issue first so the direction can be discussed before implementation.
+Issues, ideas, and pull requests are welcome.
+
+For larger changes, please open an issue first so the direction can be discussed clearly. TimePrism is especially sensitive around privacy, local data handling, and capture behavior, so changes in those areas should be reviewed carefully.
 
 ## License
 
-No license has been added yet.
+TimePrism is licensed under the MIT License.
