@@ -375,3 +375,91 @@ Follow-up:
 
 - Commit R-102.
 - Start R-103 backend domain type extraction.
+
+## 2026-06-08: R-103 Backend Domain Type Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend-domain
+
+Intent:
+
+- Move serializable response structs and command input structs out of `src-tauri/src/lib.rs`.
+- Keep command contracts, serde field names, and command registration unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/domain/mod.rs`
+- `src-tauri/src/domain/analytics.rs`
+- `src-tauri/src/domain/rules.rs`
+- `src-tauri/src/domain/reminders.rs`
+- `src-tauri/src/domain/privacy.rs`
+- `src-tauri/src/domain/idle.rs`
+- `src-tauri/src/domain/window.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `Category`, `CreateCategoryInput`, `TodaySummary`, `TopApp`, `LearnHeatmapCell`, `UsageStackSegment`, `UsageStackDay`, `RecentLogEntry` | `src-tauri/src/domain/analytics.rs` | Behavior unchanged |
+| `AppRuleEntry`, `PendingRuleProcess`, `SaveAppRuleInput`, `DeviationCheck` | `src-tauri/src/domain/rules.rs` | Behavior unchanged |
+| `ReminderEntry`, `SaveReminderInput`, `SetReminderDoneInput`, `SetReminderOrderInput` | `src-tauri/src/domain/reminders.rs` | Behavior unchanged |
+| `PrivacySettings`, `UpdatePrivacySettingsInput`, `SetWhitelistItemInput` | `src-tauri/src/domain/privacy.rs` | Behavior unchanged |
+| `IdlePromptEntry`, `ResolveIdlePromptInput`, `IdleMemoryState` | `src-tauri/src/domain/idle.rs` | Behavior unchanged |
+| `ForegroundCaptureDiagnostic`, `SettlePetWindowInput`, `PetWindowSettleResult` | `src-tauri/src/domain/window.rs` | Behavior unchanged |
+
+Behavior expected to stay the same:
+
+- Serialized field names stay the same.
+- Deserialized command input field names stay the same.
+- Tauri command names, inputs, outputs, and registration stay the same.
+- Runtime state structs remain in `lib.rs`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- Type import dependency only. Command signatures remain the same from the frontend/API perspective.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Some DTO module placement may be revisited as services are extracted; no API behavior should depend on file location.
+- Public visibility is intentionally limited to `pub(crate)` for structs and fields needed by current command implementations.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-102 commit.
+
+Follow-up:
+
+- Commit R-103.
+- Start R-104 privacy service extraction.

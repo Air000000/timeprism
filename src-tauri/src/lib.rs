@@ -5,7 +5,6 @@ use std::sync::Mutex;
 use chrono::{Datelike, Duration, Local, TimeZone};
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection};
-use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 #[cfg(target_os = "windows")]
@@ -25,9 +24,21 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 };
 
 mod db;
+mod domain;
 
 use db::connection::open_connection;
 use db::migrations::{ensure_heatmap_snapshot_table, init_database};
+use domain::analytics::{
+    Category, CreateCategoryInput, LearnHeatmapCell, RecentLogEntry, TodaySummary, TopApp,
+    UsageStackDay, UsageStackSegment,
+};
+use domain::idle::{IdleMemoryState, IdlePromptEntry, ResolveIdlePromptInput};
+use domain::privacy::{PrivacySettings, SetWhitelistItemInput, UpdatePrivacySettingsInput};
+use domain::reminders::{
+    ReminderEntry, SaveReminderInput, SetReminderDoneInput, SetReminderOrderInput,
+};
+use domain::rules::{AppRuleEntry, DeviationCheck, PendingRuleProcess, SaveAppRuleInput};
+use domain::window::{ForegroundCaptureDiagnostic, PetWindowSettleResult, SettlePetWindowInput};
 
 static DEVIATION_STATE: Lazy<Mutex<DeviationState>> = Lazy::new(|| Mutex::new(DeviationState::default()));
 static FOREGROUND_SAMPLE_STATE: Lazy<Mutex<ForegroundSampleState>> =
@@ -62,205 +73,6 @@ struct ForegroundSnapshot {
     process_name: String,
     window_title: String,
     captured_at_ms: i64,
-}
-
-#[derive(Clone, Serialize)]
-struct ForegroundCaptureDiagnostic {
-    id: i64,
-    captured_at_ms: i64,
-    observed_process_name: String,
-    observed_window_title: String,
-    stored: bool,
-    block_reason: Option<String>,
-    rule_saved: bool,
-    rule_mapped_type: String,
-}
-
-#[derive(Clone, Serialize)]
-struct IdlePromptEntry {
-    id: i64,
-    start_timestamp: i64,
-    end_timestamp: i64,
-    duration_ms: i64,
-    deferred_until_timestamp: Option<i64>,
-}
-
-#[derive(Serialize)]
-struct Category {
-    id: i64,
-    parent_id: Option<i64>,
-    name: String,
-    root_type: String,
-    color_hex: String,
-}
-
-#[derive(Deserialize)]
-struct CreateCategoryInput {
-    parent_id: i64,
-    name: String,
-    color_hex: Option<String>,
-}
-
-#[derive(Serialize)]
-struct TodaySummary {
-    learn_seconds: i64,
-    rest_seconds: i64,
-    active_session_id: Option<i64>,
-}
-
-#[derive(Deserialize)]
-struct SettlePetWindowInput {
-    mode: String,
-}
-
-#[derive(Serialize)]
-struct PetWindowSettleResult {
-    x: i32,
-    y: i32,
-    width: u32,
-    height: u32,
-    state: String,
-}
-
-#[derive(Serialize)]
-struct TopApp {
-    process_name: String,
-    seconds: i64,
-}
-
-#[derive(Serialize)]
-struct LearnHeatmapCell {
-    day: String,
-    learn_seconds: i64,
-    level: String,
-}
-
-#[derive(Serialize)]
-struct UsageStackSegment {
-    name: String,
-    seconds: i64,
-}
-
-#[derive(Serialize)]
-struct UsageStackDay {
-    day: String,
-    total_seconds: i64,
-    learn_seconds: i64,
-    rest_seconds: i64,
-    segments: Vec<UsageStackSegment>,
-}
-
-#[derive(Serialize)]
-struct RecentLogEntry {
-    id: i64,
-    process_name: String,
-    window_title: String,
-    start_timestamp: i64,
-    duration_ms: i64,
-}
-
-#[derive(Serialize)]
-struct AppRuleEntry {
-    process_name: String,
-    mapped_type: String,
-    privacy_level: String,
-    updated_at: i64,
-}
-
-#[derive(Serialize)]
-struct PendingRuleProcess {
-    process_name: String,
-    last_seen_timestamp: i64,
-    last_window_title: String,
-    total_seconds: i64,
-}
-
-#[derive(Deserialize)]
-struct SaveAppRuleInput {
-    process_name: String,
-    mapped_type: String,
-    privacy_level: Option<String>,
-}
-
-#[derive(Serialize)]
-struct DeviationCheck {
-    triggered: bool,
-    process_name: String,
-    reason: String,
-    active_root_type: Option<String>,
-    mapped_type: Option<String>,
-    suggested_root_category_id: Option<i64>,
-}
-
-#[derive(Serialize)]
-struct PrivacySettings {
-    curtain_enabled: bool,
-    browser_title_mode: String,
-    whitelist_only_enabled: bool,
-}
-
-#[derive(Deserialize)]
-struct UpdatePrivacySettingsInput {
-    curtain_enabled: bool,
-    browser_title_mode: String,
-    whitelist_only_enabled: bool,
-}
-
-#[derive(Deserialize)]
-struct SetWhitelistItemInput {
-    process_name: String,
-    enabled: bool,
-}
-
-#[derive(Deserialize)]
-struct ResolveIdlePromptInput {
-    prompt_id: i64,
-    decision: String,
-    remember_this_session: Option<bool>,
-}
-
-#[derive(Serialize)]
-struct IdleMemoryState {
-    remembered_decision: Option<String>,
-}
-
-#[derive(Serialize, Clone)]
-struct ReminderEntry {
-    id: i64,
-    content: String,
-    repeat_rule: String,
-    sort_order: i64,
-    remind_at: Option<i64>,
-    daily_time_minutes: Option<i64>,
-    weekly_days: Option<Vec<i64>>,
-    snooze_until: Option<i64>,
-    next_due_timestamp: i64,
-    done: bool,
-    completed_day_key: Option<String>,
-    completed_at: Option<i64>,
-    created_at: i64,
-    updated_at: i64,
-}
-
-#[derive(Deserialize)]
-struct SaveReminderInput {
-    id: Option<i64>,
-    content: String,
-    repeat_rule: String,
-    remind_at: Option<i64>,
-    daily_time_minutes: Option<i64>,
-    weekly_days: Option<Vec<i64>>,
-}
-
-#[derive(Deserialize)]
-struct SetReminderDoneInput {
-    id: i64,
-    done: bool,
-}
-
-#[derive(Deserialize)]
-struct SetReminderOrderInput {
-    ordered_ids: Vec<i64>,
 }
 
 fn push_foreground_diagnostic(entry: ForegroundCaptureDiagnostic) -> Result<(), String> {
