@@ -42,6 +42,7 @@ Important sibling folders in the larger workspace:
 - `src-tauri/src/db/connection.rs`: database path resolution, legacy DB migration, SQLite connection opening.
 - `src-tauri/src/db/migrations.rs`: SQLite schema creation, table upgrade helpers, default seed data, and heatmap snapshot table creation.
 - `src-tauri/src/domain/*.rs`: backend DTOs and command input/output structs grouped by feature area.
+- `src-tauri/src/services/privacy.rs`: privacy config parsing, process-name normalization, browser title protection, whitelist filtering, and related characterization tests.
 - `src-tauri/tauri.conf.json`: app and window configuration.
 
 ## Main Data Flow

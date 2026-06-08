@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, HashMap};
-use std::path::Path;
 use std::process::Command;
 use std::sync::Mutex;
 use chrono::{Datelike, Duration, Local, TimeZone};
@@ -25,6 +24,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 
 mod db;
 mod domain;
+mod services;
 
 use db::connection::open_connection;
 use db::migrations::{ensure_heatmap_snapshot_table, init_database};
@@ -39,6 +39,9 @@ use domain::reminders::{
 };
 use domain::rules::{AppRuleEntry, DeviationCheck, PendingRuleProcess, SaveAppRuleInput};
 use domain::window::{ForegroundCaptureDiagnostic, PetWindowSettleResult, SettlePetWindowInput};
+use services::privacy::{
+    normalize_process_key, parse_bool_config, parse_browser_title_mode, process_log_with_privacy,
+};
 
 static DEVIATION_STATE: Lazy<Mutex<DeviationState>> = Lazy::new(|| Mutex::new(DeviationState::default()));
 static FOREGROUND_SAMPLE_STATE: Lazy<Mutex<ForegroundSampleState>> =
@@ -348,177 +351,6 @@ fn seal_historical_heatmap_snapshot(
     .map_err(|e| format!("failed to insert heatmap snapshot: {e}"))?;
 
     Ok(())
-}
-
-fn parse_bool_config(conn: &Connection, key: &str, default_value: bool) -> bool {
-    conn.query_row(
-        "SELECT value FROM app_config WHERE key = ?1",
-        [key],
-        |row| row.get::<_, String>(0),
-    )
-    .ok()
-    .map(|v| v.eq_ignore_ascii_case("true"))
-    .unwrap_or(default_value)
-}
-
-fn normalize_process_key(process_name: &str) -> String {
-    let normalized = process_name
-        .trim()
-        .trim_matches('"')
-        .replace('\\', "/")
-        .to_lowercase();
-
-    let from_path = Path::new(&normalized)
-        .file_name()
-        .and_then(|name| name.to_str())
-        .map(str::trim)
-        .filter(|name| !name.is_empty())
-        .map(|name| name.to_string());
-
-    from_path
-        .or_else(|| {
-            let trimmed = normalized.trim();
-            if trimmed.is_empty() {
-                None
-            } else {
-                Some(trimmed.to_string())
-            }
-        })
-        .unwrap_or_else(|| "unknown.exe".to_string())
-}
-
-fn parse_browser_title_mode(conn: &Connection) -> String {
-    let from_mode_key = conn
-        .query_row(
-            "SELECT value FROM app_config WHERE key = 'browser_title_mode'",
-            [],
-            |row| row.get::<_, String>(0),
-        )
-        .ok()
-        .map(|v| v.trim().to_uppercase())
-        .filter(|v| matches!(v.as_str(), "FULL" | "BLUR" | "NONE"));
-
-    if let Some(mode) = from_mode_key {
-        return mode;
-    }
-
-    if parse_bool_config(conn, "browser_blur_enabled", true) {
-        "BLUR".to_string()
-    } else {
-        "FULL".to_string()
-    }
-}
-
-fn is_browser_process(process_name: &str) -> bool {
-    matches!(
-        process_name,
-        "chrome.exe"
-            | "msedge.exe"
-            | "firefox.exe"
-            | "opera.exe"
-            | "brave.exe"
-            | "vivaldi.exe"
-            | "iexplore.exe"
-    )
-}
-
-fn contains_incognito_keyword(title: &str) -> bool {
-    let lower = title.to_lowercase();
-    lower.contains("incognito")
-        || lower.contains("inprivate")
-        || lower.contains("private browsing")
-        || lower.contains("无痕")
-        || lower.contains("隐私")
-}
-
-fn is_desktop_shell_window(process_name: &str, window_title: &str) -> bool {
-    if process_name != "explorer.exe" {
-        return false;
-    }
-    let t = window_title.trim().to_lowercase();
-    t.is_empty()
-        || t == "program manager"
-        || t.contains("workerw")
-        || t.contains("desktop")
-        || t.contains("桌面")
-}
-
-fn process_log_with_privacy(
-    conn: &Connection,
-    process_name: &str,
-    window_title: &str,
-) -> Result<(Option<(String, String)>, Option<String>), String> {
-    let curtain_enabled = parse_bool_config(conn, "curtain_enabled", false);
-    if curtain_enabled {
-        return Ok((None, Some("curtain_enabled".to_string())));
-    }
-
-    let mut final_process = normalize_process_key(process_name);
-    let title_raw = window_title.trim();
-    let mut final_title = if title_raw.is_empty() {
-        "Untitled Window".to_string()
-    } else {
-        title_raw.to_string()
-    };
-
-    let browser_title_mode = parse_browser_title_mode(conn);
-    let whitelist_only_enabled = parse_bool_config(conn, "whitelist_only_enabled", false);
-    let is_browser = is_browser_process(&final_process);
-
-    if is_browser && contains_incognito_keyword(title_raw) {
-        return Ok((None, Some("incognito_window".to_string())));
-    }
-
-    if is_desktop_shell_window(&final_process, &final_title) {
-        final_process = "desktop.shell.exe".to_string();
-        final_title = "Desktop Shell".to_string();
-    }
-
-    let process_privacy = conn
-        .query_row(
-            "SELECT privacy_level FROM app_rules WHERE process_name = ?1",
-            [final_process.clone()],
-            |row| row.get::<_, String>(0),
-        )
-        .unwrap_or_else(|_| "NORMAL".to_string())
-        .to_uppercase();
-
-    if is_browser {
-        match browser_title_mode.as_str() {
-            "BLUR" => {
-                final_title = "Web Browser".to_string();
-            }
-            "NONE" => {
-                final_title = "Not Collected".to_string();
-            }
-            _ => {}
-        }
-    }
-
-    if process_privacy == "BLUR_TITLE" {
-        final_title = "Hidden Window".to_string();
-    }
-
-    if whitelist_only_enabled || process_privacy == "WHITELIST_ONLY" {
-        let whitelisted = conn
-            .query_row(
-                "SELECT 1 FROM app_whitelist WHERE process_name = ?1 LIMIT 1",
-                [final_process.clone()],
-                |_row| Ok(true),
-            )
-            .unwrap_or(false);
-
-        if !whitelisted {
-            final_process = "uncategorized.exe".to_string();
-            final_title = "Hidden by Whitelist".to_string();
-            return Ok((
-                Some((final_process, final_title)),
-                Some("whitelist_blocked".to_string()),
-            ));
-        }
-    }
-
-    Ok((Some((final_process, final_title)), None))
 }
 
 #[cfg(target_os = "windows")]

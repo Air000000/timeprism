@@ -463,3 +463,92 @@ Follow-up:
 
 - Commit R-103.
 - Start R-104 privacy service extraction.
+
+## 2026-06-08: R-104 Privacy Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- privacy/capture
+
+Intent:
+
+- Move privacy config parsing, process-name normalization, browser-title handling, desktop-shell handling, and whitelist filtering out of `src-tauri/src/lib.rs`.
+- Preserve all privacy behavior, title placeholder strings, block reasons, and command contracts.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/privacy.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `src-tauri/src/lib.rs::parse_bool_config` | `src-tauri/src/services/privacy.rs::parse_bool_config` | Behavior unchanged |
+| `src-tauri/src/lib.rs::normalize_process_key` | `src-tauri/src/services/privacy.rs::normalize_process_key` | Behavior unchanged; now has characterization tests |
+| `src-tauri/src/lib.rs::parse_browser_title_mode` | `src-tauri/src/services/privacy.rs::parse_browser_title_mode` | Behavior unchanged |
+| `src-tauri/src/lib.rs::is_browser_process` | `src-tauri/src/services/privacy.rs::is_browser_process` | Behavior unchanged; private helper |
+| `src-tauri/src/lib.rs::contains_incognito_keyword` | `src-tauri/src/services/privacy.rs::contains_incognito_keyword` | Behavior unchanged; private helper |
+| `src-tauri/src/lib.rs::is_desktop_shell_window` | `src-tauri/src/services/privacy.rs::is_desktop_shell_window` | Behavior unchanged; private helper |
+| `src-tauri/src/lib.rs::process_log_with_privacy` | `src-tauri/src/services/privacy.rs::process_log_with_privacy` | Behavior unchanged |
+
+Behavior expected to stay the same:
+
+- `curtain_enabled` still blocks storage with reason `curtain_enabled`.
+- Browser title mode `BLUR` still stores `Web Browser`.
+- Browser title mode `NONE` still stores `Not Collected`.
+- Incognito/private browser titles still block storage with reason `incognito_window`.
+- Desktop shell windows still normalize to `desktop.shell.exe` / `Desktop Shell`.
+- Whitelist-only behavior still stores `uncategorized.exe` / `Hidden by Whitelist` with reason `whitelist_blocked` for unlisted processes.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- Implementation dependency only. Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- No intended behavior change.
+- Added characterization tests for privacy-sensitive logic.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 8 privacy tests passed.
+
+Manual smoke tests:
+
+- S-600 interactive smoke was not run because it requires a real foreground browser/window session.
+- S-600 core behavior is covered by new automated tests for browser `BLUR`, browser `NONE`, private-window blocking, and whitelist-only behavior.
+
+Risks:
+
+- Full end-to-end capture still needs a real Windows foreground-window smoke before release.
+- Future capture extraction should keep raw-title handling behind privacy tests.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-103 commit.
+
+Follow-up:
+
+- Commit R-104.
+- Start R-105 frontend API type extraction.
