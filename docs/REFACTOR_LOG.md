@@ -291,3 +291,87 @@ Follow-up:
 
 - Commit R-101.
 - Start R-102 backend migration/table helper extraction.
+
+## 2026-06-08: R-102 Backend Migration Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend-db
+
+Intent:
+
+- Move SQLite schema initialization, schema-upgrade helpers, seed data, and heatmap snapshot table creation out of `src-tauri/src/lib.rs`.
+- Preserve database behavior, SQL meaning, seed behavior, command registration, and runtime call sites.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/db/mod.rs`
+- `src-tauri/src/db/migrations.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `src-tauri/src/lib.rs::ensure_app_rules_time_columns` | `src-tauri/src/db/migrations.rs::ensure_app_rules_time_columns` | Behavior unchanged; private helper remains private inside migrations module |
+| `src-tauri/src/lib.rs::ensure_reminders_weekly_columns` | `src-tauri/src/db/migrations.rs::ensure_reminders_weekly_columns` | Behavior unchanged; SQL copied without intentional schema change |
+| `src-tauri/src/lib.rs::ensure_reminders_sort_order` | `src-tauri/src/db/migrations.rs::ensure_reminders_sort_order` | Behavior unchanged; sort backfill logic copied |
+| `src-tauri/src/lib.rs::ensure_heatmap_snapshot_table` | `src-tauri/src/db/migrations.rs::ensure_heatmap_snapshot_table` | Behavior unchanged; public because `get_learn_heatmap` still calls it defensively |
+| `src-tauri/src/lib.rs::init_database` | `src-tauri/src/db/migrations.rs::init_database` | Behavior unchanged; public startup entry imported by `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Database schema creation and upgrade order stays the same.
+- Default categories, app rules, app config, and whitelist seeding behavior stays the same.
+- Startup still calls `init_database` during Tauri setup.
+- Heatmap reads still call `ensure_heatmap_snapshot_table` before querying snapshots.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- Implementation dependency only. Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- No intended schema change.
+- No migration versioning introduced in this batch.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed after extraction.
+- `cargo check` from `src-tauri` passed again after cleanup.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Fresh/legacy DB launch smoke remains valuable before larger backend module splits.
+- Future schema work still needs an ADR or explicit migration-versioning plan before changing SQL behavior.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-101 commit.
+
+Follow-up:
+
+- Commit R-102.
+- Start R-103 backend domain type extraction.
