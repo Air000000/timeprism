@@ -892,3 +892,85 @@ Follow-up:
 
 - Commit R-108.
 - Continue analytics extraction with heatmap and usage stack.
+
+## 2026-06-08: R-109 Backend Heatmap And Usage Stack Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- analytics
+
+Intent:
+
+- Move heatmap, heatmap-goal setting, and usage-stack command bodies into `services::analytics`.
+- Preserve current heatmap snapshot behavior, usage-stack bucketing, query caps, filters, placeholders, and command contracts.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/analytics.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `src-tauri/src/lib.rs::get_learn_heatmap` body | `src-tauri/src/services/analytics.rs::learn_heatmap` | Command shell remains in `lib.rs`; historical no-snapshot behavior preserved |
+| `src-tauri/src/lib.rs::get_heatmap_goal_seconds_setting` body | `src-tauri/src/services/analytics.rs::heatmap_goal_seconds_setting` | Command shell remains in `lib.rs` |
+| `src-tauri/src/lib.rs::set_heatmap_goal_seconds_setting` body | `src-tauri/src/services/analytics.rs::set_heatmap_goal_seconds_setting` | Command shell remains in `lib.rs`; error string preserved |
+| `src-tauri/src/lib.rs::get_usage_stack` body | `src-tauri/src/services/analytics.rs::usage_stack` | Command shell remains in `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Heatmap still seals historical snapshots before reading.
+- Historical heatmap days without a snapshot still return gray/zero cells.
+- Current-day heatmap still recomputes learn seconds.
+- Heatmap goal setting clamp stays `0..=86400`.
+- Usage stack still buckets by business day, reverses latest day first, and uses the same root filter validation.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `get_learn_heatmap`, `get_heatmap_goal_seconds_setting`, `set_heatmap_goal_seconds_setting`, and `get_usage_stack` now delegate to `services::analytics`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended. Queries continue to read already privacy-processed logs.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 15 tests passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Shared time/interval helpers are still in `lib.rs` with `pub(crate)` visibility; they should move to a small utility module in a follow-up cleanup batch.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-108 commit.
+
+Follow-up:
+
+- Commit R-109.
+- Continue Phase 2 with foreground/capture service extraction or shared time helper cleanup.

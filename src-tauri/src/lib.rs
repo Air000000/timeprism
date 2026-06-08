@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::process::Command;
 use std::sync::Mutex;
 use chrono::{Duration, Local, TimeZone};
@@ -27,10 +27,10 @@ mod domain;
 mod services;
 
 use db::connection::open_connection;
-use db::migrations::{ensure_heatmap_snapshot_table, init_database};
+use db::migrations::init_database;
 use domain::analytics::{
     Category, CreateCategoryInput, LearnHeatmapCell, RecentLogEntry, TodaySummary, TopApp,
-    UsageStackDay, UsageStackSegment,
+    UsageStackDay,
 };
 use domain::idle::{IdleMemoryState, IdlePromptEntry, ResolveIdlePromptInput};
 use domain::privacy::{PrivacySettings, SetWhitelistItemInput, UpdatePrivacySettingsInput};
@@ -40,8 +40,10 @@ use domain::reminders::{
 use domain::rules::{AppRuleEntry, DeviationCheck, PendingRuleProcess, SaveAppRuleInput};
 use domain::window::{ForegroundCaptureDiagnostic, PetWindowSettleResult, SettlePetWindowInput};
 use services::analytics::{
-    list_recent_log_entries, list_top_apps_all_time_entries, list_top_apps_today_entries,
-    today_summary,
+    heatmap_goal_seconds_setting, learn_heatmap, list_recent_log_entries,
+    list_top_apps_all_time_entries, list_top_apps_today_entries,
+    set_heatmap_goal_seconds_setting as save_heatmap_goal_seconds_setting, today_summary,
+    usage_stack,
 };
 use services::privacy::{
     normalize_process_key, parse_bool_config, parse_browser_title_mode, process_log_with_privacy,
@@ -60,7 +62,6 @@ static FOREGROUND_SAMPLE_STATE: Lazy<Mutex<ForegroundSampleState>> =
     Lazy::new(|| Mutex::new(ForegroundSampleState::default()));
 const IDLE_PROMPT_THRESHOLD_MS: i64 = 300_000;
 const BUSINESS_DAY_START_HOUR: i64 = 4;
-const HEATMAP_LOCK_GOAL_SECONDS: i64 = 7200;
 #[cfg(target_os = "windows")]
 const WINDOWS_RUN_REGISTRY_PATH: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
 #[cfg(target_os = "windows")]
@@ -120,7 +121,7 @@ pub(crate) fn business_day_window_from_local(now: chrono::DateTime<Local>) -> Re
     Ok((start, start + 86_400))
 }
 
-fn business_day_start_for_timestamp(ts: i64) -> Result<i64, String> {
+pub(crate) fn business_day_start_for_timestamp(ts: i64) -> Result<i64, String> {
     let local_dt = Local
         .timestamp_opt(ts, 0)
         .single()
@@ -136,13 +137,13 @@ pub(crate) fn business_day_key_from_start(start_ts: i64) -> Result<String, Strin
     Ok(local_dt.format("%Y-%m-%d").to_string())
 }
 
-fn overlap_seconds(seg_start: i64, seg_end: i64, window_start: i64, window_end: i64) -> i64 {
+pub(crate) fn overlap_seconds(seg_start: i64, seg_end: i64, window_start: i64, window_end: i64) -> i64 {
     let start = seg_start.max(window_start);
     let end = seg_end.min(window_end);
     (end - start).max(0)
 }
 
-fn merge_intervals_total(mut intervals: Vec<(i64, i64)>) -> i64 {
+pub(crate) fn merge_intervals_total(mut intervals: Vec<(i64, i64)>) -> i64 {
     if intervals.is_empty() {
         return 0;
     }
@@ -163,7 +164,7 @@ fn merge_intervals_total(mut intervals: Vec<(i64, i64)>) -> i64 {
     total + (current.1 - current.0).max(0)
 }
 
-fn parse_i64_config(conn: &Connection, key: &str, default_value: i64) -> i64 {
+pub(crate) fn parse_i64_config(conn: &Connection, key: &str, default_value: i64) -> i64 {
     conn.query_row(
         "SELECT value FROM app_config WHERE key = ?1",
         [key],
@@ -174,7 +175,7 @@ fn parse_i64_config(conn: &Connection, key: &str, default_value: i64) -> i64 {
     .unwrap_or(default_value)
 }
 
-fn compute_learn_seconds_for_window(conn: &Connection, start_ts: i64, end_ts: i64) -> Result<i64, String> {
+pub(crate) fn compute_learn_seconds_for_window(conn: &Connection, start_ts: i64, end_ts: i64) -> Result<i64, String> {
     let mut log_stmt = conn
         .prepare(
             "SELECT l.start_timestamp, l.duration_ms
@@ -305,7 +306,7 @@ fn set_auto_start_enabled_internal(_enabled: bool) -> Result<bool, String> {
     Ok(false)
 }
 
-fn seal_historical_heatmap_snapshot(
+pub(crate) fn seal_historical_heatmap_snapshot(
     conn: &Connection,
     day_start_ts: i64,
     goal_seconds: i64,
@@ -1061,153 +1062,19 @@ fn get_learn_heatmap(
     goal_seconds: Option<i64>,
 ) -> Result<Vec<LearnHeatmapCell>, String> {
     let conn = open_connection(&app)?;
-    ensure_heatmap_snapshot_table(&conn)?;
-    let span_days = days.unwrap_or(35).clamp(7, 2000);
-    let goal = goal_seconds.unwrap_or(7200).clamp(0, 86400);
-    let lock_goal = parse_i64_config(&conn, "heatmap_lock_goal_seconds", HEATMAP_LOCK_GOAL_SECONDS)
-        .clamp(0, 86_400);
-
-    let (today_start_ts, today_end_ts) = business_day_window_from_local(Local::now())?;
-    let start_ts = today_start_ts - (span_days - 1) * 86_400;
-    let end_ts = today_end_ts;
-
-    for i in 0..span_days {
-        let day_start_ts = start_ts + i * 86_400;
-        if day_start_ts >= today_start_ts {
-            continue;
-        }
-        seal_historical_heatmap_snapshot(&conn, day_start_ts, lock_goal)?;
-    }
-
-    let start_day_key = business_day_key_from_start(start_ts)?;
-    let end_day_key = business_day_key_from_start(end_ts - 1)?;
-    let mut snap_stmt = conn
-        .prepare(
-            "SELECT day_key, learn_seconds, level
-             FROM daily_heatmap_snapshot
-             WHERE day_key >= ?1 AND day_key <= ?2",
-        )
-        .map_err(|e| format!("failed to prepare heatmap snapshot query: {e}"))?;
-
-    let snapshot_rows = snap_stmt
-        .query_map(params![start_day_key, end_day_key], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, i64>(1)?.max(0),
-                row.get::<_, String>(2)?,
-            ))
-        })
-        .map_err(|e| format!("failed to query heatmap snapshots: {e}"))?;
-
-    let mut snapshots: HashMap<String, (i64, String)> = HashMap::new();
-    for row in snapshot_rows {
-        let (day_key, seconds, level) = row.map_err(|e| format!("failed to parse heatmap snapshot row: {e}"))?;
-        snapshots.insert(day_key, (seconds, level));
-    }
-
-    let mut stmt = conn
-        .prepare(
-            "SELECT l.start_timestamp,
-                    l.duration_ms,
-                    COALESCE(r.mapped_type, 'IGNORE') AS mapped_type
-             FROM app_usage_logs l
-             LEFT JOIN app_rules r ON r.process_name = l.process_name
-             WHERE l.start_timestamp < ?2
-               AND (l.start_timestamp + (l.duration_ms / 1000)) > ?1",
-        )
-        .map_err(|e| format!("failed to prepare heatmap query: {e}"))?;
-
-    let rows = stmt
-        .query_map(params![start_ts, end_ts], |row| {
-            Ok((
-                row.get::<_, i64>(0)?,
-                row.get::<_, i64>(1)?.max(0),
-                row.get::<_, String>(2)?.to_uppercase(),
-            ))
-        })
-        .map_err(|e| format!("failed to query heatmap rows: {e}"))?;
-
-    let mut by_day: HashMap<String, i64> = HashMap::new();
-    for row in rows {
-        let (seg_start, duration_ms, mapped_type) =
-            row.map_err(|e| format!("failed to parse heatmap row: {e}"))?;
-        if mapped_type != "LEARN" {
-            continue;
-        }
-
-        let seg_end = seg_start + (duration_ms / 1000);
-        let clip_start = seg_start.max(start_ts);
-        let clip_end = seg_end.min(end_ts);
-        if clip_end <= clip_start {
-            continue;
-        }
-
-        let mut cursor = clip_start;
-        while cursor < clip_end {
-            let bucket_start = business_day_start_for_timestamp(cursor)?;
-            let bucket_end = bucket_start + 86_400;
-            let piece_end = clip_end.min(bucket_end);
-            let piece_seconds = overlap_seconds(cursor, piece_end, bucket_start, bucket_end);
-            if piece_seconds > 0 {
-                let day_key = business_day_key_from_start(bucket_start)?;
-                *by_day.entry(day_key).or_insert(0) += piece_seconds;
-            }
-            cursor = piece_end;
-        }
-    }
-
-    let mut result = Vec::with_capacity(span_days as usize);
-    for i in 0..span_days {
-        let day_start_ts = start_ts + i * 86_400;
-        let day_key = business_day_key_from_start(day_start_ts)?;
-        let (learn_seconds, level) = if day_start_ts < today_start_ts {
-            if let Some((seconds, locked_level)) = snapshots.get(&day_key) {
-                (*seconds, locked_level.clone())
-            } else {
-                (0, "GRAY".to_string())
-            }
-        } else {
-            let seconds = compute_learn_seconds_for_window(&conn, day_start_ts, day_start_ts + 86_400)?
-                .max(0);
-            let lv = if seconds <= 0 {
-                "GRAY"
-            } else if seconds < goal {
-                "YELLOW"
-            } else {
-                "GREEN"
-            }
-            .to_string();
-            (seconds, lv)
-        };
-
-        result.push(LearnHeatmapCell {
-            day: day_key,
-            learn_seconds,
-            level,
-        });
-    }
-
-    Ok(result)
+    learn_heatmap(&conn, days, goal_seconds)
 }
 
 #[tauri::command]
 fn get_heatmap_goal_seconds_setting(app: AppHandle) -> Result<i64, String> {
     let conn = open_connection(&app)?;
-    let value = parse_i64_config(&conn, "heatmap_goal_seconds", 7_200).clamp(0, 86_400);
-    Ok(value)
+    Ok(heatmap_goal_seconds_setting(&conn))
 }
 
 #[tauri::command]
 fn set_heatmap_goal_seconds_setting(app: AppHandle, goal_seconds: i64) -> Result<i64, String> {
     let conn = open_connection(&app)?;
-    let normalized = goal_seconds.clamp(0, 86_400);
-    conn.execute(
-        "INSERT INTO app_config (key, value) VALUES ('heatmap_goal_seconds', ?1)
-         ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-        [normalized.to_string()],
-    )
-    .map_err(|e| format!("failed to save heatmap goal seconds: {e}"))?;
-    Ok(normalized)
+    save_heatmap_goal_seconds_setting(&conn, goal_seconds)
 }
 
 #[tauri::command]
@@ -1217,132 +1084,7 @@ fn get_usage_stack(
     root_filter: Option<String>,
 ) -> Result<Vec<UsageStackDay>, String> {
     let conn = open_connection(&app)?;
-    let span_days = days.unwrap_or(14).clamp(3, 366);
-    let filter = root_filter
-        .unwrap_or_else(|| "ALL".to_string())
-        .trim()
-        .to_uppercase();
-    if !matches!(filter.as_str(), "ALL" | "LEARN" | "REST") {
-        return Err("root_filter must be ALL, LEARN, or REST".to_string());
-    }
-
-    let (today_start_ts, today_end_ts) = business_day_window_from_local(Local::now())?;
-    let start_ts = today_start_ts - (span_days - 1) * 86_400;
-    let end_ts = today_end_ts;
-
-    let mut stmt = conn
-        .prepare(
-            "SELECT l.start_timestamp,
-                    l.duration_ms,
-                    COALESCE(r.mapped_type, 'IGNORE') AS mapped_type,
-                    l.process_name
-             FROM app_usage_logs l
-             LEFT JOIN app_rules r ON r.process_name = l.process_name
-             WHERE l.start_timestamp < ?2
-               AND (l.start_timestamp + (l.duration_ms / 1000)) > ?1",
-        )
-        .map_err(|e| format!("failed to prepare usage stack query: {e}"))?;
-
-    let rows = stmt
-        .query_map(params![start_ts, end_ts], |row| {
-            Ok((
-                row.get::<_, i64>(0)?,
-                row.get::<_, i64>(1)?.max(0),
-                row.get::<_, String>(2)?.to_uppercase(),
-                row.get::<_, String>(3)?,
-            ))
-        })
-        .map_err(|e| format!("failed to query usage stack rows: {e}"))?;
-
-    #[derive(Default)]
-    struct DayAcc {
-        total_intervals: Vec<(i64, i64)>,
-        learn_intervals: Vec<(i64, i64)>,
-        rest_intervals: Vec<(i64, i64)>,
-        segments: HashMap<String, i64>,
-    }
-
-    let mut by_day: BTreeMap<String, DayAcc> = BTreeMap::new();
-    for row in rows {
-        let (seg_start, duration_ms, mapped_type, process_name) =
-            row.map_err(|e| format!("failed to parse usage stack row: {e}"))?;
-        if duration_ms <= 0 {
-            continue;
-        }
-
-        let include = match filter.as_str() {
-            "LEARN" => mapped_type == "LEARN",
-            "REST" => mapped_type == "REST",
-            _ => true,
-        };
-        if !include {
-            continue;
-        }
-
-        let seg_end = seg_start + (duration_ms / 1000);
-        let clip_start = seg_start.max(start_ts);
-        let clip_end = seg_end.min(end_ts);
-        if clip_end <= clip_start {
-            continue;
-        }
-
-        let mut cursor = clip_start;
-        while cursor < clip_end {
-            let bucket_start = business_day_start_for_timestamp(cursor)?;
-            let bucket_end = bucket_start + 86_400;
-            let piece_end = clip_end.min(bucket_end);
-            let seconds = overlap_seconds(cursor, piece_end, bucket_start, bucket_end);
-            if seconds <= 0 {
-                cursor = piece_end;
-                continue;
-            }
-
-            let day = business_day_key_from_start(bucket_start)?;
-
-            let day_entry = by_day.entry(day).or_default();
-            day_entry.total_intervals.push((cursor, piece_end));
-            if mapped_type == "LEARN" {
-                day_entry.learn_intervals.push((cursor, piece_end));
-            } else if mapped_type == "REST" {
-                day_entry.rest_intervals.push((cursor, piece_end));
-            }
-
-            let seg_name = if mapped_type == "IGNORE" {
-                format!("{process_name} (IGNORE)")
-            } else {
-                process_name.clone()
-            };
-            *day_entry.segments.entry(seg_name).or_insert(0) += seconds;
-            cursor = piece_end;
-        }
-    }
-
-    let mut result = Vec::new();
-    for (i, (day, acc)) in by_day.into_iter().enumerate() {
-        if i >= span_days as usize {
-            break;
-        }
-
-        let mut segments: Vec<UsageStackSegment> = acc
-            .segments
-            .into_iter()
-            .map(|(name, seconds)| UsageStackSegment { name, seconds })
-            .collect();
-        segments.sort_by(|a, b| b.seconds.cmp(&a.seconds));
-
-        result.push(UsageStackDay {
-            day,
-            total_seconds: merge_intervals_total(acc.total_intervals).max(0),
-            learn_seconds: merge_intervals_total(acc.learn_intervals).max(0),
-            rest_seconds: merge_intervals_total(acc.rest_intervals).max(0),
-            segments,
-        });
-    }
-
-    // Return latest day first so callers can read index 0 as current business day.
-    result.reverse();
-
-    Ok(result)
+    usage_stack(&conn, days, root_filter)
 }
 
 #[tauri::command]
