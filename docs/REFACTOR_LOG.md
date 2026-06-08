@@ -810,3 +810,85 @@ Follow-up:
 
 - Commit R-107.
 - Continue Phase 2 with analytics service extraction.
+
+## 2026-06-08: R-108 Backend Analytics Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- analytics
+
+Intent:
+
+- Move recent-log, today-summary, top-apps-today, and top-apps-all-time query bodies out of `src-tauri/src/lib.rs`.
+- Keep heatmap and usage-stack extraction for a later, focused analytics batch.
+- Keep Tauri command names and payloads unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/analytics.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `src-tauri/src/lib.rs::list_recent_logs` query body | `src-tauri/src/services/analytics.rs::list_recent_log_entries` | Command shell remains in `lib.rs` |
+| `src-tauri/src/lib.rs::get_today_summary` query body | `src-tauri/src/services/analytics.rs::today_summary` | Command shell remains in `lib.rs` |
+| `src-tauri/src/lib.rs::list_top_apps_today` query body | `src-tauri/src/services/analytics.rs::list_top_apps_today_entries` | Command shell remains in `lib.rs` |
+| `src-tauri/src/lib.rs::list_top_apps_all_time` query body | `src-tauri/src/services/analytics.rs::list_top_apps_all_time_entries` | Command shell remains in `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Business-day windows, query caps, filters, ordering, and error strings stay the same.
+- `src-tauri/src/lib.rs` command signatures and registration stay the same.
+- Heatmap and usage-stack behavior are untouched in this batch.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `list_recent_logs`, `get_today_summary`, `list_top_apps_today`, and `list_top_apps_all_time` now delegate to `services::analytics`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended. Queries continue to read already privacy-processed logs.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 15 tests passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Heatmap and usage-stack remain in `lib.rs`; they should be moved in the next analytics batch with focused validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-107 commit.
+
+Follow-up:
+
+- Commit R-108.
+- Continue analytics extraction with heatmap and usage stack.
