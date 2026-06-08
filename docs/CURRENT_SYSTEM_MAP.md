@@ -32,7 +32,10 @@ Important sibling folders in the larger workspace:
 ## Key Files
 
 - `src/App.vue`: main app state, view routing, data orchestration, template, and large CSS block.
-- `src/api.ts`: TypeScript wrapper around Tauri commands.
+- `src/api.ts`: compatibility API surface that keeps existing frontend imports stable.
+- `src/api/client.ts`: thin typed wrapper around Tauri `invoke`.
+- `src/api/types.ts`: shared frontend API response/input-adjacent types.
+- `src/api/commands/`: reserved home for future command wrapper splits.
 - `src/components/HomeView.vue`: home surface.
 - `src/components/InsightsView.vue`: history and usage views.
 - `src/components/GuardView.vue`: pending apps, idle queue, rules, diagnostics.

@@ -552,3 +552,89 @@ Follow-up:
 
 - Commit R-104.
 - Start R-105 frontend API type extraction.
+
+## 2026-06-08: R-105 Frontend API Type Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend-api
+
+Intent:
+
+- Split frontend API type definitions from command wrappers.
+- Introduce a thin client wrapper around Tauri `invoke`.
+- Keep `src/api.ts` as the compatibility API surface so existing component imports continue to work.
+
+Files changed:
+
+- `src/api.ts`
+- `src/api/types.ts`
+- `src/api/client.ts`
+- `src/api/commands/index.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Exported API types in `src/api.ts` | `src/api/types.ts` | Names and field definitions preserved |
+| Direct `@tauri-apps/api/core::invoke` use in `src/api.ts` | `src/api/client.ts::invokeCommand` | Command names and args preserved |
+| Existing `./api` import surface | `src/api.ts` re-exports | Compatibility preserved |
+
+Behavior expected to stay the same:
+
+- Existing imports from `./api` keep working.
+- Tauri command names stay the same.
+- Command argument shapes stay the same.
+- Return type names stay the same.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- Frontend wrapper dependency only. No backend command registration or command name changed.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Cleanup:
+
+- Removed `dist-codex-check` after `build:check`.
+
+Manual smoke tests:
+
+- Not run for this frontend API extraction batch.
+
+Risks:
+
+- Future command wrapper splits should keep `src/api.ts` re-exporting until component imports are migrated deliberately.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-104 commit.
+
+Follow-up:
+
+- Commit R-105.
+- Select the next refactor batch from the master plan; do not start broader semantic changes without a new batch scope.
