@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "refactor/**"
+
+jobs:
+  checks:
+    name: Typecheck, Vite build, Rust check
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.9 --activate
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck frontend
+        run: pnpm run typecheck
+
+      - name: Build frontend to temporary output
+        run: pnpm run build:check
+
+      - name: Check Rust backend
+        working-directory: src-tauri
+        run: cargo check

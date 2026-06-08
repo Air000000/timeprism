@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-codex-check
 dist-ssr
 *.local
 src-tauri/tauri.local*.json

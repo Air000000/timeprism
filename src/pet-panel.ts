@@ -33,9 +33,9 @@ root.innerHTML = `
     <div id="panelTitle" class="panel-title">${tx("图表面板", "Panel")}</div>
     <div id="panelHeatmap" class="mini-heatmap">
       <div class="mini-head-row">
-        <button id="heatPrevMonth" class="mini-month-btn" type="button">‹</button>
+        <button id="heatPrevMonth" class="mini-month-btn" type="button">&lt;</button>
         <strong id="heatMonthLabel" class="mini-month-label">-</strong>
-        <button id="heatNextMonth" class="mini-month-btn" type="button">›</button>
+        <button id="heatNextMonth" class="mini-month-btn" type="button">&gt;</button>
       </div>
       <div id="miniWeekHeader" class="mini-week-header"></div>
       <div id="miniHeatmapGrid" class="mini-heatmap-grid"></div>

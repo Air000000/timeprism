@@ -395,7 +395,7 @@ async function openContextMenu(clientX: number, clientY: number) {
 
 		await menu.popup(new LogicalPosition(clientX, clientY), petWindow);
 	} catch (e) {
-		reportActionError(tx("鍙抽敭鑿滃崟鎵撳紑澶辫触", "Context menu failed"), e);
+		reportActionError(tx("右键菜单打开失败", "Context menu failed"), e);
 	}
 }
 
@@ -558,7 +558,7 @@ async function refreshPromptBubble() {
 			descriptors.push({
 				key,
 				title: tx("新软件待判定", "New App Needs Classification"),
-				detail: `${cleanPetProcessName(process)} 路 ${formatSeconds(Math.max(0, pending.total_seconds))}`,
+				detail: `${cleanPetProcessName(process)} · ${formatSeconds(Math.max(0, pending.total_seconds))}`,
 				actions: [
 					{
 						label: tx("学习", "Learn"),

@@ -80,7 +80,7 @@ const props = defineProps<{ ctx: any }>();
           <h3>{{ props.ctx.tx("已有规则（可编辑）", "Existing Rules (Editable)") }}</h3>
           <p v-if="!props.ctx.guardStep3Unlocked" class="lock-note">{{ props.ctx.tx("请先完成步骤2：确认离开时段。", "Complete Step 2 first: resolve idle segments.") }}</p>
           <div class="rule-toolbar" style="margin-top: 6px;">
-            <input :value="props.ctx.ruleSearch" @input="props.ctx.onRuleSearchInput" :placeholder="props.ctx.tx('搜索进程名，如 code.exe', 'Search process, e.g. code.exe')" />
+            <input :value="props.ctx.ruleSearch" @input="props.ctx.onRuleSearchInput" :placeholder="props.ctx.tx('搜索进程名，例如 code.exe', 'Search process, e.g. code.exe')" />
             <select :value="props.ctx.ruleSort" @change="props.ctx.onRuleSortChange">
               <option value="alpha_asc">{{ props.ctx.tx("按首字母 A-Z", "Name A-Z") }}</option>
               <option value="alpha_desc">{{ props.ctx.tx("按首字母 Z-A", "Name Z-A") }}</option>
