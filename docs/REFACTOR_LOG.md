@@ -211,3 +211,83 @@ Follow-up:
 
 - Commit R-000.
 - Start R-101 backend DB connection extraction on `refactor/architecture`.
+
+## 2026-06-08: R-101 Backend DB Connection Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend-db
+
+Intent:
+
+- Move database path resolution, legacy database migration, and connection opening out of `src-tauri/src/lib.rs`.
+- Preserve behavior and command compatibility.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/db/mod.rs`
+- `src-tauri/src/db/connection.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `src-tauri/src/lib.rs::ensure_data_dir` | `src-tauri/src/db/connection.rs::ensure_data_dir` | Behavior unchanged |
+| `src-tauri/src/lib.rs::legacy_db_path` | `src-tauri/src/db/connection.rs::legacy_db_path` | Behavior unchanged |
+| `src-tauri/src/lib.rs::db_path` | `src-tauri/src/db/connection.rs::db_path` | Behavior unchanged |
+| `src-tauri/src/lib.rs::try_migrate_legacy_db` | `src-tauri/src/db/connection.rs::try_migrate_legacy_db` | Behavior unchanged |
+| `src-tauri/src/lib.rs::open_connection` | `src-tauri/src/db/connection.rs::open_connection` | Behavior unchanged; now imported by `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Preferred DB path remains `app_local_data_dir()/timeprism.db`.
+- Legacy DB fallback/migration behavior remains the same.
+- Existing commands still call `open_connection`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- Implementation dependency only. Command names, inputs, and outputs unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Fresh/legacy DB runtime smoke still pending.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset to R-000 commit on `refactor/architecture`.
+
+Follow-up:
+
+- Commit R-101.
+- Start R-102 backend migration/table helper extraction.

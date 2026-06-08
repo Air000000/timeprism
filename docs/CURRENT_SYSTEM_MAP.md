@@ -39,6 +39,7 @@ Important sibling folders in the larger workspace:
 - `src/pet.ts`: pet UI, prompt bubble, quick actions, context menu.
 - `src/pet-panel.ts`: mini heatmap and weekly activity panel.
 - `src-tauri/src/lib.rs`: database setup, migrations, commands, analytics, capture, privacy, reminders, and window management.
+- `src-tauri/src/db/connection.rs`: database path resolution, legacy DB migration, SQLite connection opening.
 - `src-tauri/tauri.conf.json`: app and window configuration.
 
 ## Main Data Flow
