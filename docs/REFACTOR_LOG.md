@@ -722,3 +722,91 @@ Follow-up:
 
 - Commit R-106.
 - Continue Phase 2 with the next backend service extraction, likely reminders.
+
+## 2026-06-08: R-107 Backend Reminders Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- reminders
+
+Intent:
+
+- Move reminder recurrence, due-time calculation, CRUD, completion toggling, ordering, and snooze behavior out of `src-tauri/src/lib.rs`.
+- Keep Tauri command names and payloads unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/reminders.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `normalize_repeat_rule`, `normalize_weekly_days`, `weekly_days_to_db`, `parse_weekly_days_db`, `next_weekly_due_timestamp` | `src-tauri/src/services/reminders.rs` | Behavior unchanged; core weekly helpers now covered by characterization tests |
+| `collect_reminders` | `src-tauri/src/services/reminders.rs::collect_reminders` | Behavior unchanged; private service helper |
+| `list_reminders` body | `src-tauri/src/services/reminders.rs::list_reminder_entries` | Command shell remains in `lib.rs` |
+| `list_due_reminders` body | `src-tauri/src/services/reminders.rs::list_due_reminder_entries` | Command shell remains in `lib.rs` |
+| `save_reminder` body | `src-tauri/src/services/reminders.rs::save_reminder_entry` | Command shell remains in `lib.rs`; validation strings preserved |
+| `delete_reminder` body | `src-tauri/src/services/reminders.rs::delete_reminder_entry` | Command shell remains in `lib.rs` |
+| `set_reminder_done` body | `src-tauri/src/services/reminders.rs::set_reminder_done_entry` | Command shell remains in `lib.rs` |
+| `set_reminder_order` body | `src-tauri/src/services/reminders.rs::set_reminder_order_entries` | Command shell remains in `lib.rs` |
+| `snooze_reminder` body | `src-tauri/src/services/reminders.rs::snooze_reminder_entry` | Command shell remains in `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Reminder repeat rules and validation errors stay the same.
+- Daily and weekly due-time calculations stay the same.
+- Completed recurring reminders still use business-day keys.
+- Sort ordering, snooze limits, query caps, and list ordering stay the same.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `list_reminders`, `list_due_reminders`, `save_reminder`, `delete_reminder`, `set_reminder_done`, `set_reminder_order`, and `snooze_reminder` now delegate to `services::reminders`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo test` from `src-tauri` passed: 15 tests passed.
+- `cargo check` from `src-tauri` passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Business-day helpers are temporarily `pub(crate)` from `lib.rs`; a later analytics/time utility extraction should give them a proper home.
+- Full reminder UI smoke remains valuable before release.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-106 commit.
+
+Follow-up:
+
+- Commit R-107.
+- Continue Phase 2 with analytics service extraction.
