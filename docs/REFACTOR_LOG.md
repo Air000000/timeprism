@@ -638,3 +638,87 @@ Follow-up:
 
 - Commit R-105.
 - Select the next refactor batch from the master plan; do not start broader semantic changes without a new batch scope.
+
+## 2026-06-08: R-106 Backend Rules Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- rules
+
+Intent:
+
+- Move app-rule lookup, app-rule upsert, save-rule validation, app-rule listing, and pending-rule process queries out of `src-tauri/src/lib.rs`.
+- Keep Tauri command names and command signatures unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/rules.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `src-tauri/src/lib.rs::resolve_rule_mapping` | `src-tauri/src/services/rules.rs::resolve_rule_mapping` | Behavior unchanged; now covered by characterization tests |
+| `src-tauri/src/lib.rs::upsert_app_rule_entry` | `src-tauri/src/services/rules.rs::upsert_app_rule_entry` | Behavior unchanged |
+| `src-tauri/src/lib.rs::save_app_rule` validation body | `src-tauri/src/services/rules.rs::save_app_rule_entry` | Command shell remains in `lib.rs`; validation strings preserved |
+| `src-tauri/src/lib.rs::list_app_rules` query body | `src-tauri/src/services/rules.rs::list_app_rule_entries` | Command shell remains in `lib.rs` |
+| `src-tauri/src/lib.rs::list_pending_rule_processes` query body | `src-tauri/src/services/rules.rs::list_pending_rule_process_entries` | Command shell remains in `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Unknown or invalid mapped types still resolve to `IGNORE`.
+- `save_app_rule` keeps the same validation errors.
+- App-rule listing order and limit handling stay the same.
+- Pending-rule process threshold, ordering, and fallback title stay the same.
+- Idle prompt persistence still uses the same rule upsert behavior.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `list_app_rules`, `list_pending_rule_processes`, and `save_app_rule` now delegate to `services::rules`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended. Rule privacy-level validation is unchanged.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo test` from `src-tauri` passed: 11 tests passed.
+- `cargo check` from `src-tauri` passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- `check_focus_deviation` still keeps stateful deviation logic in `lib.rs`; future extraction should treat it as a separate guard/focus batch.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-105 commit.
+
+Follow-up:
+
+- Commit R-106.
+- Continue Phase 2 with the next backend service extraction, likely reminders.

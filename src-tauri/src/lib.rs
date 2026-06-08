@@ -42,6 +42,10 @@ use domain::window::{ForegroundCaptureDiagnostic, PetWindowSettleResult, SettleP
 use services::privacy::{
     normalize_process_key, parse_bool_config, parse_browser_title_mode, process_log_with_privacy,
 };
+use services::rules::{
+    list_app_rule_entries, list_pending_rule_process_entries, resolve_rule_mapping,
+    save_app_rule_entry, upsert_app_rule_entry,
+};
 
 static DEVIATION_STATE: Lazy<Mutex<DeviationState>> = Lazy::new(|| Mutex::new(DeviationState::default()));
 static FOREGROUND_SAMPLE_STATE: Lazy<Mutex<ForegroundSampleState>> =
@@ -88,29 +92,6 @@ fn push_foreground_diagnostic(entry: ForegroundCaptureDiagnostic) -> Result<(), 
         state.diagnostics.drain(0..drop_count);
     }
     Ok(())
-}
-
-fn resolve_rule_mapping(conn: &Connection, process_name: &str) -> (bool, String) {
-    let key = normalize_process_key(process_name);
-    let mapped = conn
-        .query_row(
-            "SELECT mapped_type FROM app_rules WHERE process_name = ?1",
-            [key],
-            |row| row.get::<_, String>(0),
-        )
-        .ok()
-        .map(|v| v.trim().to_uppercase());
-
-    if let Some(value) = mapped {
-        let safe = if matches!(value.as_str(), "LEARN" | "REST" | "IGNORE") {
-            value
-        } else {
-            "IGNORE".to_string()
-        };
-        return (true, safe);
-    }
-
-    (false, "IGNORE".to_string())
 }
 
 fn business_day_start_from_local(now: chrono::DateTime<Local>) -> Result<i64, String> {
@@ -482,26 +463,6 @@ fn append_usage_log_direct(
     .map_err(|e| format!("failed to append app usage log: {e}"))?;
 
     Ok(true)
-}
-
-fn upsert_app_rule_entry(
-    conn: &Connection,
-    process_name: &str,
-    mapped_type: &str,
-    privacy_level: &str,
-) -> Result<(), String> {
-    let now_ts = Local::now().timestamp();
-    conn.execute(
-        "INSERT INTO app_rules (process_name, mapped_type, privacy_level, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?4)
-         ON CONFLICT(process_name) DO UPDATE SET
-         mapped_type=excluded.mapped_type,
-         privacy_level=excluded.privacy_level,
-         updated_at=excluded.updated_at",
-        params![process_name, mapped_type, privacy_level, now_ts],
-    )
-    .map_err(|e| format!("failed to upsert app rule: {e}"))?;
-    Ok(())
 }
 
 fn persist_idle_prompt_decision(
@@ -1541,77 +1502,14 @@ fn list_foreground_capture_diagnostics(
 fn list_app_rules(app: AppHandle, limit: Option<i64>) -> Result<Vec<AppRuleEntry>, String> {
     let conn = open_connection(&app)?;
     let cap = limit.unwrap_or(200).clamp(1, 1000);
-
-    let mut stmt = conn
-        .prepare(
-            "SELECT process_name, mapped_type, privacy_level, updated_at
-             FROM app_rules
-             ORDER BY process_name ASC
-             LIMIT ?1",
-        )
-        .map_err(|e| format!("failed to prepare app rules query: {e}"))?;
-
-    let rows = stmt
-        .query_map([cap], |row| {
-            Ok(AppRuleEntry {
-                process_name: row.get(0)?,
-                mapped_type: row.get(1)?,
-                privacy_level: row.get(2)?,
-                updated_at: row.get(3)?,
-            })
-        })
-        .map_err(|e| format!("failed to query app rules rows: {e}"))?;
-
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| format!("failed to parse app rule row: {e}"))?);
-    }
-    Ok(result)
+    list_app_rule_entries(&conn, cap)
 }
 
 #[tauri::command]
 fn list_pending_rule_processes(app: AppHandle, limit: Option<i64>) -> Result<Vec<PendingRuleProcess>, String> {
     let conn = open_connection(&app)?;
     let cap = limit.unwrap_or(10).clamp(1, 200);
-
-    let mut stmt = conn
-        .prepare(
-            "SELECT l.process_name,
-                    MAX(l.start_timestamp) AS last_seen_timestamp,
-                    SUM(l.duration_ms) / 1000 AS total_seconds,
-                    (SELECT ll.window_title
-                     FROM app_usage_logs ll
-                     WHERE ll.process_name = l.process_name
-                     ORDER BY ll.start_timestamp DESC, ll.id DESC
-                     LIMIT 1) AS last_window_title
-             FROM app_usage_logs l
-             LEFT JOIN app_rules r ON r.process_name = l.process_name
-             WHERE r.process_name IS NULL
-             GROUP BY l.process_name
-               HAVING SUM(l.duration_ms) >= 180000
-             ORDER BY last_seen_timestamp DESC
-             LIMIT ?1",
-        )
-        .map_err(|e| format!("failed to prepare pending rule processes query: {e}"))?;
-
-    let rows = stmt
-        .query_map([cap], |row| {
-            Ok(PendingRuleProcess {
-                process_name: row.get(0)?,
-                last_seen_timestamp: row.get::<_, i64>(1)?.max(0),
-                total_seconds: row.get::<_, i64>(2)?.max(0),
-                last_window_title: row
-                    .get::<_, Option<String>>(3)?
-                    .unwrap_or_else(|| "Untitled Window".to_string()),
-            })
-        })
-        .map_err(|e| format!("failed to query pending rule processes rows: {e}"))?;
-
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| format!("failed to parse pending rule process row: {e}"))?);
-    }
-    Ok(result)
+    list_pending_rule_process_entries(&conn, cap)
 }
 
 #[tauri::command]
@@ -2103,30 +2001,8 @@ fn get_usage_stack(
 
 #[tauri::command]
 fn save_app_rule(app: AppHandle, input: SaveAppRuleInput) -> Result<(), String> {
-    let process_name = normalize_process_key(&input.process_name);
-    if process_name.is_empty() {
-        return Err("process_name cannot be empty".to_string());
-    }
-
-    let mapped_type = input.mapped_type.trim().to_uppercase();
-    if mapped_type != "LEARN" && mapped_type != "REST" && mapped_type != "IGNORE" {
-        return Err("mapped_type must be LEARN, REST, or IGNORE".to_string());
-    }
-
-    let privacy_level = input
-        .privacy_level
-        .unwrap_or_else(|| "NORMAL".to_string())
-        .trim()
-        .to_uppercase();
-
-    if privacy_level != "NORMAL" && privacy_level != "BLUR_TITLE" && privacy_level != "WHITELIST_ONLY" {
-        return Err("privacy_level must be NORMAL, BLUR_TITLE, or WHITELIST_ONLY".to_string());
-    }
-
     let conn = open_connection(&app)?;
-    upsert_app_rule_entry(&conn, &process_name, &mapped_type, &privacy_level)?;
-
-    Ok(())
+    save_app_rule_entry(&conn, input)
 }
 
 #[tauri::command]
