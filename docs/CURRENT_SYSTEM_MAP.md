@@ -61,7 +61,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHomeSchedule.ts`: Home reminder schedule computed binding and locale-aware due-text adapter.
 - `src/composables/useHomeViewContext.ts`: computed Home view context assembly from Home data, reminders, heatmap, rhythm, and status state.
 - `src/composables/useIdlePromptBannerContext.ts`: computed top-level idle prompt banner context assembly.
-- `src/composables/useInsightsData.ts`: Insights top-app/all-time/recent-log loading, all-time filters, and visible Insights derived view data.
+- `src/composables/useInsightsData.ts`: Insights top-app/all-time/recent-log loading, all-time filters, and helper-backed derived view data.
 - `src/composables/useInsightsSectionNavigation.ts`: Insights section Tauri event listening, target switching, DOM flash highlighting, and listener/timer cleanup.
 - `src/composables/useInsightsViewContext.ts`: computed Insights view context assembly from Insights data, navigation, and formatters.
 - `src/composables/useLazySettingsMount.ts`: settings view lazy mount state, immediate refresh-on-open, warmup refresh timer, and cleanup.
@@ -90,6 +90,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/homeReminderReorder.ts`: Home reminder drag/drop ordering helper that preserves undone/done grouping.
 - `src/lib/homeRhythmBars.ts`: Home seven-day rhythm bar construction, scale, and segment-height helpers.
 - `src/lib/homeRhythmTooltip.ts`: Home rhythm summary, compact duration, segment labels, tooltip palettes, and tone text helpers.
+- `src/lib/insightsMetrics.ts`: Insights bar-width scaling, recent-log business-day keys, and recent timeline grouping helpers.
 - `src/lib/petCharacter.ts`: pet character image paths, legacy path normalization, and localStorage persistence helpers.
 - `src/lib/petContextMenu.ts`: pet-window context menu item definitions and panel-mode toggle wiring.
 - `src/lib/petDock.ts`: pure pet-window dock state types, dock-edge mapping, and settle-state conversion helpers.

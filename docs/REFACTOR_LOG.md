@@ -12196,3 +12196,88 @@ Follow-up:
 
 - Commit R-247.
 - Continue with small helper extractions while keeping stage validation explicit.
+
+## 2026-06-09: R-248 Insights Metrics Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Insights
+- helper extraction
+
+Intent:
+
+- Move Insights timeline grouping, business-day log key construction, and bar-width scaling into a focused pure helper module.
+- Keep Tauri API loading, loading state, all-time filters, and refresh side effects inside `useInsightsData.ts`.
+- Preserve Insights derived view behavior before larger Insights data/view separation.
+
+Files changed:
+
+- `src/composables/useInsightsData.ts`
+- `src/lib/insightsMetrics.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useInsightsData.ts` | `insightsMetrics.ts` | `insightsLogDayKey` helper |
+| `useInsightsData.ts` | `insightsMetrics.ts` | `insightsBarWidth` helper |
+| `useInsightsData.ts` | `insightsMetrics.ts` | `buildRecentTimelineGroups` helper |
+
+Behavior expected to stay the same:
+
+- Recent log day keys still subtract 4 hours before formatting `YYYY-MM-DD`.
+- Bar widths still return `0%` when max or value is not positive.
+- Non-zero bar widths still clamp the visual width to `8..100` percent and format with two decimals.
+- Recent timeline grouping still preserves first-seen group order and item order within each day.
+- Insights API calls, all-time filters, include-ignore toggle, heatmap refresh, and loading guard behavior are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same grouping and width calculations now run through helper functions.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Insights metrics helper extraction batch.
+
+Risks:
+
+- Insights visual bar widths and timeline grouping were not manually smoke-tested; validation covered compile/build and code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move Insights metrics and grouping helpers back into `useInsightsData.ts`.
+
+Follow-up:
+
+- Commit R-248.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.
