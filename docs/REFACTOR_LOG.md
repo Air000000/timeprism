@@ -3824,3 +3824,85 @@ Follow-up:
 
 - Commit R-141.
 - Next safe options: run manual smoke checks, extract Home refresh orchestration, or start pet/panel feature extraction as a separate Phase 4 slice.
+
+## 2026-06-09: R-142 Home Data Refresh Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- home
+
+Intent:
+
+- Move Home-specific data refresh orchestration out of `src/App.vue`.
+- Keep global refresh routing, polling timers, and lifecycle ownership in `src/App.vue`.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useHomeData.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Home `loadingHome` guard | `useHomeData` | Same early-return behavior |
+| Home seven-way refresh request | `useHomeData` | Same APIs, limits, and parameters |
+| Assignments to Home/shared refs after refresh | `useHomeData` | Same target refs and values |
+| Home refresh error handling | `useHomeData` | Same `setErrorMessage` callback |
+
+Behavior expected to stay the same:
+
+- Home refresh still loads today summary, recent logs, heatmap, pending rules, pending idle prompts, reminders, and rhythm stack.
+- Initial load and polling still call `refreshHomeData` from `App.vue`.
+- Global `refreshData` still refreshes Home first, then the active secondary view.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None. Existing frontend command wrappers are unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Home refresh behavior was validated by typecheck/build only, not by interactive S-300 smoke testing.
+- `refreshData` still has global sequencing responsibilities in `App.vue`.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-141.
+
+Follow-up:
+
+- Commit R-142.
+- Consider extracting global refresh/lifecycle coordination only after manual smoke checks or a smaller orchestration design note.

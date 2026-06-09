@@ -22,6 +22,7 @@ import { useDisplayFormatters } from "./composables/useDisplayFormatters";
 import { useGuardData } from "./composables/useGuardData";
 import { useGuardWorkflow } from "./composables/useGuardWorkflow";
 import { useHeatmapCalendar } from "./composables/useHeatmapCalendar";
+import { useHomeData } from "./composables/useHomeData";
 import { useHomeOverview } from "./composables/useHomeOverview";
 import { useHomeRhythm } from "./composables/useHomeRhythm";
 import { useHomeSchedule } from "./composables/useHomeSchedule";
@@ -38,13 +39,6 @@ import {
 import {
   captureForegroundOnce,
   getHeatmapGoalSecondsSetting,
-  getTodaySummary,
-  listPendingIdlePrompts,
-  listPendingRuleProcesses,
-  listReminders,
-  getLearnHeatmap,
-  getUsageStack,
-  listRecentLogs,
   setHeatmapGoalSecondsSetting,
   type LearnHeatmapCell,
   type RecentLog,
@@ -108,7 +102,6 @@ const recentLogs = ref<RecentLog[]>([]);
 const learnHeatmap = ref<LearnHeatmapCell[]>([]);
 const homeUsageStack = ref<UsageStackDay[]>([]);
 const learnGoalSliderMinutes = ref(120);
-const loadingHome = ref(false);
 const error = ref("");
 const privacyViewMounted = ref(false);
 const { homeMonthRhythmBars } = useHomeRhythm(homeUsageStack);
@@ -220,6 +213,18 @@ const {
   cleanProcessName,
   formatClock,
 });
+const { refreshHomeData } = useHomeData({
+  todaySummary,
+  recentLogs,
+  learnHeatmap,
+  pendingRuleProcesses,
+  idlePrompts,
+  reminders,
+  homeUsageStack,
+  getHeatmapFetchDays,
+  getHeatmapGoalSeconds,
+  setErrorMessage,
+});
 
 function switchHistorySubView(next: HistorySubViewKey) {
   selectHistoryView(next);
@@ -261,36 +266,6 @@ function setMainView(next: MainViewKey) {
 
 function setErrorMessage(e: unknown) {
   error.value = `${e}`;
-}
-
-async function refreshHomeData() {
-  if (loadingHome.value) {
-    return;
-  }
-
-  loadingHome.value = true;
-  try {
-    const [summary, logs, heatmap, pendingRules, pendingIdle, reminderRows, rhythmStack] = await Promise.all([
-      getTodaySummary(),
-      listRecentLogs(12),
-      getLearnHeatmap(getHeatmapFetchDays(), getHeatmapGoalSeconds()),
-      listPendingRuleProcesses(10),
-      listPendingIdlePrompts(3),
-      listReminders(120, true),
-      getUsageStack(7, "ALL"),
-    ]);
-    todaySummary.value = summary;
-    recentLogs.value = logs;
-    learnHeatmap.value = heatmap;
-    pendingRuleProcesses.value = pendingRules;
-    idlePrompts.value = pendingIdle;
-    reminders.value = reminderRows;
-    homeUsageStack.value = rhythmStack;
-  } catch (e) {
-    setErrorMessage(e);
-  } finally {
-    loadingHome.value = false;
-  }
 }
 
 async function refreshData() {

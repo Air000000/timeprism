@@ -47,6 +47,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, diagnostics, rule mutations, idle resolution, and Guard input handlers.
 - `src/composables/useGuardWorkflow.ts`: guard workflow step completion/unlock state, labels, review completion, and reset watcher.
 - `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar cells, cell classes, fetch-window calculation, and month progress summaries.
+- `src/composables/useHomeData.ts`: Home data refresh orchestration for summary, logs, heatmap, pending work, reminders, and rhythm stack.
 - `src/composables/useHomeOverview.ts`: Home summary state, goal progress, recent activity summary, pending counts, and status labels.
 - `src/composables/useHomeRhythm.ts`: Home seven-day rhythm bar derivation from usage-stack data.
 - `src/composables/useHomeSchedule.ts`: Home reminder visibility filtering and due-text presentation.
