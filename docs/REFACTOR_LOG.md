@@ -2401,3 +2401,85 @@ Follow-up:
 
 - Commit R-125.
 - Add typed contexts for `InsightsView.vue` and `HomeView.vue` in separate small batches.
+
+## 2026-06-09: R-126 Insights View Context Typing
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shell
+- typed component contracts
+- insights
+
+Intent:
+
+- Replace the existing `ctx: any` contract in `src/components/InsightsView.vue` with a typed Insights view context.
+- Type only the fields the current Insights component actually consumes, while allowing `insightsCtx` to keep extra legacy fields until later cleanup.
+
+Files changed:
+
+- `src/App.vue`
+- `src/components/InsightsView.vue`
+- `src/components/viewContexts.ts`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| implicit Insights `ctx` shape | `src/components/viewContexts.ts` | New `InsightsViewContext` type |
+| broad `ctx: any` in `InsightsView.vue` | `ctx: InsightsViewContext` | Template behavior unchanged |
+| unchecked consumed Insights fields | `satisfies InsightsViewContext & Record<string, unknown>` | Verifies required fields while permitting temporary extra context fields |
+
+Behavior expected to stay the same:
+
+- History subnav, top-app list, all-time filters, and recent timeline use the same fields and handlers.
+- Existing extra `insightsCtx` fields remain available for later cleanup; no visible UI was removed.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected. Type-only runtime impact.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this type-contract batch.
+
+Risks:
+
+- Insights interactions were validated by typecheck/build only, not by interactive smoke testing.
+- `HomeView.vue` still uses existing `ctx: any` and needs its own batch.
+- `insightsCtx` still contains legacy fields not consumed by the current component.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-125 commit.
+
+Follow-up:
+
+- Commit R-126.
+- Type `HomeView.vue` context in a separate batch or remove unused Insights context fields.

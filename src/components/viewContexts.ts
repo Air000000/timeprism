@@ -3,12 +3,45 @@ import type {
   ForegroundCaptureDiagnostic,
   IdlePrompt,
   PendingRuleProcess,
+  RecentLog,
+  TopApp,
 } from "../api";
+import type { HistorySubViewKey } from "../composables/useAppNavigation";
 
 export type TranslateFn = (zh: string, en: string) => string;
+export type AllTimeFilter = "ALL" | "LEARN" | "REST";
 export type RuleMappedType = "LEARN" | "REST" | "IGNORE";
 export type IdleDecision = "LEARN" | "REST" | "IDLE" | "SKIP";
 export type RuleSortKey = "alpha_asc" | "alpha_desc" | "time_desc" | "time_asc";
+
+export type HistorySubViewOption = {
+  key: HistorySubViewKey;
+  label: string;
+};
+
+export type RecentTimelineGroup = {
+  day: string;
+  items: RecentLog[];
+};
+
+export type InsightsViewContext = {
+  tx: TranslateFn;
+  historySubViews: HistorySubViewOption[];
+  historySubView: HistorySubViewKey;
+  switchHistorySubView: (next: HistorySubViewKey) => Promise<void> | void;
+  topApps: TopApp[];
+  cleanProcessName: (name: string) => string;
+  formatSeconds: (totalSeconds: number) => string;
+  topAppsBarWidth: (seconds: number) => string;
+  setAllTimeFilter: (next: AllTimeFilter) => void;
+  allTimeIncludeIgnore: boolean;
+  onAllTimeIgnoreToggle: (event: Event) => void;
+  allTimeTopApps: TopApp[];
+  allTimeBarWidth: (seconds: number) => string;
+  recentTimelineGroups: RecentTimelineGroup[];
+  formatClock: (unixSeconds: number) => string;
+  recentDurationWidth: (durationMs: number) => string;
+};
 
 export type GuardViewContext = {
   tx: TranslateFn;

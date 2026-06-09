@@ -4,7 +4,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
 import InsightsView from "./components/InsightsView.vue";
-import type { GuardViewContext } from "./components/viewContexts";
+import type { GuardViewContext, InsightsViewContext } from "./components/viewContexts";
 import {
   useAppNavigation,
   type HistorySubViewKey,
@@ -1817,7 +1817,7 @@ const insightsCtx = computed(() => ({
   allTimeBarWidth,
   recentTimelineGroups: recentTimelineGroups.value,
   recentDurationWidth,
-}));
+}) satisfies InsightsViewContext & Record<string, unknown>);
 
 const guardCtx = computed<GuardViewContext>(() => ({
   tx,

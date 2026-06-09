@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const props = defineProps<{ ctx: any }>();
+import type { InsightsViewContext } from "./viewContexts";
+
+const props = defineProps<{ ctx: InsightsViewContext }>();
 </script>
 
 <template>
