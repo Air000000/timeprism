@@ -1,7 +1,13 @@
 import { computed, ref, type Ref } from "vue";
 import type { LearnHeatmapCell } from "../api";
+import {
+  heatmapDayLabel,
+  heatmapMonthKey,
+  heatmapMonthTitle,
+  heatmapWeekHeaders,
+} from "../lib/heatmapCalendarText";
+import type { LocaleCode } from "../lib/locale";
 import { currentLocalDayKey, localDayKeyFromDate } from "../lib/time";
-import type { LocaleCode } from "./useLocale";
 
 type UseHeatmapCalendarOptions = {
   locale: Ref<LocaleCode>;
@@ -14,24 +20,11 @@ export function useHeatmapCalendar({
 }: UseHeatmapCalendarOptions) {
   const viewMonthDate = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 
-  const currentMonthKey = computed(() => {
-    const year = viewMonthDate.value.getFullYear();
-    const month = (viewMonthDate.value.getMonth() + 1).toString().padStart(2, "0");
-    return `${year}-${month}`;
-  });
+  const currentMonthKey = computed(() => heatmapMonthKey(viewMonthDate.value));
 
-  const monthTitleText = computed(() => {
-    const monthNames = locale.value === "zh-CN"
-      ? ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
-      : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return monthNames[viewMonthDate.value.getMonth()] ?? `${viewMonthDate.value.getMonth() + 1}`;
-  });
+  const monthTitleText = computed(() => heatmapMonthTitle(viewMonthDate.value, locale.value));
 
-  const weekHeaders = computed(() => (
-    locale.value === "zh-CN"
-      ? ["日", "一", "二", "三", "四", "五", "六"]
-      : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-  ));
+  const weekHeaders = computed(() => heatmapWeekHeaders(locale.value));
 
   const currentMonthHeatmap = computed(() =>
     learnHeatmap.value.filter((cell) => cell.day.startsWith(currentMonthKey.value)),
@@ -154,7 +147,7 @@ export function useHeatmapCalendar({
   }
 
   function heatmapDayText(dayKey: string): string {
-    return dayKey.slice(-2).replace(/^0/, "");
+    return heatmapDayLabel(dayKey);
   }
 
   function shiftHeatmapMonth(delta: number) {

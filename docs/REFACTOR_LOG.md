@@ -10538,3 +10538,87 @@ Follow-up:
 
 - Commit R-226.
 - Continue with low-risk frontend-helper batches unless detailed Home rhythm smoke results are recorded.
+
+## 2026-06-09: R-227 Heatmap Calendar Text Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Home view
+- heatmap calendar
+
+Intent:
+
+- Move heatmap month-key creation, localized month title, localized week headers, and day-number label formatting out of `useHeatmapCalendar.ts`.
+- Keep heatmap grid construction, class calculation, progress/streak summaries, month navigation, and fetch-window logic in the composable for now.
+
+Files changed:
+
+- `src/composables/useHeatmapCalendar.ts`
+- `src/lib/heatmapCalendarText.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| current month key creation | `src/lib/heatmapCalendarText.ts::heatmapMonthKey` | Same `YYYY-MM` formatting |
+| month title labels | `src/lib/heatmapCalendarText.ts::heatmapMonthTitle` | Same zh-CN month names and English abbreviations |
+| week header labels | `src/lib/heatmapCalendarText.ts::heatmapWeekHeaders` | Same Sun-Sat / 日-六 labels |
+| heatmap day number text | `src/lib/heatmapCalendarText.ts::heatmapDayLabel` | Same leading-zero stripping |
+
+Behavior expected to stay the same:
+
+- Heatmap month keys still use the same year/month formatting.
+- Heatmap title and week headers still render the same localized labels.
+- Heatmap cell day labels still strip the leading zero in the same way.
+- Calendar grid, class generation, goal progress, active streak, navigation, and fetch-window behavior remain in `useHeatmapCalendar`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same tiny string formatting now runs through helper functions.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this heatmap calendar text helper extraction batch.
+
+Risks:
+
+- Heatmap calendar labels were validated by typecheck/build only, not by manually checking both locales.
+
+Rollback:
+
+- Revert this batch to move month key, month title, week header, and day label helpers back into `useHeatmapCalendar.ts`.
+
+Follow-up:
+
+- Commit R-227.
+- Continue with a backend checkpoint after commit.
