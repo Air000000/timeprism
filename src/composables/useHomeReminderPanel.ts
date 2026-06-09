@@ -6,6 +6,7 @@ import { buildHomeReminderDropOrder } from "../lib/homeReminderReorder";
 import {
   defaultReminderWeeklyDays,
   reminderWeekdayOptions,
+  toggleReminderWeeklyDay,
   type ReminderWeekdayOption,
 } from "../lib/reminderWeekdays";
 
@@ -30,11 +31,7 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
   }
 
   function toggleWeeklyDay(day: number) {
-    if (reminderDraftWeeklyDays.value.includes(day)) {
-      reminderDraftWeeklyDays.value = reminderDraftWeeklyDays.value.filter((item) => item !== day);
-      return;
-    }
-    reminderDraftWeeklyDays.value = [...reminderDraftWeeklyDays.value, day].sort((a, b) => a - b);
+    reminderDraftWeeklyDays.value = toggleReminderWeeklyDay(reminderDraftWeeklyDays.value, day);
   }
 
   function resetReminderDraft() {

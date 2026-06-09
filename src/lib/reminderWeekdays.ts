@@ -28,6 +28,13 @@ export function normalizeReminderWeeklyDays(days: readonly number[] | null | und
     .sort((a, b) => a - b);
 }
 
+export function toggleReminderWeeklyDay(days: readonly number[], day: number): number[] {
+  if (days.includes(day)) {
+    return days.filter((item) => item !== day);
+  }
+  return [...days, day].sort((a, b) => a - b);
+}
+
 export function reminderWeekdayShortLabel(day: number, locale: LocaleCode): string {
   const option = reminderWeekdayOptions.find((item) => item.value === day);
   if (!option) {

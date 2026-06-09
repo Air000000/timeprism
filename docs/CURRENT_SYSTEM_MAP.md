@@ -105,7 +105,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/reminderSchedule.ts`: Home reminder visibility rules plus due-text and weekly-day formatting helpers.
 - `src/lib/reminderSort.ts`: shared reminder ordering comparator and sorted reminder list helper.
 - `src/lib/reminderUpsert.ts`: reminder form input normalization and save-payload construction for one-time, daily, and weekly reminders.
-- `src/lib/reminderWeekdays.ts`: shared weekday options, default weekly reminder days, weekday labels, and weekly-day normalization.
+- `src/lib/reminderWeekdays.ts`: shared weekday options, default weekly reminder days, weekday labels, weekly-day normalization, and weekly-day toggle helpers.
 - `src/lib/settingsPrivacy.ts`: Settings privacy defaults and whitelist process-name normalization helpers.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
 - `src/styles/app.css`: global main-window CSS previously embedded in `src/App.vue`.

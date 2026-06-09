@@ -11728,3 +11728,85 @@ Follow-up:
 
 - Commit R-241.
 - Continue with small helper extractions while avoiding untested UI interaction rewrites.
+
+## 2026-06-09: R-242 Reminder Weekly-Day Toggle Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home reminders
+- helper extraction
+
+Intent:
+
+- Move weekly-day chip toggle array logic out of `useHomeReminderPanel.ts` and into the shared reminder weekday helper module.
+- Keep the composable responsible for writing the calculated result back to its draft ref.
+- Preserve weekly reminder draft behavior before any broader reminder modal refactor.
+
+Files changed:
+
+- `src/composables/useHomeReminderPanel.ts`
+- `src/lib/reminderWeekdays.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHomeReminderPanel.ts` | `reminderWeekdays.ts` | `toggleReminderWeeklyDay` helper |
+
+Behavior expected to stay the same:
+
+- Toggling an already-selected weekly day still removes all matching entries for that day.
+- Toggling an unselected weekly day still appends it and sorts the resulting array ascending.
+- The composable still writes the returned array to `reminderDraftWeeklyDays`.
+- Weekly-day labels, defaults, normalization, save payloads, and reminder schedule text are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same array operation now runs through a shared helper.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this weekly-day toggle helper extraction batch.
+
+Risks:
+
+- Weekly-day chip interaction was not manually smoke-tested; validation covered compile/build and direct code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move weekly-day toggle array logic back into `useHomeReminderPanel.ts`.
+
+Follow-up:
+
+- Commit R-242.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.
