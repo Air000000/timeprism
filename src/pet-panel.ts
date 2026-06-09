@@ -4,6 +4,7 @@ import { getLearnHeatmap, getUsageStack, type LearnHeatmapCell, type UsageStackD
 import { getStoredOrBrowserLocale, translateForLocale, type LocaleCode } from "./lib/locale";
 import {
   queryPetPanelElements,
+  renderPetPanelHeatmapGrid,
   renderPetPanelShell,
   renderPetPanelWeekHeaders,
 } from "./lib/petPanelDom";
@@ -84,24 +85,14 @@ async function resizePanelForMode(nextMode: "heatmap" | "stack") {
 }
 
 function renderHeatmap(cells: LearnHeatmapCell[]) {
-  miniHeatmapGrid.replaceChildren();
   heatMonthLabel.textContent = petPanelHeatmapMonthLabel(viewMonthDate);
-
-  for (let i = 0; i < petPanelHeatmapPadCount(viewMonthDate); i += 1) {
-    const pad = document.createElement("div");
-    pad.className = "mini-heat-cell pad";
-    miniHeatmapGrid.appendChild(pad);
-  }
-
-  for (const { dayKey, cell, isToday } of buildPetPanelHeatmapDayCells(cells, viewMonthDate)) {
-    const node = document.createElement("div");
-    node.className = `mini-heat-cell ${heatCellClass(cell.level)}`;
-    if (isToday) {
-      node.classList.add("today");
-    }
-    node.title = `${dayKey} ${formatSeconds(cell.learn_seconds)}`;
-    miniHeatmapGrid.appendChild(node);
-  }
+  renderPetPanelHeatmapGrid(
+    miniHeatmapGrid,
+    petPanelHeatmapPadCount(viewMonthDate),
+    buildPetPanelHeatmapDayCells(cells, viewMonthDate),
+    heatCellClass,
+    formatSeconds,
+  );
 }
 
 function renderStack(days: UsageStackDay[]) {

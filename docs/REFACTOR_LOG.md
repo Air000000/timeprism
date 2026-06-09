@@ -7677,3 +7677,84 @@ Follow-up:
 
 - Commit R-190.
 - Continue with small heatmap DOM helpers or record detailed pet-panel smoke results.
+
+## 2026-06-09: R-191 Pet Panel Heatmap Grid DOM Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet panel
+- DOM rendering
+
+Intent:
+
+- Move pet-panel heatmap grid DOM creation out of `src/pet-panel.ts`.
+- Keep heatmap data fetching, month label assignment, and render timing in `src/pet-panel.ts`.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelDom.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| heatmap leading pad DOM creation | `renderPetPanelHeatmapGrid` | Same `mini-heat-cell pad` nodes |
+| heatmap day-cell DOM creation | `renderPetPanelHeatmapGrid` | Same class, today class, title, and append order |
+
+Behavior expected to stay the same:
+
+- Pet-panel heatmap grid still clears and recreates the same pad and day cells.
+- Heatmap day cell classes, titles, and today highlighting remain unchanged.
+- `src/pet-panel.ts` still owns month label assignment and when the heatmap renders.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same DOM nodes are created in the same render path.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this heatmap-grid DOM helper extraction batch.
+
+Risks:
+
+- Pet-panel heatmap visual behavior was validated by typecheck/build only, not by opening the panel and switching months.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-190.
+
+Follow-up:
+
+- Commit R-191.
+- Continue with small stack DOM helpers or record detailed pet-panel smoke results.

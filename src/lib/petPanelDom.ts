@@ -1,4 +1,9 @@
+import type { LearnHeatmapCell } from "../api";
+import type { PetPanelHeatmapDayCell } from "./petPanelMetrics";
+
 type TranslateFn = (zh: string, en: string) => string;
+type HeatCellClassFn = (level: LearnHeatmapCell["level"]) => string;
+type FormatSecondsFn = (seconds: number) => string;
 
 export type PetPanelElements = {
   panelTitle: HTMLElement;
@@ -69,6 +74,31 @@ export function renderPetPanelWeekHeaders(container: HTMLElement, labels: string
   for (const label of labels) {
     const node = document.createElement("span");
     node.textContent = label;
+    container.appendChild(node);
+  }
+}
+
+export function renderPetPanelHeatmapGrid(
+  container: HTMLElement,
+  padCount: number,
+  dayCells: PetPanelHeatmapDayCell[],
+  heatCellClass: HeatCellClassFn,
+  formatSeconds: FormatSecondsFn,
+) {
+  container.replaceChildren();
+  for (let i = 0; i < padCount; i += 1) {
+    const pad = document.createElement("div");
+    pad.className = "mini-heat-cell pad";
+    container.appendChild(pad);
+  }
+
+  for (const { dayKey, cell, isToday } of dayCells) {
+    const node = document.createElement("div");
+    node.className = `mini-heat-cell ${heatCellClass(cell.level)}`;
+    if (isToday) {
+      node.classList.add("today");
+    }
+    node.title = `${dayKey} ${formatSeconds(cell.learn_seconds)}`;
     container.appendChild(node);
   }
 }
