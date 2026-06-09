@@ -11478,3 +11478,97 @@ Follow-up:
 
 - Commit R-238.
 - Continue with small helper extractions where behavior can be preserved and verified quickly.
+
+## 2026-06-09: R-239 Reminder Recurrence Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend
+- reminders
+- helper extraction
+
+Intent:
+
+- Reduce `src-tauri/src/services/reminders.rs` by moving repeat-rule and weekly recurrence pure rules into a focused service helper module.
+- Keep reminder SQL, CRUD, completion, ordering, snooze, and list assembly behavior inside `reminders.rs`.
+- Move the existing recurrence characterization tests with the extracted functions so the rules remain covered in their new module.
+
+Files changed:
+
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/reminder_recurrence.rs`
+- `src-tauri/src/services/reminders.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `reminders.rs` | `reminder_recurrence.rs` | `NO_DUE_TIMESTAMP` sentinel for no due time |
+| `reminders.rs` | `reminder_recurrence.rs` | `normalize_repeat_rule` |
+| `reminders.rs` | `reminder_recurrence.rs` | `normalize_weekly_days` |
+| `reminders.rs` | `reminder_recurrence.rs` | `weekly_days_to_db` |
+| `reminders.rs` | `reminder_recurrence.rs` | `parse_weekly_days_db` |
+| `reminders.rs` | `reminder_recurrence.rs` | `next_weekly_due_timestamp` |
+| `reminders.rs` tests | `reminder_recurrence.rs` tests | Existing weekly-day and weekly-due characterization tests |
+
+Behavior expected to stay the same:
+
+- Repeat rules are still trimmed, uppercased, and limited to `NONE`, `DAILY`, or `WEEKLY`.
+- Weekly days are still deduplicated, clamped to `0..=6`, sorted, and converted to `None` when empty.
+- Weekly days are still serialized as comma-separated day numbers.
+- Weekly day DB parsing still ignores invalid chunks and normalizes the parsed set.
+- Weekly due timestamps still clamp minutes to `0..1439`, skip completed-today weekly reminders, scan up to 14 days, and return `NO_DUE_TIMESTAMP` when no due time exists.
+- Reminder SQL, list limits, completion behavior, snooze behavior, and ordering behavior are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- Reminder commands compile against the same service entry points; command names and payloads are unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same pure recurrence calculations now run through a sibling service module.
+
+Automated validation:
+
+- `rustfmt --check src\\services\\reminder_recurrence.rs src\\services\\reminders.rs src\\services\\mod.rs` passed in `src-tauri`.
+- `cargo check` passed in `src-tauri`.
+- `cargo test` passed in `src-tauri` with 19 tests passing.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this backend reminder recurrence helper extraction batch.
+
+Risks:
+
+- Full `cargo fmt --check` still reports pre-existing formatting drift in unrelated backend files, so this batch used `rustfmt --check` on touched Rust files instead of reformatting the whole backend.
+- Reminder UI and real database flows were not manually smoke-tested; recurrence rules were covered by the existing Rust tests after relocation.
+
+Rollback:
+
+- Revert this batch to move recurrence helper functions and tests back into `src-tauri/src/services/reminders.rs`.
+
+Follow-up:
+
+- Commit R-239.
+- Because this batch is already backend-side and covered by `cargo check`/`cargo test`, the next checkpoint can focus on frontend/build integration before another backend extraction.
