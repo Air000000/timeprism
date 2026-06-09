@@ -25,6 +25,16 @@ import {
 	getPetCharacterSrc,
 	savePetCharacterSrc,
 } from "./lib/petCharacter";
+import {
+	availablePromptDescriptors,
+	pickActivePromptDescriptor,
+	pruneExpiredPromptSnoozes,
+	type IdlePromptLite,
+	type PendingRuleProcessLite,
+	type PromptAction,
+	type PromptDescriptor,
+	type ReminderLite,
+} from "./lib/petPrompts";
 import { formatSeconds } from "./lib/time";
 import "./pet.css";
 
@@ -172,41 +182,6 @@ function setPetCharacterSrc(src: string) {
 }
 
 (window as Window & { setTimePrismPetCharacter?: (src: string) => void }).setTimePrismPetCharacter = setPetCharacterSrc;
-
-type IdlePromptLite = {
-	id: number;
-	start_timestamp: number;
-	end_timestamp: number;
-	duration_ms: number;
-};
-
-type PendingRuleProcessLite = {
-	process_name: string;
-	total_seconds: number;
-};
-
-type ReminderLite = {
-	id: number;
-	content: string;
-	repeat_rule: "NONE" | "DAILY" | "WEEKLY";
-	remind_at: number | null;
-	daily_time_minutes: number | null;
-	weekly_days: number[] | null;
-	next_due_timestamp: number;
-	done: boolean;
-};
-
-type PromptAction = {
-	label: string;
-	run: () => Promise<void>;
-};
-
-type PromptDescriptor = {
-	key: string;
-	title: string;
-	detail: string;
-	actions: PromptAction[];
-};
 
 const promptSnoozeUntilByKey = new Map<string, number>();
 let currentPromptKey = "";
@@ -544,23 +519,17 @@ async function refreshPromptBubble() {
 		}
 
 		const nowMs = Date.now();
-		for (const [key, until] of promptSnoozeUntilByKey.entries()) {
-			if (until <= nowMs) {
-				promptSnoozeUntilByKey.delete(key);
-			}
-		}
+		pruneExpiredPromptSnoozes(promptSnoozeUntilByKey, nowMs);
+		const active = pickActivePromptDescriptor(
+			availablePromptDescriptors(descriptors, promptSnoozeUntilByKey, nowMs),
+			currentPromptKey,
+		);
 
-		const available = descriptors.filter((item) => {
-			const until = promptSnoozeUntilByKey.get(item.key) ?? 0;
-			return until <= nowMs;
-		});
-
-		if (available.length === 0) {
+		if (!active) {
 			hidePromptBubble();
 			return;
 		}
 
-		const active = available.find((item) => item.key === currentPromptKey) ?? available[0];
 		renderPromptBubble(active.key, active.title, active.detail, active.actions);
 		return;
 	} catch (e) {

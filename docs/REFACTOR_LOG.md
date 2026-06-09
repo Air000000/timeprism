@@ -6422,3 +6422,87 @@ Follow-up:
 
 - Commit R-174.
 - Continue with small pet helper extractions before changing prompt, drag, or window event flow.
+
+## 2026-06-09: R-175 Pet Prompt Selection Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shared helpers
+- pet window
+
+Intent:
+
+- Move pet prompt DTO types and pure snooze/active-selection helpers out of `src/pet.ts`.
+- Keep prompt descriptor construction, button DOM rendering, and Tauri command actions in `src/pet.ts`.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petPrompts.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| pet prompt DTO types | `src/lib/petPrompts.ts` | Type-only move for reminder, idle, pending-rule, action, and descriptor shapes |
+| expired snooze cleanup loop | `pruneExpiredPromptSnoozes` | Same `until <= nowMs` deletion rule |
+| prompt availability filter | `availablePromptDescriptors` | Same per-key snooze cutoff check |
+| active prompt selection | `pickActivePromptDescriptor` | Same current-key preference and first-available fallback |
+
+Behavior expected to stay the same:
+
+- Prompt snoozes still expire at the same timestamps.
+- Snoozed prompts stay hidden until their snooze time passes.
+- The currently visible prompt remains preferred when it is still available.
+- If the current prompt is unavailable, the first available prompt is rendered.
+- If no prompt is available, the prompt bubble is hidden.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; prompt filtering still runs once per prompt refresh.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this pet prompt selection helper extraction batch.
+
+Risks:
+
+- Prompt visibility behavior was validated by typecheck/build only, not by exercising reminder/idle/rule prompt scenarios in the pet window.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-174.
+
+Follow-up:
+
+- Commit R-175.
+- Consider a cross-stack checkpoint after the pet helper series, then continue with prompt rendering or window behavior only in small slices.
