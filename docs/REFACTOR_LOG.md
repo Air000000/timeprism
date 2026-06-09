@@ -7443,3 +7443,75 @@ Follow-up:
 
 - Commit R-187.
 - Continue with small render-helper extractions or record detailed pet-panel smoke results.
+
+## 2026-06-09: R-188 Cross-Stack Checkpoint After Pet Panel Text/Stack Helpers
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- validation checkpoint
+- pet panel
+- Tauri backend compile check
+
+Intent:
+
+- Record a clean checkpoint after R-185 through R-187 moved pet-panel week headers, stack data helpers, and panel text helpers out of `src/pet-panel.ts`.
+- Confirm the Rust/Tauri side still compiles before continuing with any larger render or window behavior changes.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+- None; this is a docs-only validation checkpoint.
+
+Behavior expected to stay the same:
+
+- No behavior changed in this checkpoint.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `git status --short --branch` showed a clean `refactor/architecture` worktree before this docs-only entry.
+- Current entry line counts: `src/App.vue` 420, `src/pet.ts` 664, `src/pet-panel.ts` 240.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace interactive pet-panel smoke testing; it only confirms backend compilation after the recent frontend helper extractions.
+
+Rollback:
+
+- Revert this docs-only checkpoint commit if the checkpoint note is not wanted.
+
+Follow-up:
+
+- Commit R-188.
+- Recommended next: run a detailed pet-panel smoke pass, or continue only with very small render-helper extractions.
