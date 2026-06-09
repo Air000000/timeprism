@@ -3906,3 +3906,76 @@ Follow-up:
 
 - Commit R-142.
 - Consider extracting global refresh/lifecycle coordination only after manual smoke checks or a smaller orchestration design note.
+
+## 2026-06-09: R-143 Desktop Release Build Check
+
+Status:
+
+- Passed With Known Risk.
+
+Primary domain:
+
+- validation
+- desktop build
+
+Intent:
+
+- Verify that the refactored frontend and Rust Tauri shell still compile together as a release desktop app.
+- Record the file-lock issue encountered during the first attempts so the validation remains auditable.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to stay the same:
+
+- No source behavior changed in this docs-only validation record.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `tauri build --no-bundle` first failed because `src-tauri/target/release/timeprism.exe` was locked by a running `timeprism` process at PID 25912.
+- `taskkill /PID 25912` sent a termination signal, but the process remained alive.
+- `taskkill /PID 25912 /F` terminated the repository release process.
+- Re-running `tauri build --no-bundle` passed.
+- Release artifact produced: `src-tauri/target/release/timeprism.exe`, size 16165888 bytes, last write time 2026-06-09 16:23:35.
+- `git status --short` was clean after the build.
+
+Manual smoke tests:
+
+- Not run. The release app was not relaunched after build, to avoid leaving a running process that would lock future release builds.
+
+Risks:
+
+- This validates compilation and frontend build integration, not interactive UI behavior.
+- A running `timeprism.exe` process can lock future release rebuilds until stopped.
+- `dist/`, `dist-codex-check/`, and `src-tauri/target/` build artifacts remain local build outputs.
+
+Rollback:
+
+- No source rollback needed for the build itself.
+- Revert this docs-only commit after it is committed if the checkpoint record is not wanted.
+
+Follow-up:
+
+- Commit R-143.
+- Continue with either manual smoke tests or the next small refactor batch.
