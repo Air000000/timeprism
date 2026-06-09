@@ -3568,3 +3568,85 @@ Follow-up:
 
 - Commit R-138.
 - Continue Phase 4 with remaining Home overview state or perform a frontend phase-gate audit.
+
+## 2026-06-09: R-139 Home Overview State Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- home
+
+Intent:
+
+- Move Home summary and status derived state out of `src/App.vue`.
+- Keep Home data loading, polling, and lifecycle orchestration in `src/App.vue` for this batch.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useHomeOverview.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `todaySummary` state and today learn/rest derived values | `useHomeOverview` | `refreshHomeData` still writes the same summary ref |
+| goal progress percentage/fill/overflow derived state | `useHomeOverview` | Same goal-minute input and clamping behavior |
+| recent activity summary | `useHomeOverview` | Same latest-log formatting, process cleanup, and clock helper |
+| due reminder count, status label/tone, pending summary | `useHomeOverview` | Same priority order and copy |
+
+Behavior expected to stay the same:
+
+- Home top status, goal progress, recent activity summary, due-reminder count, and pending summary should render the same.
+- `refreshHomeData` still fetches today summary, recent logs, heatmap, pending rules, idle prompts, reminders, and rhythm stack.
+- Polling and navigation refresh behavior are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Home overview display was validated by typecheck/build only, not by interactive S-500 smoke testing.
+- `useHomeOverview` depends on shared refs owned by App/composables; keep this boundary explicit until Home data loading is extracted.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-138.
+
+Follow-up:
+
+- Commit R-139.
+- Consider a frontend phase-gate audit before further App-level orchestration changes.
