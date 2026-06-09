@@ -43,6 +43,7 @@ Important sibling folders in the larger workspace:
 - `src/components/SettingsView.vue`: interface, startup, privacy sampling policy, and whitelist settings UI.
 - `src/composables/useAppNavigation.ts`: main-window navigation state, tab labels, and insights history subview state.
 - `src/composables/useLocale.ts`: main-window locale state, translation helper, document language sync, and localStorage persistence.
+- `src/composables/useSettingsPrivacy.ts`: settings/privacy state, auto-start loading/saving, whitelist actions, and settings refresh cache.
 - `src/composables/useThemeMode.ts`: main-window theme state, body theme attribute sync, system preference fallback, and localStorage persistence.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
 - `src/pet.ts`: pet UI, prompt bubble, quick actions, context menu.

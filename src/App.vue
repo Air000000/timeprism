@@ -19,6 +19,7 @@ import {
   type MainViewKey,
 } from "./composables/useAppNavigation";
 import { useLocale } from "./composables/useLocale";
+import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
 import { useThemeMode } from "./composables/useThemeMode";
 import {
   currentLocalDayKey,
@@ -33,7 +34,6 @@ import {
 } from "./lib/time";
 import {
   captureForegroundOnce,
-  getAutoStartEnabled,
   getHeatmapGoalSecondsSetting,
   getIdleMemoryState,
   getTodaySummary,
@@ -41,37 +41,31 @@ import {
   listPendingIdlePrompts,
   listPendingRuleProcesses,
   listReminders,
-  getPrivacySettings,
   getLearnHeatmap,
   getUsageStack,
   saveReminder,
   setReminderOrder,
   deleteReminder,
-  setAutoStartEnabled,
   setReminderDone,
   snoozeReminder,
   listForegroundCaptureDiagnostics,
   listTopAppsAllTime,
   listRecentLogs,
   listTopAppsToday,
-  listWhitelist,
   resolveIdlePrompt,
   saveAppRule,
   setHeatmapGoalSecondsSetting,
-  setWhitelistItem,
   type AppRule,
   type ForegroundCaptureDiagnostic,
   type IdleMemoryState,
   type LearnHeatmapCell,
   type IdlePrompt,
   type PendingRuleProcess,
-  type PrivacySettings,
   type RecentLog,
   type Reminder,
   type TopApp,
   type TodaySummary,
   type UsageStackDay,
-  updatePrivacySettings,
 } from "./api";
 
 const { locale, tx, applyLocale, initLocale } = useLocale();
@@ -87,6 +81,21 @@ const {
   selectMainView,
   selectGuardView,
 } = useAppNavigation(tx);
+const {
+  privacy,
+  autoStartEnabled,
+  whitelist,
+  whitelistInput,
+  privacyFeedback,
+  privacyFeedbackType,
+  refreshSettingsData,
+  resetPrivacyFeedback,
+  handleSavePrivacySettings,
+  handleAddWhitelist,
+  handleRemoveWhitelist,
+  onAutoStartChange,
+  onWhitelistInput,
+} = useSettingsPrivacy({ tx, refreshData, setErrorMessage });
 
 const topApps = ref<TopApp[]>([]);
 const allTimeTopApps = ref<TopApp[]>([]);
@@ -107,8 +116,6 @@ const viewMonthDate = ref(new Date(new Date().getFullYear(), new Date().getMonth
 const loadingHome = ref(false);
 const loadingInsights = ref(false);
 const loadingGuard = ref(false);
-const loadingSettings = ref(false);
-const settingsLoadedAt = ref(0);
 const error = ref("");
 const autoCaptureEnabled = ref(true);
 const autoCaptureFeedback = ref("自动采样已开启");
@@ -123,17 +130,7 @@ const idleRememberChoice = ref(false);
 const idleMemoryState = ref<IdleMemoryState>({ remembered_decision: null });
 const ruleSearch = ref("");
 const ruleSort = ref<"alpha_asc" | "alpha_desc" | "time_desc" | "time_asc">("alpha_asc");
-const privacy = ref<PrivacySettings>({
-  curtain_enabled: false,
-  browser_title_mode: "BLUR",
-  whitelist_only_enabled: false,
-});
-const autoStartEnabled = ref(false);
 const reminders = ref<Reminder[]>([]);
-const whitelist = ref<string[]>([]);
-const whitelistInput = ref("code.exe");
-const privacyFeedback = ref("未保存隐私设置");
-const privacyFeedbackType = ref<"info" | "ok" | "warn" | "error">("info");
 const reminderActionLoading = ref(false);
 const privacyViewMounted = ref(false);
 
@@ -443,16 +440,6 @@ function topAppsBarWidth(seconds: number): string {
     return "0%";
   }
   return `${Math.max(8, Math.min(100, (seconds / max) * 100)).toFixed(2)}%`;
-}
-
-function browserModeText(mode: PrivacySettings["browser_title_mode"]): string {
-  if (mode === "FULL") {
-    return tx("完整标题", "Full title");
-  }
-  if (mode === "BLUR") {
-    return tx("模糊标题", "Blurred title");
-  }
-  return tx("不采集标题", "No title capture");
 }
 
 function mappedTypeText(mappedType: "LEARN" | "REST" | "IGNORE") {
@@ -1202,25 +1189,6 @@ async function refreshGuardData() {
   }
 }
 
-async function refreshSettingsData() {
-  if (loadingSettings.value) {
-    return;
-  }
-
-  const now = Date.now();
-  if (settingsLoadedAt.value > 0 && now - settingsLoadedAt.value < 60_000) {
-    return;
-  }
-
-  loadingSettings.value = true;
-  try {
-    await Promise.all([refreshPrivacy(), refreshAutoStartSetting()]);
-    settingsLoadedAt.value = Date.now();
-  } finally {
-    loadingSettings.value = false;
-  }
-}
-
 async function refreshData() {
   await refreshHomeData();
   if (currentMainView.value === "insights") {
@@ -1345,24 +1313,6 @@ async function handleSaveRuleFromDiagnostic(
   }
 }
 
-async function refreshPrivacy() {
-  try {
-    const [settings, list] = await Promise.all([getPrivacySettings(), listWhitelist()]);
-    privacy.value = settings;
-    whitelist.value = list;
-  } catch (e) {
-    setErrorMessage(e);
-  }
-}
-
-async function refreshAutoStartSetting() {
-  try {
-    autoStartEnabled.value = await getAutoStartEnabled();
-  } catch (e) {
-    setErrorMessage(e);
-  }
-}
-
 async function handleUpdateExistingRule(rule: AppRule) {
   try {
     await saveAppRule({
@@ -1403,66 +1353,6 @@ async function handleSavePendingRule(
     setErrorMessage(e);
     guardFeedbackType.value = "error";
     guardFeedback.value = tx(`保存规则失败：${e}`, `Failed to save rule: ${e}`);
-  }
-}
-
-async function handleSavePrivacySettings() {
-  try {
-    await setAutoStartEnabled(autoStartEnabled.value);
-    await updatePrivacySettings({
-      curtain_enabled: privacy.value.curtain_enabled,
-      browser_title_mode: privacy.value.browser_title_mode,
-      whitelist_only_enabled: privacy.value.whitelist_only_enabled,
-    });
-    privacyFeedbackType.value = "ok";
-    privacyFeedback.value = tx(
-      `隐私设置已保存（浏览器模式：${browserModeText(privacy.value.browser_title_mode)}）。`,
-      `Privacy settings saved (browser mode: ${browserModeText(privacy.value.browser_title_mode)}).`,
-    );
-    await refreshPrivacy();
-    await refreshData();
-  } catch (e) {
-    setErrorMessage(e);
-    privacyFeedbackType.value = "error";
-    privacyFeedback.value = tx(`保存失败：${e}`, `Save failed: ${e}`);
-  }
-}
-
-async function handleAddWhitelist() {
-  const processName = whitelistInput.value.trim().toLowerCase();
-  if (!processName) {
-    return;
-  }
-
-  try {
-    await setWhitelistItem({
-      process_name: processName,
-      enabled: true,
-    });
-    whitelistInput.value = "";
-    privacyFeedbackType.value = "ok";
-    privacyFeedback.value = tx(`已加入白名单：${processName}`, `Added to whitelist: ${processName}`);
-    await refreshPrivacy();
-  } catch (e) {
-    setErrorMessage(e);
-    privacyFeedbackType.value = "error";
-    privacyFeedback.value = tx(`添加失败：${e}`, `Add failed: ${e}`);
-  }
-}
-
-async function handleRemoveWhitelist(processName: string) {
-  try {
-    await setWhitelistItem({
-      process_name: processName,
-      enabled: false,
-    });
-    privacyFeedbackType.value = "warn";
-    privacyFeedback.value = tx(`已移除白名单：${processName}`, `Removed from whitelist: ${processName}`);
-    await refreshPrivacy();
-  } catch (e) {
-    setErrorMessage(e);
-    privacyFeedbackType.value = "error";
-    privacyFeedback.value = tx(`移除失败：${e}`, `Remove failed: ${e}`);
   }
 }
 
@@ -1661,16 +1551,6 @@ function onLocaleChange(event: Event) {
   if (input.value === "zh-CN" || input.value === "en-US") {
     locale.value = input.value;
   }
-}
-
-function onAutoStartChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  autoStartEnabled.value = input.checked;
-}
-
-function onWhitelistInput(event: Event) {
-  const input = event.target as HTMLInputElement;
-  whitelistInput.value = input.value;
 }
 
 function onAutoCaptureToggle(event: Event) {
@@ -1907,7 +1787,7 @@ onMounted(async () => {
 
   autoCaptureFeedback.value = tx("自动采样已开启", "Auto capture enabled");
   guardFeedback.value = tx("尚未执行检测", "No check executed yet");
-  privacyFeedback.value = tx("未保存隐私设置", "Privacy settings not saved");
+  resetPrivacyFeedback();
   void refreshHomeData();
   settingsWarmTimer = window.setTimeout(() => {
     privacyViewMounted.value = true;

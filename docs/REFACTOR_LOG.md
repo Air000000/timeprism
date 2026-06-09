@@ -2729,3 +2729,87 @@ Follow-up:
 
 - Commit R-128.
 - Extract settings/privacy state and handlers into a focused composable or feature module.
+
+## 2026-06-09: R-129 Settings Privacy Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- settings/privacy
+
+Intent:
+
+- Move settings/privacy state, refresh caching, auto-start loading/saving, privacy saving, whitelist add/remove, and related feedback out of `src/App.vue`.
+- Keep `SettingsView.vue` unchanged and preserve the typed settings context boundary.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useSettingsPrivacy.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `privacy`, `autoStartEnabled`, `whitelist`, `whitelistInput`, privacy feedback refs | `useSettingsPrivacy` | Same defaults |
+| `refreshSettingsData`, `refreshPrivacy`, `refreshAutoStartSetting` | `useSettingsPrivacy` | Same 60s refresh cache and loading guard |
+| `handleSavePrivacySettings` | `useSettingsPrivacy` | Same API calls and feedback text |
+| `handleAddWhitelist`, `handleRemoveWhitelist` | `useSettingsPrivacy` | Same lowercasing, clearing, refresh, and feedback behavior |
+| `browserModeText`, auto-start/whitelist input handlers | `useSettingsPrivacy` | Same display text and input updates |
+
+Behavior expected to stay the same:
+
+- Settings data still refreshes lazily and is cached for 60 seconds.
+- Saving settings still persists auto-start first, then privacy settings, then refreshes privacy and current data.
+- Whitelist add/remove still calls the same command wrappers and refreshes whitelist state.
+- Settings feedback text and tones remain the same.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None. Command wrappers called by settings/privacy are unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- No intended privacy behavior change. Privacy settings and whitelist calls were moved only.
+
+Startup/performance impact:
+
+- No intended startup behavior change. The existing settings refresh cache moved with the feature state.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `rg -n "getPrivacySettings|getAutoStartEnabled|listWhitelist|setAutoStartEnabled|setWhitelistItem|updatePrivacySettings|loadingSettings|settingsLoadedAt|refreshPrivacy|refreshAutoStartSetting|browserModeText" src/App.vue src/composables/useSettingsPrivacy.ts` confirmed the settings/privacy API dependency lives in `useSettingsPrivacy.ts`.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Settings/privacy interactions were validated by typecheck/build only, not by interactive S-600 smoke testing.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-128.
+
+Follow-up:
+
+- Commit R-129.
+- Continue Phase 4 with reminders feature extraction.
