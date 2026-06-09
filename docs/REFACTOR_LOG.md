@@ -6977,3 +6977,84 @@ Follow-up:
 
 - Commit R-181.
 - Avoid drag/dock/window behavior refactors until an interactive pet smoke pass is available, or keep the next batch purely textual/data-oriented.
+
+## 2026-06-09: R-182 Pet Panel DOM Shell Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet panel
+- DOM shell
+
+Intent:
+
+- Move pet-panel initial HTML template rendering and required element lookup out of `src/pet-panel.ts`.
+- Keep panel rendering, refresh interval, Tauri events, and resize commands in `src/pet-panel.ts`.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelDom.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| pet-panel shell `innerHTML` template | `renderPetPanelShell` | Same shell, title, heatmap, month controls, grid, and stack container markup |
+| pet-panel control DOM queries | `queryPetPanelElements` | Same selectors, replacing non-null assertions with an explicit `pet panel controls not found` error |
+
+Behavior expected to stay the same:
+
+- Pet-panel root lookup still throws `pet panel root not found` from `src/pet-panel.ts` if the root is missing.
+- Pet-panel initial markup, IDs, classes, title text, controls, and hidden stack container remain unchanged.
+- Pet-panel behavior code still receives the same title, heatmap, stack, month, header, grid, and button elements.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same DOM is rendered and queried once during pet-panel startup.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this pet-panel DOM shell extraction batch.
+
+Risks:
+
+- Pet-panel startup DOM behavior was validated by typecheck/build only, not by opening the panel and checking heatmap/stack modes.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-181.
+
+Follow-up:
+
+- Commit R-182.
+- Continue with small pet-panel rendering helpers or run interactive pet/panel smoke testing before touching Tauri window behavior.

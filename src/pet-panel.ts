@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getLearnHeatmap, getUsageStack, type LearnHeatmapCell, type UsageStackDay } from "./api";
 import { getStoredOrBrowserLocale, translateForLocale, type LocaleCode } from "./lib/locale";
+import { queryPetPanelElements, renderPetPanelShell } from "./lib/petPanelDom";
 import {
   getHeatmapFetchDays,
   heatCellClass,
@@ -24,30 +25,17 @@ if (!root) {
   throw new Error("pet panel root not found");
 }
 
-root.innerHTML = `
-  <section class="panel-shell">
-    <div id="panelTitle" class="panel-title">${tx("图表面板", "Panel")}</div>
-    <div id="panelHeatmap" class="mini-heatmap">
-      <div class="mini-head-row">
-        <button id="heatPrevMonth" class="mini-month-btn" type="button">&lt;</button>
-        <strong id="heatMonthLabel" class="mini-month-label">-</strong>
-        <button id="heatNextMonth" class="mini-month-btn" type="button">&gt;</button>
-      </div>
-      <div id="miniWeekHeader" class="mini-week-header"></div>
-      <div id="miniHeatmapGrid" class="mini-heatmap-grid"></div>
-    </div>
-    <div id="panelStack" class="mini-stack" style="display:none"></div>
-  </section>
-`;
-
-const panelTitle = document.querySelector<HTMLElement>("#panelTitle")!;
-const panelHeatmap = document.querySelector<HTMLElement>("#panelHeatmap")!;
-const panelStack = document.querySelector<HTMLElement>("#panelStack")!;
-const heatMonthLabel = document.querySelector<HTMLElement>("#heatMonthLabel")!;
-const miniWeekHeader = document.querySelector<HTMLElement>("#miniWeekHeader")!;
-const miniHeatmapGrid = document.querySelector<HTMLElement>("#miniHeatmapGrid")!;
-const heatPrevMonthBtn = document.querySelector<HTMLButtonElement>("#heatPrevMonth")!;
-const heatNextMonthBtn = document.querySelector<HTMLButtonElement>("#heatNextMonth")!;
+renderPetPanelShell(root, tx);
+const {
+  panelTitle,
+  panelHeatmap,
+  panelStack,
+  heatMonthLabel,
+  miniWeekHeader,
+  miniHeatmapGrid,
+  heatPrevMonthBtn,
+  heatNextMonthBtn,
+} = queryPetPanelElements();
 
 function renderWeekHeaders() {
   miniWeekHeader.replaceChildren();
