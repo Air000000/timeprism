@@ -8078,3 +8078,85 @@ Follow-up:
 
 - Commit R-195.
 - Continue with low-risk pet helper extraction, or record detailed pet/context-menu smoke results before changing menu behavior.
+
+## 2026-06-09: R-196 Pet Summary DOM Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet window
+- DOM rendering
+
+Intent:
+
+- Move pet-window localized static label updates and summary value DOM writes out of `src/pet.ts`.
+- Keep summary data fetching, timer scheduling, locale detection, mood fallback errors, and refresh orchestration in `src/pet.ts`.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petDom.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| learn/rest token text assignment | `applyPetLocalizedStaticText` | Same localized token values |
+| auto-tracking mood relocalization | `applyPetLocalizedStaticText` | Same Chinese/English auto-tracking detection |
+| learn/rest/mood summary DOM writes | `renderPetSummary` | Same formatted values supplied by caller |
+
+Behavior expected to stay the same:
+
+- Pet summary still displays the same formatted learn/rest durations from `getTodaySummary`.
+- Auto-tracking mood text is still relocalized only when the current mood is the auto-tracking label.
+- Summary refresh failure still sets the same localized sync-failure mood from `src/pet.ts`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same text nodes are assigned in the same refresh paths.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this pet summary DOM helper extraction batch.
+
+Risks:
+
+- Pet-window summary visuals were validated by typecheck/build only, not by manually observing the pet window.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-195.
+
+Follow-up:
+
+- Commit R-196.
+- Continue with low-risk pet helper extraction, or record detailed pet-window smoke results before touching drag/dock behavior.

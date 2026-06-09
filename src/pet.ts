@@ -17,7 +17,12 @@ import {
 	type PetDockState,
 	type PetWindowSettleResult,
 } from "./lib/petDock";
-import { queryPetElements, renderPetShell } from "./lib/petDom";
+import {
+	applyPetLocalizedStaticText,
+	queryPetElements,
+	renderPetShell,
+	renderPetSummary,
+} from "./lib/petDom";
 import {
 	PET_CHARACTER_DEFAULT_SRC,
 	PET_CHARACTER_DOCKED_LEFT_SRC,
@@ -88,16 +93,15 @@ const {
 } = queryPetElements();
 
 function applyLocalizedStaticText() {
-	learnToken.textContent = tx("学", "L");
-	restToken.textContent = tx("休", "B");
-
-	const currentMood = mood.textContent || "";
-	if (
-		currentMood === "自动记录中"
-		|| currentMood === "Auto tracking"
-	) {
-		mood.textContent = tx("自动记录中", "Auto tracking");
-	}
+	applyPetLocalizedStaticText(
+		{ mood, learnToken, restToken },
+		{
+			learnToken: tx("学", "L"),
+			restToken: tx("休", "B"),
+			autoTracking: tx("自动记录中", "Auto tracking"),
+			autoTrackingValues: ["自动记录中", "Auto tracking"],
+		},
+	);
 }
 
 function applyPetCharacter() {
@@ -490,9 +494,12 @@ function scheduleSettleRetry(attempt = 0) {
 async function refreshSummary() {
 	try {
 		const summary: TodaySummary = await getTodaySummary();
-		learn.textContent = formatSeconds(summary.learn_seconds);
-		rest.textContent = formatSeconds(summary.rest_seconds);
-		setMood(tx("自动记录中", "Auto tracking"));
+		renderPetSummary(
+			{ learn, rest, mood },
+			formatSeconds(summary.learn_seconds),
+			formatSeconds(summary.rest_seconds),
+			tx("自动记录中", "Auto tracking"),
+		);
 	} catch {
 		setMood(tx("状态同步失败，请打开设置查看详情", "Sync failed, open settings for details"));
 	}

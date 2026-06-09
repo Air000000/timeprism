@@ -75,3 +75,34 @@ export function queryPetElements(root: ParentNode = document): PetElements {
     promptBubble,
   };
 }
+
+type PetLocalizedStaticText = {
+  learnToken: string;
+  restToken: string;
+  autoTracking: string;
+  autoTrackingValues: readonly string[];
+};
+
+export function applyPetLocalizedStaticText(
+  elements: Pick<PetElements, "mood" | "learnToken" | "restToken">,
+  text: PetLocalizedStaticText,
+) {
+  elements.learnToken.textContent = text.learnToken;
+  elements.restToken.textContent = text.restToken;
+
+  const currentMood = elements.mood.textContent || "";
+  if (text.autoTrackingValues.includes(currentMood)) {
+    elements.mood.textContent = text.autoTracking;
+  }
+}
+
+export function renderPetSummary(
+  elements: Pick<PetElements, "learn" | "rest" | "mood">,
+  learnText: string,
+  restText: string,
+  moodText: string,
+) {
+  elements.learn.textContent = learnText;
+  elements.rest.textContent = restText;
+  elements.mood.textContent = moodText;
+}

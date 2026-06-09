@@ -76,7 +76,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/petCharacter.ts`: pet character image paths, legacy path normalization, and localStorage persistence helpers.
 - `src/lib/petContextMenu.ts`: pet-window context menu item definitions and panel-mode toggle wiring.
 - `src/lib/petDock.ts`: pure pet-window dock state types, dock-edge mapping, and settle-state conversion helpers.
-- `src/lib/petDom.ts`: pet-window initial shell template rendering and required DOM element lookup helpers.
+- `src/lib/petDom.ts`: pet-window initial shell template rendering, required DOM element lookup helpers, localized static text updates, and summary DOM updates.
 - `src/lib/petPanelDom.ts`: pet-panel initial shell template rendering, required DOM element lookup, mode display updates, week-header rendering, heatmap-grid DOM helpers, and usage-stack DOM helpers.
 - `src/lib/petPanelMetrics.ts`: pure pet-panel heatmap sizing/fetch-window, month cell data, and usage-stack day selection helpers.
 - `src/lib/petPanelStack.ts`: pure pet-panel stack signature, segment, color, and percent helpers.
