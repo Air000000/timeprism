@@ -3732,3 +3732,95 @@ Follow-up:
 
 - Commit R-140.
 - Run a frontend phase-gate audit before larger App lifecycle or refresh orchestration changes.
+
+## 2026-06-09: R-141 Phase 4 Checkpoint - Main Window Feature Extraction
+
+Status:
+
+- Passed With Known Risk.
+
+Primary domain:
+
+- frontend feature extraction
+- phase checkpoint
+
+Intent:
+
+- Evaluate the main-window Phase 4 extraction work from R-128 through R-140 before making larger lifecycle or refresh-orchestration changes.
+- Confirm typed feature contexts, extracted composables, and removed hidden Insights usage-stack state remain build-stable.
+- Record remaining risk explicitly instead of treating Phase 4 as fully complete.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Checkpoint scope:
+
+- Main window feature/component extraction only.
+- Pet window and pet panel extraction are not included in this checkpoint.
+- No business behavior changes were made in this checkpoint record.
+
+Evidence reviewed:
+
+| Evidence | Result |
+| --- | --- |
+| Git branch/status | `refactor/architecture`, clean before this docs record |
+| `src/App.vue` line count | 3330 lines after R-140 |
+| View component line counts | Home 679, Guard 148, Insights 97, Settings 82 |
+| `rg -n "ctx:\s*any|defineProps<\{ ctx: any \}>|usageStack|usageRootFilter|usageShowIgnore|selectedUsage|stackTooltip|RenderSegment|TooltipLine|any" src/App.vue src/components src/composables src/lib src/api` | No matches |
+| `src/App.vue` remaining explicit state | shared recent logs, heatmap, home usage stack, goal slider, loading/error/privacy-mounted shell state |
+| `src/App.vue` remaining functions | shell navigation, home refresh, global refresh, goal persistence timer, locale change, section flash/scroll, context assembly, lifecycle timers |
+
+Behavior expected to stay the same:
+
+- Main Home, Insights, Guard, Settings, and idle prompt surfaces use the same user-visible behavior as before the Phase 4 extraction batches.
+- Tauri command names, payload shapes, and return shapes remain unchanged.
+- Database schema and privacy behavior remain unchanged.
+- Hidden old Insights usage-stack context remains removed; the current visible Insights history tabs remain supported.
+
+Behavior intentionally changed:
+
+- None in this checkpoint record.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- No new startup behavior change in this checkpoint record.
+- Earlier R-134 removed unused hidden Insights usage-stack queries; that remains the only recorded performance-oriented change in this Phase 4 slice.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `cargo check` from `src-tauri` passed.
+
+Manual smoke tests:
+
+- Not run in this checkpoint.
+
+Risks:
+
+- This is not the final Phase 4 gate for the whole application; pet/panel extraction and smoke coverage are still outside this checkpoint.
+- Manual S-300/S-400/S-500/S-600/S-700 smoke tests were not run interactively.
+- `src/App.vue` is much thinner but still owns Home refresh orchestration, global timers, context assembly, and a large CSS block.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Reset `refactor/architecture` to R-140 commit `c4a7c2a`, or revert this docs-only checkpoint commit after it is committed.
+
+Follow-up:
+
+- Commit R-141.
+- Next safe options: run manual smoke checks, extract Home refresh orchestration, or start pet/panel feature extraction as a separate Phase 4 slice.
