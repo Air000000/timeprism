@@ -1989,3 +1989,85 @@ Follow-up:
 
 - Commit R-120.
 - Continue frontend shell extraction by reducing `src/App.vue` responsibilities and replacing broad `ctx: any` component contracts.
+
+## 2026-06-09: R-121 Locale Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shell
+- locale
+
+Intent:
+
+- Move main-window locale state, translation helper, document language sync, and localStorage persistence out of `src/App.vue`.
+- Preserve existing locale behavior and existing child-component context shape.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useLocale.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `LocaleCode` | `src/composables/useLocale.ts` | Exported for future reuse |
+| `LOCALE_STORAGE_KEY` | `src/composables/useLocale.ts` | Same key: `timeprism-locale` |
+| `locale` ref | `src/composables/useLocale.ts` | Same default: `zh-CN` |
+| `tx`, `applyLocale`, `initLocale` | `src/composables/useLocale.ts` | Same behavior and error swallowing |
+
+Behavior expected to stay the same:
+
+- Stored `zh-CN` or `en-US` locale still wins.
+- Browser language still initializes Chinese when it starts with `zh`.
+- `document.documentElement.lang` is still updated on locale changes.
+- LocalStorage failures are still ignored.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Main window locale behavior was not manually toggled in a running app during this batch.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-120 commit.
+
+Follow-up:
+
+- Commit R-121.
+- Continue extracting App shell state into focused composables.
