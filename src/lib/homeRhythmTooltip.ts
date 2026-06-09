@@ -8,6 +8,18 @@ export type RhythmTooltipPalette = {
   accentColor: string;
 };
 
+export type HomeRhythmSummaryBar = {
+  label: string;
+  totalSeconds?: number | null;
+};
+
+export type HomeRhythmSummary = {
+  totalText: string;
+  averageText: string;
+  activeDays: number;
+  bestText: string;
+};
+
 export function compactRhythmDuration(seconds: number): string {
   const safe = Math.max(0, Math.floor(seconds));
   if (safe >= 3600) {
@@ -22,6 +34,30 @@ export function compactRhythmDuration(seconds: number): string {
 
 export function rhythmSegmentLabel(segment: RhythmSegment, tx: TranslateFn): string {
   return segment === "learn" ? tx("学习", "Learn") : tx("休息", "Rest");
+}
+
+export function buildHomeRhythmSummary(
+  bars: readonly HomeRhythmSummaryBar[],
+  tx: TranslateFn,
+): HomeRhythmSummary {
+  const totalSeconds = bars.reduce((sum, bar) => sum + (bar.totalSeconds ?? 0), 0);
+  const activeDays = bars.filter((bar) => (bar.totalSeconds ?? 0) > 0).length;
+  const averageSeconds = bars.length > 0 ? Math.round(totalSeconds / bars.length) : 0;
+  const bestBar = bars.reduce<HomeRhythmSummaryBar | null>((best, bar) => (
+    (bar.totalSeconds ?? 0) > (best?.totalSeconds ?? -1) ? bar : best
+  ), null);
+
+  return {
+    totalText: compactRhythmDuration(totalSeconds),
+    averageText: compactRhythmDuration(averageSeconds),
+    activeDays,
+    bestText: bestBar && (bestBar.totalSeconds ?? 0) > 0
+      ? tx(
+        `${bestBar.label}号 · ${compactRhythmDuration(bestBar.totalSeconds ?? 0)}`,
+        `${bestBar.label} · ${compactRhythmDuration(bestBar.totalSeconds ?? 0)}`,
+      )
+      : tx("暂无记录", "No data"),
+  };
 }
 
 export function rhythmSegmentPalette(segment: RhythmSegment): RhythmTooltipPalette {

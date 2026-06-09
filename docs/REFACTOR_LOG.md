@@ -10228,3 +10228,84 @@ Follow-up:
 
 - Commit R-222.
 - Continue with low-risk frontend-helper batches unless detailed Home rhythm smoke results are recorded.
+
+## 2026-06-09: R-223 Home Rhythm Summary Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Home view
+- rhythm summary
+
+Intent:
+
+- Move Home rhythm total, average, active-day, and best-day summary calculation into the existing `homeRhythmTooltip` helper module.
+- Keep reactive computed wiring and tooltip event state in `useHomeRhythmTooltip.ts`.
+
+Files changed:
+
+- `src/composables/useHomeRhythmTooltip.ts`
+- `src/lib/homeRhythmTooltip.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Home rhythm summary calculation | `src/lib/homeRhythmTooltip.ts::buildHomeRhythmSummary` | Same total seconds, active days, average seconds, best bar selection, best-day text, and no-data fallback |
+
+Behavior expected to stay the same:
+
+- Home rhythm summary still shows the same total, average, active-day count, and best-day text.
+- Best-day selection still chooses the bar with the greatest `totalSeconds`.
+- Empty or all-zero rhythm data still falls back to the same localized no-data text.
+- `useHomeRhythmTooltip` still returns the same `homeRhythmSummary` computed value to HomeView.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same summary calculation now runs through a helper function.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home rhythm summary helper extraction batch.
+
+Risks:
+
+- Home rhythm summary display was validated by typecheck/build only, not by manually inspecting populated and empty rhythm states.
+
+Rollback:
+
+- Revert this batch to move summary calculation back into `useHomeRhythmTooltip.ts`.
+
+Follow-up:
+
+- Commit R-223.
+- Continue with a backend checkpoint after commit.

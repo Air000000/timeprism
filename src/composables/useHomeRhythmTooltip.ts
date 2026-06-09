@@ -1,6 +1,7 @@
 import { computed, ref } from "vue";
 import type { HomeRhythmBar, HomeViewContext } from "../components/viewContexts";
 import {
+  buildHomeRhythmSummary,
   compactRhythmDuration,
   rhythmSegmentLabel,
   rhythmSegmentPalette,
@@ -42,24 +43,7 @@ export function useHomeRhythmTooltip(getCtx: () => HomeViewContext) {
 
   const homeRhythmSummary = computed(() => {
     const ctx = getCtx();
-    const bars = ctx.homeMonthRhythmBars ?? [];
-    const totalSeconds = bars.reduce((sum, bar) => sum + (bar.totalSeconds ?? 0), 0);
-    const activeDays = bars.filter((bar) => (bar.totalSeconds ?? 0) > 0).length;
-    const averageSeconds = bars.length > 0 ? Math.round(totalSeconds / bars.length) : 0;
-    const bestBar = bars.reduce<HomeRhythmBar | null>((best, bar) => (
-      (bar.totalSeconds ?? 0) > (best?.totalSeconds ?? -1) ? bar : best
-    ), null);
-    return {
-      totalText: compactRhythmDuration(totalSeconds),
-      averageText: compactRhythmDuration(averageSeconds),
-      activeDays,
-      bestText: bestBar && (bestBar.totalSeconds ?? 0) > 0
-        ? ctx.tx(
-          `${bestBar.label}号 · ${compactRhythmDuration(bestBar.totalSeconds)}`,
-          `${bestBar.label} · ${compactRhythmDuration(bestBar.totalSeconds)}`,
-        )
-        : ctx.tx("暂无记录", "No data"),
-    };
+    return buildHomeRhythmSummary(ctx.homeMonthRhythmBars ?? [], ctx.tx);
   });
 
   function handleRhythmEnter(
