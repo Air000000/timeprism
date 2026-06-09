@@ -192,7 +192,6 @@ Automated validation:
 - `pnpm.cmd run typecheck` passed.
 - `pnpm.cmd run build:check` passed.
 - `git diff --check` passed.
-- `pnpm.cmd run build:check` passed.
 - `cargo check` from `src-tauri` passed.
 
 Manual smoke tests:
@@ -9347,10 +9346,13 @@ Startup/performance impact:
 Automated validation:
 
 - `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
 
 Manual smoke tests:
 
-- Not run yet for this batch.
+- Not run for this reminder upsert payload helper extraction batch.
 
 Risks:
 
@@ -9364,3 +9366,76 @@ Follow-up:
 
 - Commit R-211.
 - Continue with a backend checkpoint after commit.
+
+## 2026-06-09: R-212 Cross-Stack Checkpoint After Reminder Upsert Payload Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the reminder upsert payload helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-211 and correct the R-211 validation log to include the build and whitespace checks that were run before commit.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Reminder upsert helper changes from R-211 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace detailed reminder UI smoke tests for one-time, daily, weekly, disabled-reminder, and validation-error paths.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-212.
+- Continue with low-risk frontend-helper batches unless detailed reminder UI smoke results are recorded.
