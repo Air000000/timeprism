@@ -9041,3 +9041,86 @@ Follow-up:
 
 - Commit R-207.
 - Continue with low-risk frontend-helper batches unless detailed pet prompt smoke results are recorded.
+
+## 2026-06-09: R-208 App Settings Section Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- App setup
+- Settings view
+
+Intent:
+
+- Move App-level Settings privacy state, lazy mount coordination, and Settings view context assembly out of `src/App.vue`.
+- Keep the underlying Settings privacy, lazy mount, and context composables unchanged.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useAppSettingsSection.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useSettingsPrivacy` wiring | `useAppSettingsSection` | Same `tx`, `refreshData`, and `setErrorMessage` inputs |
+| `useLazySettingsMount` wiring | `useAppSettingsSection` | Same refresh-on-open and warmup cleanup returned to App lifecycle |
+| `useSettingsViewContext` assembly | `useAppSettingsSection` | Same locale/theme/privacy/whitelist handlers passed through |
+
+Behavior expected to stay the same:
+
+- Settings view still lazy-mounts and refreshes through the same warmup and show-settings paths.
+- Settings privacy save, whitelist, auto-start, locale, and theme handlers still flow into the same `settingsCtx`.
+- `src/App.vue` still owns the visual shell and passes the same `settingsCtx` to `SettingsView`.
+- Main lifecycle still receives the same `refreshSettingsData`, `resetPrivacyFeedback`, `startSettingsWarmup`, and `cleanupSettingsWarmup` callbacks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None; privacy settings behavior is only re-wired through a wrapper composable.
+
+Startup/performance impact:
+
+- None expected; the same composables are created in the same setup path.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this App Settings section extraction batch.
+
+Risks:
+
+- Settings UI behavior was validated by typecheck/build only, not by manually opening Settings and changing options.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-207.
+
+Follow-up:
+
+- Commit R-208.
+- Continue with small App setup section extractions or record detailed Settings smoke results.

@@ -7,6 +7,7 @@ import InsightsView from "./components/InsightsView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import { useAutoCaptureSampler } from "./composables/useAutoCaptureSampler";
 import { useAppNavigation } from "./composables/useAppNavigation";
+import { useAppSettingsSection } from "./composables/useAppSettingsSection";
 import { useDisplayFormatters } from "./composables/useDisplayFormatters";
 import { useErrorMessage } from "./composables/useErrorMessage";
 import { useGuardData } from "./composables/useGuardData";
@@ -23,7 +24,6 @@ import { useIdlePromptBannerContext } from "./composables/useIdlePromptBannerCon
 import { useInsightsData } from "./composables/useInsightsData";
 import { useInsightsSectionNavigation } from "./composables/useInsightsSectionNavigation";
 import { useInsightsViewContext } from "./composables/useInsightsViewContext";
-import { useLazySettingsMount } from "./composables/useLazySettingsMount";
 import { useLocale } from "./composables/useLocale";
 import { useMainDataBuffers } from "./composables/useMainDataBuffers";
 import { useMainDataRefresh } from "./composables/useMainDataRefresh";
@@ -31,8 +31,6 @@ import { useMainRefreshPolling } from "./composables/useMainRefreshPolling";
 import { useMainViewActions } from "./composables/useMainViewActions";
 import { useMainWindowLifecycle } from "./composables/useMainWindowLifecycle";
 import { useReminders } from "./composables/useReminders";
-import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
-import { useSettingsViewContext } from "./composables/useSettingsViewContext";
 import { useThemeMode } from "./composables/useThemeMode";
 import {
   formatSeconds,
@@ -67,43 +65,21 @@ const {
   selectHistoryView,
 });
 const {
-  privacy,
-  autoStartEnabled,
-  whitelist,
-  whitelistInput,
-  privacyFeedback,
-  privacyFeedbackType,
-  refreshSettingsData,
-  resetPrivacyFeedback,
-  handleSavePrivacySettings,
-  handleAddWhitelist,
-  handleRemoveWhitelist,
-  onAutoStartChange,
-  onWhitelistInput,
-} = useSettingsPrivacy({ tx, refreshData, setErrorMessage });
-const {
   privacyViewMounted,
+  settingsCtx,
   showSettingsViewAndRefresh,
   startSettingsWarmup,
   cleanupSettingsWarmup,
-} = useLazySettingsMount({ refreshSettingsData });
-const settingsCtx = useSettingsViewContext({
+  refreshSettingsData,
+  resetPrivacyFeedback,
+} = useAppSettingsSection({
   tx,
   locale,
   onLocaleChange,
   themeMode,
   toggleThemeMode,
-  autoStartEnabled,
-  onAutoStartChange,
-  privacy,
-  handleSavePrivacySettings,
-  privacyFeedbackType,
-  privacyFeedback,
-  whitelistInput,
-  onWhitelistInput,
-  handleAddWhitelist,
-  whitelist,
-  handleRemoveWhitelist,
+  refreshData,
+  setErrorMessage,
 });
 const {
   reminders,

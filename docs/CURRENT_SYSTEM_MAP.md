@@ -45,6 +45,7 @@ Important sibling folders in the larger workspace:
 - `src/components/SettingsView.vue`: interface, startup, privacy sampling policy, and whitelist settings UI.
 - `src/composables/useAutoCaptureSampler.ts`: auto-capture foreground sampling timer, capture feedback text, and timer cleanup.
 - `src/composables/useAppNavigation.ts`: main-window navigation state, tab labels, and insights history subview state.
+- `src/composables/useAppSettingsSection.ts`: App-level Settings privacy state, lazy mount coordination, and Settings view context assembly.
 - `src/composables/useDisplayFormatters.ts`: shared UI display formatters for clock text, mapped type labels, process names, and idle prompt spans.
 - `src/composables/useErrorMessage.ts`: top-level main-window error message state and setter.
 - `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, rule mutations, idle resolution, and Guard input handlers.
