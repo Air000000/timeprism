@@ -20,6 +20,7 @@ import {
 } from "./composables/useAppNavigation";
 import { useGuardData } from "./composables/useGuardData";
 import { useGuardWorkflow } from "./composables/useGuardWorkflow";
+import { useInsightsData } from "./composables/useInsightsData";
 import { useLocale } from "./composables/useLocale";
 import { useReminders } from "./composables/useReminders";
 import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
@@ -42,15 +43,12 @@ import {
   listReminders,
   getLearnHeatmap,
   getUsageStack,
-  listTopAppsAllTime,
   listRecentLogs,
-  listTopAppsToday,
   setHeatmapGoalSecondsSetting,
   type LearnHeatmapCell,
   type IdlePrompt,
   type RecentLog,
   type Reminder,
-  type TopApp,
   type TodaySummary,
   type UsageStackDay,
 } from "./api";
@@ -93,19 +91,33 @@ const {
   handleReminderSnooze,
 } = useReminders({ tx, refreshData, setErrorMessage });
 
-const topApps = ref<TopApp[]>([]);
-const allTimeTopApps = ref<TopApp[]>([]);
-const allTimeFilter = ref<"ALL" | "LEARN" | "REST">("ALL");
-const allTimeIncludeIgnore = ref(true);
 const recentLogs = ref<RecentLog[]>([]);
 const learnHeatmap = ref<LearnHeatmapCell[]>([]);
 const homeUsageStack = ref<UsageStackDay[]>([]);
 const learnGoalSliderMinutes = ref(120);
 const viewMonthDate = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 const loadingHome = ref(false);
-const loadingInsights = ref(false);
 const error = ref("");
 const privacyViewMounted = ref(false);
+const {
+  topApps,
+  topAppsBarWidth,
+  allTimeTopApps,
+  allTimeIncludeIgnore,
+  allTimeBarWidth,
+  setAllTimeFilter,
+  onAllTimeIgnoreToggle,
+  recentTimelineGroups,
+  recentDurationWidth,
+  refreshInsightsData,
+} = useInsightsData({
+  recentLogs,
+  learnHeatmap,
+  getHeatmapFetchDays,
+  getHeatmapGoalSeconds,
+  refreshData,
+  setErrorMessage,
+});
 const {
   autoCaptureEnabled,
   autoCaptureFeedback,
@@ -406,22 +418,6 @@ function reminderDueText(item: Reminder): string {
   return formatReminderDateTime(item.next_due_timestamp);
 }
 
-function allTimeBarWidth(seconds: number): string {
-  const max = allTimeTopApps.value[0]?.seconds ?? 0;
-  if (max <= 0 || seconds <= 0) {
-    return "0%";
-  }
-  return `${Math.max(8, Math.min(100, (seconds / max) * 100)).toFixed(2)}%`;
-}
-
-function topAppsBarWidth(seconds: number): string {
-  const max = topApps.value[0]?.seconds ?? 0;
-  if (max <= 0 || seconds <= 0) {
-    return "0%";
-  }
-  return `${Math.max(8, Math.min(100, (seconds / max) * 100)).toFixed(2)}%`;
-}
-
 function mappedTypeText(mappedType: "LEARN" | "REST" | "IGNORE") {
   if (mappedType === "LEARN") {
     return tx("学习", "Learn");
@@ -461,14 +457,6 @@ function cleanProcessName(name: string): string {
     .trim();
 
   return normalized || tx("未知进程", "Unknown App");
-}
-
-function logDayKey(unixSeconds: number): string {
-  const date = new Date((unixSeconds - 4 * 3600) * 1000);
-  const y = date.getFullYear();
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
-  const d = date.getDate().toString().padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 type HomeRhythmBar = {
@@ -695,30 +683,6 @@ async function refreshHomeData() {
   }
 }
 
-async function refreshInsightsData() {
-  if (loadingInsights.value) {
-    return;
-  }
-
-  loadingInsights.value = true;
-  try {
-    const [apps, allTimeApps, logs, heatmap] = await Promise.all([
-      listTopAppsToday(6),
-      listTopAppsAllTime(10, allTimeFilter.value, allTimeIncludeIgnore.value),
-      listRecentLogs(12),
-      getLearnHeatmap(getHeatmapFetchDays(), getHeatmapGoalSeconds()),
-    ]);
-    topApps.value = apps;
-    allTimeTopApps.value = allTimeApps;
-    recentLogs.value = logs;
-    learnHeatmap.value = heatmap;
-  } catch (e) {
-    setErrorMessage(e);
-  } finally {
-    loadingInsights.value = false;
-  }
-}
-
 async function refreshData() {
   await refreshHomeData();
   if (currentMainView.value === "insights") {
@@ -754,41 +718,11 @@ function schedulePersistHeatmapGoal() {
   }, 260);
 }
 
-function setAllTimeFilter(next: "ALL" | "LEARN" | "REST") {
-  allTimeFilter.value = next;
-  void refreshData();
-}
-
-function onAllTimeIgnoreToggle(event: Event) {
-  const input = event.target as HTMLInputElement;
-  allTimeIncludeIgnore.value = input.checked;
-  void refreshData();
-}
-
 function onLocaleChange(event: Event) {
   const input = event.target as HTMLSelectElement;
   if (input.value === "zh-CN" || input.value === "en-US") {
     locale.value = input.value;
   }
-}
-
-const recentTimelineGroups = computed(() => {
-  const groups = new Map<string, RecentLog[]>();
-  for (const item of recentLogs.value) {
-    const day = logDayKey(item.start_timestamp);
-    const list = groups.get(day) ?? [];
-    list.push(item);
-    groups.set(day, list);
-  }
-  return Array.from(groups.entries()).map(([day, items]) => ({ day, items }));
-});
-
-function recentDurationWidth(durationMs: number): string {
-  const max = recentLogs.value[0]?.duration_ms ?? 0;
-  if (max <= 0 || durationMs <= 0) {
-    return "0%";
-  }
-  return `${Math.max(8, Math.min(100, (durationMs / max) * 100)).toFixed(2)}%`;
 }
 
 function flashInsightsSection(target: HTMLElement | null) {

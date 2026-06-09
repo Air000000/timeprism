@@ -3234,3 +3234,88 @@ Follow-up:
 
 - Commit R-134.
 - Continue Phase 4 with remaining `src/App.vue` Home/Insights state extraction.
+
+## 2026-06-09: R-135 Insights Data Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- insights
+
+Intent:
+
+- Move visible Insights data loading and derived view helpers out of `src/App.vue`.
+- Keep shared Home/Insights refs for recent logs and heatmap in `App.vue` for this batch.
+- Preserve current Insights history tab behavior while reducing App-level feature ownership.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useInsightsData.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `topApps`, `allTimeTopApps`, all-time filter state | `useInsightsData` | Same defaults and same API inputs |
+| `refreshInsightsData` | `useInsightsData` | Same four visible data requests after R-134 cleanup |
+| `allTimeBarWidth`, `topAppsBarWidth`, `recentDurationWidth` | `useInsightsData` | Same percentage clamping behavior |
+| recent-log day grouping helper | `useInsightsData` | Same 04:00 business-day boundary |
+| all-time filter and include-ignore event handlers | `useInsightsData` | Still refresh through App-level `refreshData` |
+
+Behavior expected to stay the same:
+
+- Opening Insights still refreshes visible top-app, all-time, recent-log, and heatmap data.
+- History subtab switching still refreshes Insights data.
+- All-time filter buttons and include-unclassified checkbox still trigger the same full refresh path.
+- Home still owns and refreshes recent logs, heatmap, reminders, pending rules, idle prompts, and rhythm stack.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None. Existing frontend command wrappers are unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected beyond R-134's already-recorded removal of unused hidden usage-stack queries.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Insights interactions were validated by typecheck/build only, not by interactive S-500 smoke testing.
+- `recentLogs` and `learnHeatmap` are still shared between Home and Insights; this is intentional for this batch and should be handled deliberately if Home data extraction moves them later.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-134.
+
+Follow-up:
+
+- Commit R-135.
+- Continue Phase 4 by extracting Home overview/rhythm/heatmap state or by separating shared recent-log/heatmap ownership.
