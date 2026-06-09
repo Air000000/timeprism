@@ -191,6 +191,8 @@ Automated validation:
 
 - `pnpm.cmd run typecheck` passed.
 - `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `pnpm.cmd run build:check` passed.
 - `cargo check` from `src-tauri` passed.
 
 Manual smoke tests:
@@ -9283,3 +9285,82 @@ Follow-up:
 
 - Commit R-210.
 - Continue with low-risk frontend-helper batches.
+
+## 2026-06-09: R-211 Reminder Upsert Payload Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- reminder workflow
+
+Intent:
+
+- Move reminder form input normalization and save-payload construction out of `useReminders.ts`.
+- Keep API side effects, loading state, refresh behavior, and error forwarding in the composable.
+- Preserve the existing `ReminderUpsertInput` export path through `useReminders.ts` so current callers do not need to move yet.
+
+Files changed:
+
+- `src/composables/useReminders.ts`
+- `src/lib/reminderUpsert.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `src/composables/useReminders.ts` | `src/lib/reminderUpsert.ts` | Extracted content trimming, one-time datetime parsing, daily clock parsing, weekly-day normalization, and save payload construction. |
+
+Behavior expected to stay the same:
+
+- Empty reminder content still raises the same localized validation message.
+- Daily and weekly reminders still parse `daily_time_text` only when reminders are enabled.
+- Weekly reminders still require at least one valid weekday and still persist normalized weekday order.
+- One-time reminders still parse `remind_at_text` only when reminders are enabled.
+- `handleUpsertReminder` still toggles action loading, saves through `saveReminder`, refreshes data, forwards errors, and rethrows.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `save_reminder` indirectly through unchanged frontend API calls.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+
+Manual smoke tests:
+
+- Not run yet for this batch.
+
+Risks:
+
+- Reminder modal save behavior still needs real UI smoke coverage for one-time, daily, weekly, disabled-reminder, and validation-error paths.
+
+Rollback:
+
+- Revert this batch to move payload construction back into `useReminders.ts`.
+
+Follow-up:
+
+- Commit R-211.
+- Continue with a backend checkpoint after commit.

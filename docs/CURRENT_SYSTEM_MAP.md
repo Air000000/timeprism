@@ -93,6 +93,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/petPrompts.ts`: pet prompt DTO types plus pure snooze pruning, availability filtering, and active prompt selection helpers.
 - `src/lib/petReminderText.ts`: pet reminder due-text formatting for daily, weekly, and one-time reminders.
 - `src/lib/reminderSort.ts`: shared reminder ordering comparator and sorted reminder list helper.
+- `src/lib/reminderUpsert.ts`: reminder form input normalization and save-payload construction for one-time, daily, and weekly reminders.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
 - `src/styles/app.css`: global main-window CSS previously embedded in `src/App.vue`.
 - `src/pet.ts`: pet UI orchestration, prompt action side effects, context menu orchestration, and drag/dock behavior.
