@@ -11249,3 +11249,76 @@ Follow-up:
 
 - Commit R-235.
 - Run a backend checkpoint after commit before continuing the next frontend helper batch.
+
+## 2026-06-09: R-236 Cross-Stack Checkpoint After Home Reminder Reorder Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the Home reminder reorder helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-235 reduced `useHomeReminderPanel.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Home reminder reorder helper changes from R-235 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace manual Home reminder drag/drop smoke testing.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-236.
+- Continue with small frontend-helper batches that keep event and persistence behavior stable.
