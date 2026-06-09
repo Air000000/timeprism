@@ -2071,3 +2071,84 @@ Follow-up:
 
 - Commit R-121.
 - Continue extracting App shell state into focused composables.
+
+## 2026-06-09: R-122 Theme Mode Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shell
+- theme
+
+Intent:
+
+- Move main-window theme state, body theme attribute sync, system preference fallback, and localStorage persistence out of `src/App.vue`.
+- Preserve existing settings UI behavior and template bindings.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useThemeMode.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `ThemeMode` | `src/composables/useThemeMode.ts` | Exported for future reuse |
+| `themeMode` ref | `src/composables/useThemeMode.ts` | Same default: `light` |
+| `applyTheme`, `toggleThemeMode`, `initThemeMode` | `src/composables/useThemeMode.ts` | Same localStorage key and system fallback |
+
+Behavior expected to stay the same:
+
+- Stored `light` or `dark` theme still wins.
+- System `prefers-color-scheme: dark` still selects dark when no stored setting exists.
+- `document.body[data-theme]` is still updated when applying a theme.
+- LocalStorage failures are still ignored.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Theme toggling was not manually smoke-tested in a running app during this batch.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-121 commit.
+
+Follow-up:
+
+- Commit R-122.
+- Continue extracting App shell state into focused composables.

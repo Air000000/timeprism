@@ -5,6 +5,7 @@ import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
 import InsightsView from "./components/InsightsView.vue";
 import { useLocale } from "./composables/useLocale";
+import { useThemeMode } from "./composables/useThemeMode";
 import {
   captureForegroundOnce,
   getAutoStartEnabled,
@@ -49,6 +50,7 @@ import {
 } from "./api";
 
 const { locale, tx, applyLocale, initLocale } = useLocale();
+const { themeMode, applyTheme, toggleThemeMode, initThemeMode } = useThemeMode();
 
 const topApps = ref<TopApp[]>([]);
 const allTimeTopApps = ref<TopApp[]>([]);
@@ -221,9 +223,6 @@ const guardStepLabels = computed(() => [
   tx("规则复核", "Rules Review"),
   tx("采样诊断", "Diagnostics"),
 ]);
-type ThemeMode = "light" | "dark";
-const themeMode = ref<ThemeMode>("light");
-
 function switchInsightsSubView(next: InsightsPrimaryViewKey) {
   currentMainView.value = "insights";
   insightsPrimaryView.value = next;
@@ -235,38 +234,6 @@ function switchHistorySubView(next: HistorySubViewKey) {
   insightsPrimaryView.value = "history";
   historySubView.value = next;
   void refreshInsightsData();
-}
-
-function applyTheme(nextTheme: ThemeMode) {
-  themeMode.value = nextTheme;
-  if (typeof document !== "undefined") {
-    document.body.setAttribute("data-theme", nextTheme);
-  }
-  try {
-    window.localStorage.setItem("timeprism-theme", nextTheme);
-  } catch {
-    // Ignore persistence errors in restricted WebView contexts.
-  }
-}
-
-function toggleThemeMode() {
-  applyTheme(themeMode.value === "dark" ? "light" : "dark");
-}
-
-function initThemeMode() {
-  try {
-    const stored = window.localStorage.getItem("timeprism-theme");
-    if (stored === "light" || stored === "dark") {
-      applyTheme(stored);
-      return;
-    }
-  } catch {
-    // Ignore read errors and continue with system preference.
-  }
-
-  const prefersDark = typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  applyTheme(prefersDark ? "dark" : "light");
 }
 
 const currentMonthKey = computed(() => {
