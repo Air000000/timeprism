@@ -5853,3 +5853,85 @@ Follow-up:
 
 - Commit R-167.
 - Prefer interactive main-window smoke testing before refactoring `refreshData` or `setMainView`.
+
+## 2026-06-09: R-168 Main View Actions Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- main-window navigation
+
+Intent:
+
+- Move main tab and History subview action handlers out of `src/App.vue`.
+- Keep the same refresh side effects when opening Insights, Guard, Settings/Privacy, or switching History subviews.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useMainViewActions.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `switchHistorySubView` | `useMainViewActions` | Still selects the History subview and refreshes Insights data |
+| `setMainView` | `useMainViewActions` | Still selects the main tab and runs the same per-tab refresh/open side effects |
+
+Behavior expected to stay the same:
+
+- Selecting a History subview still refreshes Insights data.
+- Opening Insights still refreshes Insights data.
+- Opening Guard still refreshes Guard data.
+- Opening Settings/Privacy still lazy-mounts Settings and refreshes Settings data through `showSettingsViewAndRefresh`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; navigation actions now live in a composable but call the same functions in the same cases.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this navigation-action extraction batch.
+
+Risks:
+
+- Navigation behavior was validated by typecheck/build only, not by clicking through S-100/S-300/S-500 smoke scenarios.
+- The action composable is initialized after Guard data so it can receive `refreshGuardData`; future edits should preserve that initialization order unless dependencies are untangled further.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-167.
+
+Follow-up:
+
+- Commit R-168.
+- Consider a validation checkpoint before refactoring `refreshData`, because it still coordinates Home, Insights, Guard, and Settings refresh paths.

@@ -6,11 +6,7 @@ import IdlePromptBanner from "./components/IdlePromptBanner.vue";
 import InsightsView from "./components/InsightsView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import { useAutoCaptureSampler } from "./composables/useAutoCaptureSampler";
-import {
-  useAppNavigation,
-  type HistorySubViewKey,
-  type MainViewKey,
-} from "./composables/useAppNavigation";
+import { useAppNavigation } from "./composables/useAppNavigation";
 import { useDisplayFormatters } from "./composables/useDisplayFormatters";
 import { useErrorMessage } from "./composables/useErrorMessage";
 import { useGuardData } from "./composables/useGuardData";
@@ -31,6 +27,7 @@ import { useLazySettingsMount } from "./composables/useLazySettingsMount";
 import { useLocale } from "./composables/useLocale";
 import { useMainDataBuffers } from "./composables/useMainDataBuffers";
 import { useMainRefreshPolling } from "./composables/useMainRefreshPolling";
+import { useMainViewActions } from "./composables/useMainViewActions";
 import { useMainWindowLifecycle } from "./composables/useMainWindowLifecycle";
 import { useReminders } from "./composables/useReminders";
 import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
@@ -170,24 +167,6 @@ const {
   refreshData,
   setErrorMessage,
 });
-const insightsCtx = useInsightsViewContext({
-  tx,
-  formatSeconds,
-  cleanProcessName,
-  formatClock,
-  historySubViews,
-  historySubView,
-  switchHistorySubView,
-  topApps,
-  topAppsBarWidth,
-  allTimeTopApps,
-  setAllTimeFilter,
-  allTimeIncludeIgnore,
-  onAllTimeIgnoreToggle,
-  allTimeBarWidth,
-  recentTimelineGroups,
-  recentDurationWidth,
-});
 const {
   autoCaptureEnabled,
   autoCaptureFeedback,
@@ -221,6 +200,31 @@ const {
   mappedTypeText,
   refreshData,
   setErrorMessage,
+});
+const { switchHistorySubView, setMainView } = useMainViewActions({
+  selectHistoryView,
+  selectMainView,
+  refreshInsightsData,
+  refreshGuardData,
+  showSettingsViewAndRefresh,
+});
+const insightsCtx = useInsightsViewContext({
+  tx,
+  formatSeconds,
+  cleanProcessName,
+  formatClock,
+  historySubViews,
+  historySubView,
+  switchHistorySubView,
+  topApps,
+  topAppsBarWidth,
+  allTimeTopApps,
+  setAllTimeFilter,
+  allTimeIncludeIgnore,
+  onAllTimeIgnoreToggle,
+  allTimeBarWidth,
+  recentTimelineGroups,
+  recentDurationWidth,
 });
 const {
   startAutoCaptureSampler,
@@ -364,22 +368,6 @@ const homeCtx = useHomeViewContext({
   dueReminderCount,
   homeMonthRhythmBars,
 });
-
-function switchHistorySubView(next: HistorySubViewKey) {
-  selectHistoryView(next);
-  void refreshInsightsData();
-}
-
-function setMainView(next: MainViewKey) {
-  selectMainView(next);
-  if (next === "insights") {
-    void refreshInsightsData();
-  } else if (next === "guard") {
-    void refreshGuardData();
-  } else if (next === "privacy") {
-    showSettingsViewAndRefresh();
-  }
-}
 
 async function refreshData() {
   await refreshHomeData();
