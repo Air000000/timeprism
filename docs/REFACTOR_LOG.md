@@ -2568,3 +2568,78 @@ Follow-up:
 
 - Commit R-127.
 - Consider a dedicated cleanup batch for unused context fields and dead Insights usage-stack helpers.
+
+## 2026-06-09: Phase 3 Gate - Frontend API And Shell Extraction
+
+State:
+
+- Passed With Known Risk.
+
+Scope completed:
+
+- Split broad frontend Tauri command wrappers from `src/api.ts` into `src/api/commands/*`.
+- Kept `src/api.ts` as a compatibility export surface for existing callers.
+- Extracted main-window locale, theme, navigation, and pure time helpers out of `src/App.vue`.
+- Added typed view context contracts for `HomeView.vue`, `InsightsView.vue`, and `GuardView.vue`.
+- Removed existing `ctx: any` usage from current feature view components.
+
+Scope intentionally not completed:
+
+- Did not remove all unused legacy `homeCtx` / `insightsCtx` fields because pruning them exposed dead usage-stack helpers that need a separate cleanup audit.
+- Did not extract feature state into full feature composables; that belongs to Phase 4.
+- Did not remove `src/api.ts` compatibility exports; they should stay until callers are fully stable or intentionally migrated.
+
+Files changed:
+
+- `src/api.ts`
+- `src/api/client.ts`
+- `src/api/types.ts`
+- `src/api/commands/*`
+- `src/App.vue`
+- `src/composables/useLocale.ts`
+- `src/composables/useThemeMode.ts`
+- `src/composables/useAppNavigation.ts`
+- `src/lib/time.ts`
+- `src/components/HomeView.vue`
+- `src/components/InsightsView.vue`
+- `src/components/GuardView.vue`
+- `src/components/viewContexts.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Commands affected:
+
+- None on the Tauri backend.
+- Frontend command wrapper organization changed, but command names and payload shapes were preserved.
+
+Schema/privacy/startup impact:
+
+- Database schema: none.
+- Privacy behavior: none expected.
+- Startup behavior: none expected; locale/theme init behavior was moved but intended to remain the same.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `rg -n "ctx:\s*any|defineProps<\{ ctx: any \}>|any" src/components src/composables src/lib src/api` returned no matches.
+- `git diff --stat fd1f132..HEAD -- src/App.vue src/api.ts src/api src/composables src/components src/lib docs/CURRENT_SYSTEM_MAP.md docs/REFACTOR_LOG.md` reviewed for Phase 3 scope.
+
+Manual smoke tests:
+
+- Not run in an interactive Tauri window during this gate.
+
+Known risks:
+
+- S-100 Main Window and S-200 Navigation still need manual smoke testing before considering this phase release-ready.
+- `dist-codex-check/` remains ignored locally after build validation.
+- Some unused context fields and dead Insights usage-stack helpers remain for a later cleanup batch.
+
+Rollback point:
+
+- Reset `refactor/architecture` to `fd1f132` to return to the Phase 2 gate.
+- Or revert individual Phase 3 commits from R-120 through R-127.
+
+Next phase:
+
+- Phase 4: feature extraction, starting with settings/privacy or reminders.
