@@ -8,6 +8,10 @@ import {
   type PrivacySettings,
   updatePrivacySettings,
 } from "../api";
+import {
+  defaultPrivacySettings,
+  normalizeWhitelistProcessName,
+} from "../lib/settingsPrivacy";
 
 type TranslateFn = (zh: string, en: string) => string;
 type FeedbackTone = "info" | "ok" | "warn" | "error";
@@ -17,14 +21,6 @@ type UseSettingsPrivacyOptions = {
   refreshData: () => Promise<void>;
   setErrorMessage: (error: unknown) => void;
 };
-
-function defaultPrivacySettings(): PrivacySettings {
-  return {
-    curtain_enabled: false,
-    browser_title_mode: "BLUR",
-    whitelist_only_enabled: false,
-  };
-}
 
 export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSettingsPrivacyOptions) {
   const loadingSettings = ref(false);
@@ -108,7 +104,7 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
   }
 
   async function handleAddWhitelist() {
-    const processName = whitelistInput.value.trim().toLowerCase();
+    const processName = normalizeWhitelistProcessName(whitelistInput.value);
     if (!processName) {
       return;
     }

@@ -11322,3 +11322,86 @@ Follow-up:
 
 - Commit R-236.
 - Continue with small frontend-helper batches that keep event and persistence behavior stable.
+
+## 2026-06-09: R-237 Settings Privacy Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Settings privacy
+- helper extraction
+
+Intent:
+
+- Move Settings privacy defaults and whitelist input normalization into a focused helper module.
+- Keep Tauri command calls, refresh cache state, feedback state, and persistence flow inside `useSettingsPrivacy.ts`.
+- Prepare Settings privacy code for later, more substantial separation without changing saved settings behavior.
+
+Files changed:
+
+- `src/composables/useSettingsPrivacy.ts`
+- `src/lib/settingsPrivacy.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useSettingsPrivacy.ts` | `settingsPrivacy.ts` | `defaultPrivacySettings` helper |
+| `useSettingsPrivacy.ts` | `settingsPrivacy.ts` | `normalizeWhitelistProcessName` helper |
+
+Behavior expected to stay the same:
+
+- Default privacy settings still start with curtain disabled, browser-title mode `BLUR`, and whitelist-only mode disabled.
+- Whitelist process input still uses `trim()` and `toLowerCase()` before saving.
+- Empty normalized whitelist input still returns early without calling the backend.
+- Auto-start, privacy-save, whitelist add/remove, feedback, refresh cache, and global refresh behavior remain in `useSettingsPrivacy.ts`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended; privacy setting values and whitelist normalization are unchanged.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Settings privacy helper extraction batch.
+
+Risks:
+
+- Settings UI save/add/remove flows were not manually smoke-tested; validation covered compile/build and direct code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move Settings privacy defaults and whitelist input normalization back into `useSettingsPrivacy.ts`.
+
+Follow-up:
+
+- Commit R-237.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.
