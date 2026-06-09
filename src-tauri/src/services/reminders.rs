@@ -4,7 +4,7 @@ use rusqlite::{params, Connection};
 use crate::domain::reminders::{
     ReminderEntry, SaveReminderInput, SetReminderDoneInput, SetReminderOrderInput,
 };
-use crate::{
+use super::time::{
     business_day_key_from_start, business_day_start_from_local, business_day_window_from_local,
 };
 

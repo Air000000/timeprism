@@ -3,20 +3,133 @@ use std::collections::{BTreeMap, HashMap};
 use chrono::Local;
 use rusqlite::{params, Connection};
 
-use crate::business_day_key_from_start;
-use crate::business_day_start_for_timestamp;
-use crate::business_day_window_from_local;
-use crate::compute_learn_seconds_for_window;
 use crate::db::migrations::ensure_heatmap_snapshot_table;
 use crate::domain::analytics::{
     LearnHeatmapCell, RecentLogEntry, TodaySummary, TopApp, UsageStackDay, UsageStackSegment,
 };
-use crate::merge_intervals_total;
-use crate::overlap_seconds;
-use crate::parse_i64_config;
-use crate::seal_historical_heatmap_snapshot;
+use super::time::{
+    business_day_key_from_start, business_day_start_for_timestamp,
+    business_day_window_from_local, merge_intervals_total, overlap_seconds,
+};
 
 const HEATMAP_LOCK_GOAL_SECONDS: i64 = 7200;
+
+fn parse_i64_config(conn: &Connection, key: &str, default_value: i64) -> i64 {
+    conn.query_row(
+        "SELECT value FROM app_config WHERE key = ?1",
+        [key],
+        |row| row.get::<_, String>(0),
+    )
+    .ok()
+    .and_then(|v| v.parse::<i64>().ok())
+    .unwrap_or(default_value)
+}
+
+fn compute_learn_seconds_for_window(conn: &Connection, start_ts: i64, end_ts: i64) -> Result<i64, String> {
+    let mut log_stmt = conn
+        .prepare(
+            "SELECT l.start_timestamp, l.duration_ms
+             FROM app_usage_logs l
+             LEFT JOIN app_rules r ON r.process_name = l.process_name
+             WHERE COALESCE(r.mapped_type, 'IGNORE') = 'LEARN'
+               AND l.start_timestamp < ?2
+               AND (l.start_timestamp + (l.duration_ms / 1000)) > ?1",
+        )
+        .map_err(|e| format!("failed to prepare learn-seconds log query: {e}"))?;
+
+    let log_rows = log_stmt
+        .query_map(params![start_ts, end_ts], |row| {
+            Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?.max(0)))
+        })
+        .map_err(|e| format!("failed to query learn-seconds log rows: {e}"))?;
+
+    let mut log_intervals = Vec::new();
+    for row in log_rows {
+        let (seg_start, duration_ms) =
+            row.map_err(|e| format!("failed to parse learn-seconds log row: {e}"))?;
+        let seg_end = seg_start + (duration_ms / 1000);
+        let clip_start = seg_start.max(start_ts);
+        let clip_end = seg_end.min(end_ts);
+        if clip_end > clip_start {
+            log_intervals.push((clip_start, clip_end));
+        }
+    }
+
+    let from_logs = merge_intervals_total(log_intervals).max(0);
+
+    if from_logs > 0 {
+        return Ok(from_logs);
+    }
+
+    let mut session_stmt = conn
+        .prepare(
+            "SELECT ts.start_time, COALESCE(ts.end_time, ?2)
+             FROM task_sessions ts
+             JOIN categories c ON c.id = ts.category_id
+             WHERE c.root_type = 'LEARN'
+               AND ts.start_time < ?2
+               AND COALESCE(ts.end_time, ?2) > ?1",
+        )
+        .map_err(|e| format!("failed to prepare learn-seconds session query: {e}"))?;
+
+    let session_rows = session_stmt
+        .query_map(params![start_ts, end_ts], |row| {
+            Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?))
+        })
+        .map_err(|e| format!("failed to query learn-seconds session rows: {e}"))?;
+
+    let mut session_intervals = Vec::new();
+    for row in session_rows {
+        let (seg_start, seg_end) =
+            row.map_err(|e| format!("failed to parse learn-seconds session row: {e}"))?;
+        let clip_start = seg_start.max(start_ts);
+        let clip_end = seg_end.min(end_ts);
+        if clip_end > clip_start {
+            session_intervals.push((clip_start, clip_end));
+        }
+    }
+
+    let from_sessions = merge_intervals_total(session_intervals).max(0);
+
+    Ok(from_sessions)
+}
+
+fn seal_historical_heatmap_snapshot(
+    conn: &Connection,
+    day_start_ts: i64,
+    goal_seconds: i64,
+) -> Result<(), String> {
+    let day_key = business_day_key_from_start(day_start_ts)?;
+    let exists = conn
+        .query_row(
+            "SELECT 1 FROM daily_heatmap_snapshot WHERE day_key = ?1 LIMIT 1",
+            [day_key.clone()],
+            |_row| Ok(true),
+        )
+        .unwrap_or(false);
+    if exists {
+        return Ok(());
+    }
+
+    let day_end_ts = day_start_ts + 86_400;
+    let learn_seconds = compute_learn_seconds_for_window(conn, day_start_ts, day_end_ts)?.max(0);
+    let level = if learn_seconds <= 0 {
+        "GRAY"
+    } else if learn_seconds < goal_seconds {
+        "YELLOW"
+    } else {
+        "GREEN"
+    };
+
+    conn.execute(
+        "INSERT OR IGNORE INTO daily_heatmap_snapshot (day_key, learn_seconds, goal_seconds, level, sealed_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![day_key, learn_seconds, goal_seconds, level, Local::now().timestamp()],
+    )
+    .map_err(|e| format!("failed to insert heatmap snapshot: {e}"))?;
+
+    Ok(())
+}
 
 pub(crate) fn list_recent_log_entries(
     conn: &Connection,

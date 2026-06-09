@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::process::Command;
 use std::sync::Mutex;
-use chrono::{Duration, Local, TimeZone};
+use chrono::Local;
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection};
 use tauri::{AppHandle, Emitter, Manager};
@@ -61,7 +61,6 @@ static DEVIATION_STATE: Lazy<Mutex<DeviationState>> = Lazy::new(|| Mutex::new(De
 static FOREGROUND_SAMPLE_STATE: Lazy<Mutex<ForegroundSampleState>> =
     Lazy::new(|| Mutex::new(ForegroundSampleState::default()));
 const IDLE_PROMPT_THRESHOLD_MS: i64 = 300_000;
-const BUSINESS_DAY_START_HOUR: i64 = 4;
 #[cfg(target_os = "windows")]
 const WINDOWS_RUN_REGISTRY_PATH: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
 #[cfg(target_os = "windows")]
@@ -101,147 +100,6 @@ fn push_foreground_diagnostic(entry: ForegroundCaptureDiagnostic) -> Result<(), 
         state.diagnostics.drain(0..drop_count);
     }
     Ok(())
-}
-
-pub(crate) fn business_day_start_from_local(now: chrono::DateTime<Local>) -> Result<i64, String> {
-    let shifted = now - Duration::hours(BUSINESS_DAY_START_HOUR);
-    let start_naive = shifted
-        .date_naive()
-        .and_hms_opt(BUSINESS_DAY_START_HOUR as u32, 0, 0)
-        .ok_or_else(|| "failed to build business day start".to_string())?;
-    let start_local = Local
-        .from_local_datetime(&start_naive)
-        .single()
-        .ok_or_else(|| "failed to convert business day start to local timestamp".to_string())?;
-    Ok(start_local.timestamp())
-}
-
-pub(crate) fn business_day_window_from_local(now: chrono::DateTime<Local>) -> Result<(i64, i64), String> {
-    let start = business_day_start_from_local(now)?;
-    Ok((start, start + 86_400))
-}
-
-pub(crate) fn business_day_start_for_timestamp(ts: i64) -> Result<i64, String> {
-    let local_dt = Local
-        .timestamp_opt(ts, 0)
-        .single()
-        .ok_or_else(|| "failed to convert timestamp to local datetime".to_string())?;
-    business_day_start_from_local(local_dt)
-}
-
-pub(crate) fn business_day_key_from_start(start_ts: i64) -> Result<String, String> {
-    let local_dt = Local
-        .timestamp_opt(start_ts, 0)
-        .single()
-        .ok_or_else(|| "failed to convert business day start to local datetime".to_string())?;
-    Ok(local_dt.format("%Y-%m-%d").to_string())
-}
-
-pub(crate) fn overlap_seconds(seg_start: i64, seg_end: i64, window_start: i64, window_end: i64) -> i64 {
-    let start = seg_start.max(window_start);
-    let end = seg_end.min(window_end);
-    (end - start).max(0)
-}
-
-pub(crate) fn merge_intervals_total(mut intervals: Vec<(i64, i64)>) -> i64 {
-    if intervals.is_empty() {
-        return 0;
-    }
-
-    intervals.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
-
-    let mut total = 0_i64;
-    let mut current = intervals[0];
-    for (start, end) in intervals.into_iter().skip(1) {
-        if start <= current.1 {
-            current.1 = current.1.max(end);
-        } else {
-            total += (current.1 - current.0).max(0);
-            current = (start, end);
-        }
-    }
-
-    total + (current.1 - current.0).max(0)
-}
-
-pub(crate) fn parse_i64_config(conn: &Connection, key: &str, default_value: i64) -> i64 {
-    conn.query_row(
-        "SELECT value FROM app_config WHERE key = ?1",
-        [key],
-        |row| row.get::<_, String>(0),
-    )
-    .ok()
-    .and_then(|v| v.parse::<i64>().ok())
-    .unwrap_or(default_value)
-}
-
-pub(crate) fn compute_learn_seconds_for_window(conn: &Connection, start_ts: i64, end_ts: i64) -> Result<i64, String> {
-    let mut log_stmt = conn
-        .prepare(
-            "SELECT l.start_timestamp, l.duration_ms
-             FROM app_usage_logs l
-             LEFT JOIN app_rules r ON r.process_name = l.process_name
-             WHERE COALESCE(r.mapped_type, 'IGNORE') = 'LEARN'
-               AND l.start_timestamp < ?2
-               AND (l.start_timestamp + (l.duration_ms / 1000)) > ?1",
-        )
-        .map_err(|e| format!("failed to prepare learn-seconds log query: {e}"))?;
-
-    let log_rows = log_stmt
-        .query_map(params![start_ts, end_ts], |row| {
-            Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?.max(0)))
-        })
-        .map_err(|e| format!("failed to query learn-seconds log rows: {e}"))?;
-
-    let mut log_intervals = Vec::new();
-    for row in log_rows {
-        let (seg_start, duration_ms) =
-            row.map_err(|e| format!("failed to parse learn-seconds log row: {e}"))?;
-        let seg_end = seg_start + (duration_ms / 1000);
-        let clip_start = seg_start.max(start_ts);
-        let clip_end = seg_end.min(end_ts);
-        if clip_end > clip_start {
-            log_intervals.push((clip_start, clip_end));
-        }
-    }
-
-    let from_logs = merge_intervals_total(log_intervals).max(0);
-
-    if from_logs > 0 {
-        return Ok(from_logs);
-    }
-
-    let mut session_stmt = conn
-        .prepare(
-            "SELECT ts.start_time, COALESCE(ts.end_time, ?2)
-             FROM task_sessions ts
-             JOIN categories c ON c.id = ts.category_id
-             WHERE c.root_type = 'LEARN'
-               AND ts.start_time < ?2
-               AND COALESCE(ts.end_time, ?2) > ?1",
-        )
-        .map_err(|e| format!("failed to prepare learn-seconds session query: {e}"))?;
-
-    let session_rows = session_stmt
-        .query_map(params![start_ts, end_ts], |row| {
-            Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?))
-        })
-        .map_err(|e| format!("failed to query learn-seconds session rows: {e}"))?;
-
-    let mut session_intervals = Vec::new();
-    for row in session_rows {
-        let (seg_start, seg_end) =
-            row.map_err(|e| format!("failed to parse learn-seconds session row: {e}"))?;
-        let clip_start = seg_start.max(start_ts);
-        let clip_end = seg_end.min(end_ts);
-        if clip_end > clip_start {
-            session_intervals.push((clip_start, clip_end));
-        }
-    }
-
-    let from_sessions = merge_intervals_total(session_intervals).max(0);
-
-    Ok(from_sessions)
 }
 
 #[cfg(target_os = "windows")]
@@ -304,43 +162,6 @@ fn set_auto_start_enabled_internal(enabled: bool) -> Result<bool, String> {
 #[cfg(not(target_os = "windows"))]
 fn set_auto_start_enabled_internal(_enabled: bool) -> Result<bool, String> {
     Ok(false)
-}
-
-pub(crate) fn seal_historical_heatmap_snapshot(
-    conn: &Connection,
-    day_start_ts: i64,
-    goal_seconds: i64,
-) -> Result<(), String> {
-    let day_key = business_day_key_from_start(day_start_ts)?;
-    let exists = conn
-        .query_row(
-            "SELECT 1 FROM daily_heatmap_snapshot WHERE day_key = ?1 LIMIT 1",
-            [day_key.clone()],
-            |_row| Ok(true),
-        )
-        .unwrap_or(false);
-    if exists {
-        return Ok(());
-    }
-
-    let day_end_ts = day_start_ts + 86_400;
-    let learn_seconds = compute_learn_seconds_for_window(conn, day_start_ts, day_end_ts)?.max(0);
-    let level = if learn_seconds <= 0 {
-        "GRAY"
-    } else if learn_seconds < goal_seconds {
-        "YELLOW"
-    } else {
-        "GREEN"
-    };
-
-    conn.execute(
-        "INSERT OR IGNORE INTO daily_heatmap_snapshot (day_key, learn_seconds, goal_seconds, level, sealed_at)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![day_key, learn_seconds, goal_seconds, level, Local::now().timestamp()],
-    )
-    .map_err(|e| format!("failed to insert heatmap snapshot: {e}"))?;
-
-    Ok(())
 }
 
 #[cfg(target_os = "windows")]

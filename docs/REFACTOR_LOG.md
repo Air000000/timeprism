@@ -974,3 +974,95 @@ Follow-up:
 
 - Commit R-109.
 - Continue Phase 2 with foreground/capture service extraction or shared time helper cleanup.
+
+## 2026-06-09: R-110 Shared Time Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend shared services
+- analytics
+- reminders
+
+Intent:
+
+- Move business-day and interval helper functions out of `src-tauri/src/lib.rs`.
+- Keep analytics-specific heatmap helper functions private to `services::analytics`.
+- Preserve command names, payloads, SQL behavior, reminder day-key behavior, and heatmap bucketing.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/time.rs`
+- `src-tauri/src/services/analytics.rs`
+- `src-tauri/src/services/reminders.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `src-tauri/src/lib.rs::business_day_start_from_local` | `src-tauri/src/services/time.rs::business_day_start_from_local` | Same 04:00 business-day boundary |
+| `src-tauri/src/lib.rs::business_day_window_from_local` | `src-tauri/src/services/time.rs::business_day_window_from_local` | Same 86,400-second window |
+| `src-tauri/src/lib.rs::business_day_start_for_timestamp` | `src-tauri/src/services/time.rs::business_day_start_for_timestamp` | Used by analytics bucketing |
+| `src-tauri/src/lib.rs::business_day_key_from_start` | `src-tauri/src/services/time.rs::business_day_key_from_start` | Used by analytics and reminders |
+| `src-tauri/src/lib.rs::overlap_seconds` | `src-tauri/src/services/time.rs::overlap_seconds` | Shared interval clipping helper |
+| `src-tauri/src/lib.rs::merge_intervals_total` | `src-tauri/src/services/time.rs::merge_intervals_total` | Shared interval total helper |
+| `src-tauri/src/lib.rs::parse_i64_config` | `src-tauri/src/services/analytics.rs::parse_i64_config` | Currently only needed by heatmap settings |
+| `src-tauri/src/lib.rs::compute_learn_seconds_for_window` | `src-tauri/src/services/analytics.rs::compute_learn_seconds_for_window` | Kept private to analytics |
+| `src-tauri/src/lib.rs::seal_historical_heatmap_snapshot` | `src-tauri/src/services/analytics.rs::seal_historical_heatmap_snapshot` | Kept private to analytics |
+
+Behavior expected to stay the same:
+
+- Business days still start at local 04:00.
+- Heatmap and usage-stack windows still use the same local business-day timestamps.
+- Reminder completion day keys still use the same business-day key helper.
+- Interval merging and overlap calculations are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None directly. Existing command shells continue to call service functions with unchanged names and payloads.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 17 tests passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Time helpers still depend on `chrono::Local`, so business-day behavior is tied to the host local timezone as before.
+- Day length remains hard-coded to 86,400 seconds; this preserves current behavior but does not model daylight-saving-time day length changes.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-109 commit.
+
+Follow-up:
+
+- Commit R-110.
+- Continue Phase 2 with foreground/capture extraction or command-shell thinning.
