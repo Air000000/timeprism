@@ -31,7 +31,7 @@ Important sibling folders in the larger workspace:
 
 ## Key Files
 
-- `src/App.vue`: main app state, view routing, data orchestration, template, and large CSS block.
+- `src/App.vue`: main app shell, global lifecycle/refresh routing, view context assembly, and top-level template.
 - `src/api.ts`: compatibility API surface that keeps existing frontend imports stable.
 - `src/api/client.ts`: thin typed wrapper around Tauri `invoke`.
 - `src/api/types.ts`: shared frontend API response/input-adjacent types.
@@ -57,6 +57,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useSettingsPrivacy.ts`: settings/privacy state, auto-start loading/saving, whitelist actions, and settings refresh cache.
 - `src/composables/useThemeMode.ts`: main-window theme state, body theme attribute sync, system preference fallback, and localStorage persistence.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
+- `src/styles/app.css`: global main-window CSS previously embedded in `src/App.vue`.
 - `src/pet.ts`: pet UI, prompt bubble, quick actions, context menu.
 - `src/pet-panel.ts`: mini heatmap and weekly activity panel.
 - `src-tauri/src/lib.rs`: Tauri command shells, app setup, command registration, and global shortcut wiring.
@@ -122,7 +123,7 @@ Pet panel:
 
 ## Known Architecture Debt
 
-- `src/App.vue` is too broad and owns too many feature concerns.
+- `src/App.vue` still owns global lifecycle/refresh orchestration and context assembly.
 - `src-tauri/src/lib.rs` is too broad and mixes unrelated layers.
 - Feature views now consume typed context contracts, but `src/App.vue` still assembles broad feature contexts and owns too much orchestration.
 - Backend SQL, migrations, services, and commands are not separated.

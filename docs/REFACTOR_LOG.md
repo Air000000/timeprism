@@ -3979,3 +3979,85 @@ Follow-up:
 
 - Commit R-143.
 - Continue with either manual smoke tests or the next small refactor batch.
+
+## 2026-06-09: R-144 App Global CSS Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend cleanup
+- styling
+
+Intent:
+
+- Move the global main-window CSS out of `src/App.vue`.
+- Reduce `App.vue` noise without changing selectors or style rules.
+
+Files changed:
+
+- `src/App.vue`
+- `src/main.ts`
+- `src/styles/app.css`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Final `<style>` block in `src/App.vue` | `src/styles/app.css` | Mechanical move, style content preserved |
+| CSS loading responsibility | `src/main.ts` import | App entry now imports `./styles/app.css` |
+
+Behavior expected to stay the same:
+
+- Main-window global styles should be applied in the same way through Vite's CSS import pipeline.
+- Component templates and script logic are unchanged.
+- Pet and pet-panel entry styles are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `src/App.vue` line count dropped from 3305 to 590 after moving 2712 CSS lines.
+
+Manual smoke tests:
+
+- Not run for this CSS extraction batch.
+
+Risks:
+
+- Visual parity was validated by build only, not by screenshot or interactive smoke testing.
+- Because the CSS is global, future style edits should still be treated as application-wide changes.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-143.
+
+Follow-up:
+
+- Commit R-144.
+- Consider screenshot/manual smoke checks before larger visual or layout refactors.
