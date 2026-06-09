@@ -75,6 +75,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/locale.ts`: shared locale code, storage key, browser fallback detection, and locale-specific text selection helpers.
 - `src/lib/petCharacter.ts`: pet character image paths, legacy path normalization, and localStorage persistence helpers.
 - `src/lib/petDock.ts`: pure pet-window dock state types, dock-edge mapping, and settle-state conversion helpers.
+- `src/lib/petDom.ts`: pet-window initial shell template rendering and required DOM element lookup helpers.
 - `src/lib/petPanelMetrics.ts`: pure pet-panel heatmap sizing/fetch-window and usage-stack day selection helpers.
 - `src/lib/petPrompts.ts`: pet prompt DTO types plus pure snooze pruning, availability filtering, and active prompt selection helpers.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.

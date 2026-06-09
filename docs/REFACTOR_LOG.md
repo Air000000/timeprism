@@ -6579,3 +6579,84 @@ Follow-up:
 
 - Commit R-176.
 - Continue with small, reversible extraction batches or run interactive pet/panel smoke tests before touching drag, dock, prompt DOM, or Tauri window event flow.
+
+## 2026-06-09: R-177 Pet DOM Shell Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet window
+- DOM shell
+
+Intent:
+
+- Move pet-window initial HTML template rendering and required element lookup out of `src/pet.ts`.
+- Keep event binding, refresh, prompt behavior, character application, and window behavior in `src/pet.ts`.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petDom.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| pet shell `innerHTML` template | `renderPetShell` | Same shell, portrait, counters, and prompt bubble markup |
+| pet control DOM queries | `queryPetElements` | Same selectors and same `pet controls not found` error |
+
+Behavior expected to stay the same:
+
+- Pet root lookup still throws `pet app root not found` from `src/pet.ts` if the root is missing.
+- Pet initial markup, IDs, classes, default counter text, and translated labels remain unchanged.
+- Pet behavior code still receives the same mood, counter, token, character, drag, shell, and prompt bubble elements.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same DOM is rendered and queried once during pet startup.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this pet DOM shell extraction batch.
+
+Risks:
+
+- Pet startup DOM behavior was validated by typecheck/build only, not by opening the pet window and inspecting the rendered shell.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-176.
+
+Follow-up:
+
+- Commit R-177.
+- Continue with small pet prompt rendering or summary helper extractions, or run interactive pet smoke testing before touching drag/window behavior.

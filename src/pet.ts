@@ -17,6 +17,7 @@ import {
 	type PetDockState,
 	type PetWindowSettleResult,
 } from "./lib/petDock";
+import { queryPetElements, renderPetShell } from "./lib/petDom";
 import {
 	PET_CHARACTER_DEFAULT_SRC,
 	PET_CHARACTER_DOCKED_LEFT_SRC,
@@ -72,63 +73,18 @@ if (!app) {
 	throw new Error("pet app root not found");
 }
 
-app.innerHTML = `
-	<section class="pet-shell">
-		<div id="petMood" class="pet-hidden-mood">${tx("自动记录中", "Auto tracking")}</div>
-
-		<div class="pet-body">
-			<div class="pet-main">
-				<div id="petDragArea" class="pet-portrait-wrap">
-					<img id="petCharacterImage" class="pet-portrait" src="${PET_CHARACTER_PRIMARY_SRC}" alt="${tx("TimePrism 桌宠角色", "TimePrism Pet Character")}" />
-				</div>
-				<div class="today-lines">
-					<div class="line-row single-row">
-						<span id="learnToken" class="line-label">${tx("学", "L")}</span>
-						<strong id="learnValue" class="line-value">00:00:00</strong>
-						<span id="restToken" class="line-label">${tx("休", "B")}</span>
-						<strong id="restValue" class="line-value">00:00:00</strong>
-					</div>
-				</div>
-			</div>
-
-		</div>
-	</section>
-	<section id="petPromptBubble" class="pet-prompt-bubble"></section>
-`;
-
-const moodEl = document.querySelector<HTMLDivElement>("#petMood");
-const learnEl = document.querySelector<HTMLDivElement>("#learnValue");
-const restEl = document.querySelector<HTMLDivElement>("#restValue");
-const learnTokenEl = document.querySelector<HTMLSpanElement>("#learnToken");
-const restTokenEl = document.querySelector<HTMLSpanElement>("#restToken");
-const petCharacterImage = document.querySelector<HTMLImageElement>("#petCharacterImage");
-const petDragAreaEl = document.querySelector<HTMLElement>("#petDragArea");
-const petShell = document.querySelector<HTMLElement>(".pet-shell");
-const promptBubbleEl = document.querySelector<HTMLElement>("#petPromptBubble");
-
-if (
-	!moodEl
-	|| !learnEl
-	|| !restEl
-	|| !learnTokenEl
-	|| !restTokenEl
-	|| !petCharacterImage
-	|| !petDragAreaEl
-	|| !petShell
-	|| !promptBubbleEl
-) {
-	throw new Error("pet controls not found");
-}
-
-const mood = moodEl;
-const learn = learnEl;
-const rest = restEl;
-const learnToken = learnTokenEl;
-const restToken = restTokenEl;
-const characterImage = petCharacterImage;
-const dragArea = petDragAreaEl;
-const shell = petShell;
-const promptBubble = promptBubbleEl;
+renderPetShell(app, tx, PET_CHARACTER_PRIMARY_SRC);
+const {
+	mood,
+	learn,
+	rest,
+	learnToken,
+	restToken,
+	characterImage,
+	dragArea,
+	shell,
+	promptBubble,
+} = queryPetElements();
 
 function applyLocalizedStaticText() {
 	learnToken.textContent = tx("学", "L");
