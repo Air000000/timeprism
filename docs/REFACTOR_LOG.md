@@ -8319,3 +8319,88 @@ Follow-up:
 
 - Commit R-198.
 - Continue with small Home view extractions, preferably reminder modal state/actions next.
+
+## 2026-06-09: R-199 Home Reminder Panel Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Home view
+- reminder workflow
+
+Intent:
+
+- Move Home reminder modal state, quick reminder actions, weekday chip state, feedback, and drag/drop reorder logic out of `src/components/HomeView.vue`.
+- Keep Home template markup and Home view context API unchanged.
+
+Files changed:
+
+- `src/components/HomeView.vue`
+- `src/composables/useHomeReminderPanel.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| reminder modal draft refs | `useHomeReminderPanel` | Same defaults for repeat, enabled state, time, and weekdays |
+| reminder create/update/delete/done/snooze actions | `useHomeReminderPanel` | Same context handlers, feedback tone, and feedback text |
+| weekly weekday options and toggle logic | `useHomeReminderPanel` | Same day labels and sorted selected days |
+| reminder drag/drop reorder state and ordering logic | `useHomeReminderPanel` | Same done/undone grouping and ordered id calculation |
+
+Behavior expected to stay the same:
+
+- Home schedule modal still creates, edits, resets, and saves reminders through the same `ctx` handlers.
+- Quick reminder done, snooze, edit, and delete actions still set the same feedback text and tones.
+- Weekly-day chips still toggle selected weekdays with the same default weekday set.
+- Reminder drag/drop reorder still only reorders within the same done/undone group and sends the same ordered id list.
+- `src/components/HomeView.vue` still owns the visual template and receives the same `HomeViewContext`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same refs and handlers are created through a composable instead of inline setup code.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home reminder panel composable extraction batch.
+
+Risks:
+
+- Reminder modal and drag/drop behavior were validated by typecheck/build only, not by manually creating, editing, or reordering reminders.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-198.
+
+Follow-up:
+
+- Commit R-199.
+- Continue with small component/template extractions or record detailed Home view smoke results.

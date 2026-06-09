@@ -54,6 +54,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHeatmapGoalSetting.ts`: heatmap goal slider state, saved goal loading, 15-minute normalization, debounced persistence, and timer cleanup.
 - `src/composables/useHomeData.ts`: Home data refresh orchestration for summary, logs, heatmap, pending work, reminders, and rhythm stack.
 - `src/composables/useHomeOverview.ts`: Home summary state, goal progress, recent activity summary, pending counts, and status labels.
+- `src/composables/useHomeReminderPanel.ts`: Home reminder modal draft state, feedback, quick actions, weekly-day chips, and drag/drop reorder handling.
 - `src/composables/useHomeRhythm.ts`: Home seven-day rhythm bar derivation from usage-stack data.
 - `src/composables/useHomeRhythmTooltip.ts`: Home rhythm summary text, compact duration formatting, and hover-tooltip state/placement.
 - `src/composables/useHomeSchedule.ts`: Home reminder visibility filtering and due-text presentation.
