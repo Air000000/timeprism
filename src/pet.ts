@@ -3,11 +3,17 @@ import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { Menu } from "@tauri-apps/api/menu";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
 import { getTodaySummary, type TodaySummary } from "./api";
+import {
+	LOCALE_STORAGE_KEY,
+	getStoredOrBrowserLocale,
+	translateForLocale,
+	type LocaleCode,
+} from "./lib/locale";
+import { formatSeconds } from "./lib/time";
 import "./pet.css";
 
 const petWindow = getCurrentWindow();
 const EDGE_SNAP_THRESHOLD = 72;
-const LOCALE_STORAGE_KEY = "timeprism-locale";
 const PET_CHARACTER_STORAGE_KEY = "timeprism.pet.character";
 const PET_CHARACTER_PRIMARY_SRC = "/慕沛灵Q版桌宠形象.png";
 const PET_CHARACTER_LEGACY_PRIMARY_SRC = "/pet-character.png";
@@ -15,23 +21,12 @@ const PET_CHARACTER_DEFAULT_SRC = "/pet-character-default.svg";
 const PET_CHARACTER_DOCKED_LEFT_SRC = "/左侧.png";
 const PET_CHARACTER_DOCKED_RIGHT_SRC = "/右侧.png";
 
-type LocaleCode = "zh-CN" | "en-US";
-
 function getLocale(): LocaleCode {
-	try {
-		const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-		if (stored === "zh-CN" || stored === "en-US") {
-			return stored;
-		}
-	} catch {
-		// Ignore storage read failures.
-	}
-	const browserLang = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "zh-cn";
-	return browserLang.startsWith("zh") ? "zh-CN" : "en-US";
+	return getStoredOrBrowserLocale();
 }
 
 function tx(zh: string, en: string): string {
-	return getLocale() === "zh-CN" ? zh : en;
+	return translateForLocale(getLocale(), zh, en);
 }
 
 function cleanPetProcessName(name: string): string {
@@ -62,20 +57,6 @@ let moodResetTimer: number | null = null;
 let dragPointerId: number | null = null;
 let snapRetryTimer: number | null = null;
 let currentPanelMode: "summary" | "heatmap" | "stack" = "summary";
-
-function formatSeconds(totalSeconds: number): string {
-	const safe = Math.max(0, Math.floor(totalSeconds));
-	const h = Math.floor(safe / 3600)
-		.toString()
-		.padStart(2, "0");
-	const m = Math.floor((safe % 3600) / 60)
-		.toString()
-		.padStart(2, "0");
-	const s = Math.floor(safe % 60)
-		.toString()
-		.padStart(2, "0");
-	return `${h}:${m}:${s}`;
-}
 
 const app = document.querySelector<HTMLDivElement>("#pet-app");
 if (!app) {

@@ -1,12 +1,18 @@
 import { ref, watch } from "vue";
+import {
+  getStoredOrBrowserLocale,
+  isLocaleCode,
+  LOCALE_STORAGE_KEY,
+  translateForLocale,
+  type LocaleCode,
+} from "../lib/locale";
 
-export type LocaleCode = "zh-CN" | "en-US";
+export type { LocaleCode } from "../lib/locale";
 
-const LOCALE_STORAGE_KEY = "timeprism-locale";
 const locale = ref<LocaleCode>("zh-CN");
 
 function tx(zh: string, en: string): string {
-  return locale.value === "zh-CN" ? zh : en;
+  return translateForLocale(locale.value, zh, en);
 }
 
 function applyLocale(next: LocaleCode) {
@@ -22,18 +28,7 @@ function applyLocale(next: LocaleCode) {
 }
 
 function initLocale() {
-  try {
-    const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-    if (stored === "zh-CN" || stored === "en-US") {
-      applyLocale(stored);
-      return;
-    }
-  } catch {
-    // Ignore read errors and continue with system preference.
-  }
-
-  const browserLang = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "zh-cn";
-  applyLocale(browserLang.startsWith("zh") ? "zh-CN" : "en-US");
+  applyLocale(getStoredOrBrowserLocale());
 }
 
 function watchLocaleChanges() {
@@ -47,7 +42,7 @@ function watchLocaleChanges() {
 
 function onLocaleChange(event: Event) {
   const input = event.target as HTMLSelectElement;
-  if (input.value === "zh-CN" || input.value === "en-US") {
+  if (isLocaleCode(input.value)) {
     locale.value = input.value;
   }
 }

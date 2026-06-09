@@ -1,26 +1,16 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getLearnHeatmap, getUsageStack, type LearnHeatmapCell, type UsageStackDay } from "./api";
+import { getStoredOrBrowserLocale, translateForLocale, type LocaleCode } from "./lib/locale";
+import { formatSeconds } from "./lib/time";
 import "./pet-panel.css";
 
-const LOCALE_STORAGE_KEY = "timeprism-locale";
-type LocaleCode = "zh-CN" | "en-US";
-
 function getLocale(): LocaleCode {
-  try {
-    const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-    if (stored === "zh-CN" || stored === "en-US") {
-      return stored;
-    }
-  } catch {
-    // Ignore storage read failures.
-  }
-  const browserLang = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "zh-cn";
-  return browserLang.startsWith("zh") ? "zh-CN" : "en-US";
+  return getStoredOrBrowserLocale();
 }
 
 function tx(zh: string, en: string): string {
-  return getLocale() === "zh-CN" ? zh : en;
+  return translateForLocale(getLocale(), zh, en);
 }
 
 const root = document.querySelector<HTMLDivElement>("#pet-panel-app");
@@ -70,14 +60,6 @@ let timer: number | null = null;
 let lastStackSig = "";
 let active = true;
 const viewMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-
-function formatSeconds(totalSeconds: number): string {
-  const safe = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.floor(safe / 3600).toString().padStart(2, "0");
-  const m = Math.floor((safe % 3600) / 60).toString().padStart(2, "0");
-  const s = Math.floor(safe % 60).toString().padStart(2, "0");
-  return `${h}:${m}:${s}`;
-}
 
 function heatCellClass(level: LearnHeatmapCell["level"]): string {
   if (level === "GREEN") return "green";

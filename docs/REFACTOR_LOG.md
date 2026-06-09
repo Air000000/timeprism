@@ -6088,3 +6088,89 @@ Follow-up:
 
 - Commit R-170.
 - Continue only with small, reversible extraction batches unless an interactive main-window smoke pass is run first.
+
+## 2026-06-09: R-171 Shared Locale And Time Helper Reuse For Pet Entries
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shared helpers
+- pet window
+- pet panel
+- main-window locale
+
+Intent:
+
+- Remove duplicated locale storage/browser fallback logic from `src/pet.ts`, `src/pet-panel.ts`, and `src/composables/useLocale.ts`.
+- Reuse the existing shared `formatSeconds` helper in pet and pet-panel entries.
+
+Files changed:
+
+- `src/composables/useLocale.ts`
+- `src/lib/locale.ts`
+- `src/pet.ts`
+- `src/pet-panel.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| locale code/storage key/browser fallback helpers | `src/lib/locale.ts` | Same `timeprism-locale` key and same zh/en browser fallback |
+| direct zh/en text selection | `translateForLocale` | Reused by main window, pet, and pet panel |
+| duplicate pet/panel `formatSeconds` implementations | `src/lib/time.ts` | Existing shared `HH:MM:SS` behavior reused |
+
+Behavior expected to stay the same:
+
+- Main window, pet window, and pet panel still read `timeprism-locale`.
+- Locale fallback still chooses Chinese for browser languages starting with `zh`, otherwise English.
+- Pet and pet-panel duration labels still use the same `HH:MM:SS` formatting.
+- Existing imports of `LocaleCode` from `useLocale` remain compatible through a type re-export.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; helper calls perform the same localStorage/browser checks as before.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this shared-helper extraction batch.
+
+Risks:
+
+- Pet and pet-panel locale behavior was validated by typecheck/build only, not by opening those windows and changing language interactively.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-170.
+
+Follow-up:
+
+- Commit R-171.
+- Continue pet/panel extraction in small slices, preferably separating pure helpers from window/DOM behavior.
