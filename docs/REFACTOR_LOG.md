@@ -7130,3 +7130,73 @@ Follow-up:
 
 - Commit R-183.
 - Recommended next: run interactive S-100/S-300/S-500 plus pet/panel smoke checks, or continue only with very small pure/render-helper extractions.
+
+## 2026-06-09: R-184 User Confirmation Checkpoint After Smoke-Test Instructions
+
+Status:
+
+- Passed as a user-confirmed checkpoint.
+
+Primary domain:
+
+- validation checkpoint
+- manual smoke-test handoff
+
+Intent:
+
+- Record that the user confirmed there was no problem after being given the correct project directory and smoke-test command flow.
+- Avoid overstating this as agent-performed interactive validation; the agent did not directly click through the UI in this checkpoint.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+- None; this is a docs-only validation checkpoint.
+
+Behavior expected to stay the same:
+
+- No behavior changed in this checkpoint.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `git status --short --branch` showed a clean `refactor/architecture` worktree before this docs-only entry.
+
+Manual smoke tests:
+
+- User reported no problem after receiving the corrected `timeprism` directory workflow and smoke-test instructions.
+- Agent did not independently perform UI click-through validation in this checkpoint.
+
+Risks:
+
+- The exact scope of the user's smoke pass is not captured item-by-item, so S-100 through S-800 should still be run and recorded explicitly before release/merge readiness.
+
+Rollback:
+
+- Revert this docs-only checkpoint commit if the checkpoint note is not wanted.
+
+Follow-up:
+
+- Commit R-184.
+- Continue only with small, reversible batches until a detailed smoke checklist result is recorded.
