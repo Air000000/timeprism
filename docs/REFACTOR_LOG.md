@@ -6017,3 +6017,74 @@ Follow-up:
 
 - Commit R-169.
 - Run an interactive main-window smoke pass before making broader wiring changes, especially around write-triggered refresh paths.
+
+## 2026-06-09: R-170 Cross-Stack Checkpoint After Main Shell Refresh Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- validation checkpoint
+- frontend shell
+- Tauri backend compile check
+
+Intent:
+
+- Record a clean checkpoint after R-168 and R-169 moved main-window navigation and global refresh orchestration out of `src/App.vue`.
+- Confirm the Rust/Tauri side still compiles before continuing with deeper shell or feature extraction.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+- None; this is a docs-only validation checkpoint.
+
+Behavior expected to stay the same:
+
+- No behavior changed in this checkpoint.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `git status --short --branch` showed a clean `refactor/architecture` worktree before this docs-only entry.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace interactive S-100/S-300/S-500/S-600 smoke testing; it only confirms backend compilation after the recent frontend shell refactors.
+
+Rollback:
+
+- Revert this docs-only checkpoint commit if the checkpoint note is not wanted.
+
+Follow-up:
+
+- Commit R-170.
+- Continue only with small, reversible extraction batches unless an interactive main-window smoke pass is run first.
