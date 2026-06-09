@@ -7,4 +7,5 @@ pub mod rules;
 pub mod sessions;
 pub mod startup;
 pub mod time;
+pub mod usage;
 pub mod window;

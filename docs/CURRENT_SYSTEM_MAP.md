@@ -54,6 +54,7 @@ Important sibling folders in the larger workspace:
 - `src-tauri/src/services/sessions.rs`: legacy/manual task-session start, stop, and active-root lookup SQL.
 - `src-tauri/src/services/startup.rs`: Windows startup registry query/update wrappers plus non-Windows fallbacks.
 - `src-tauri/src/services/time.rs`: business-day timestamp/key helpers plus shared interval overlap and merge helpers.
+- `src-tauri/src/services/usage.rs`: app usage log append/merge behavior, privacy-filtered log persistence, and idle-decision persistence.
 - `src-tauri/src/services/window.rs`: main, pet, and pet-panel window creation, positioning, visibility, dragging, and settle behavior.
 - `src-tauri/tauri.conf.json`: app and window configuration.
 

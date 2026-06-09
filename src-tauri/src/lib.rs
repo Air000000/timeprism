@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use chrono::Local;
 use once_cell::sync::Lazy;
-use rusqlite::{params, Connection};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -31,19 +30,18 @@ use services::analytics::{
 };
 use services::categories::{create_category_entry, list_category_entries};
 use services::foreground::{capture_foreground_window, current_idle_millis};
-use services::privacy::{
-    normalize_process_key, parse_bool_config, parse_browser_title_mode, process_log_with_privacy,
-};
+use services::privacy::{normalize_process_key, parse_bool_config, parse_browser_title_mode};
 use services::reminders::{
     delete_reminder_entry, list_due_reminder_entries, list_reminder_entries, save_reminder_entry,
     set_reminder_done_entry, set_reminder_order_entries, snooze_reminder_entry,
 };
 use services::rules::{
     list_app_rule_entries, list_pending_rule_process_entries, resolve_rule_mapping,
-    save_app_rule_entry, upsert_app_rule_entry,
+    save_app_rule_entry,
 };
 use services::sessions::{active_root_type, start_session_entry, stop_active_session_entry};
 use services::startup::{get_auto_start_enabled_state, set_auto_start_enabled_state};
+use services::usage::{append_usage_log_record, persist_idle_prompt_decision};
 use services::window as window_service;
 
 static DEVIATION_STATE: Lazy<Mutex<DeviationState>> = Lazy::new(|| Mutex::new(DeviationState::default()));
@@ -85,106 +83,6 @@ fn push_foreground_diagnostic(entry: ForegroundCaptureDiagnostic) -> Result<(), 
         state.diagnostics.drain(0..drop_count);
     }
     Ok(())
-}
-
-fn append_usage_log_direct(
-    conn: &Connection,
-    process_name: &str,
-    window_title: &str,
-    start_timestamp: i64,
-    duration_ms: i64,
-) -> Result<bool, String> {
-    let span = duration_ms.max(0);
-
-    let last_row = conn
-        .query_row(
-            "SELECT id, process_name, window_title, start_timestamp, duration_ms
-             FROM app_usage_logs
-             ORDER BY id DESC
-             LIMIT 1",
-            [],
-            |row| {
-                Ok((
-                    row.get::<_, i64>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, i64>(3)?,
-                    row.get::<_, i64>(4)?,
-                ))
-            },
-        )
-        .ok();
-
-    if let Some((last_id, last_process, last_title, last_start, last_duration_ms)) = last_row {
-        let last_end = last_start + (last_duration_ms.max(0) / 1000);
-        let is_same_signature = last_process == process_name && last_title == window_title;
-        let is_contiguous = start_timestamp >= last_start && start_timestamp <= last_end + 2;
-
-        if is_same_signature && is_contiguous {
-            conn.execute(
-                "UPDATE app_usage_logs
-                 SET duration_ms = duration_ms + ?1
-                 WHERE id = ?2",
-                params![span, last_id],
-            )
-            .map_err(|e| format!("failed to extend app usage log segment: {e}"))?;
-            return Ok(true);
-        }
-    }
-
-    conn.execute(
-        "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
-         VALUES (?1, ?2, ?3, ?4)",
-        params![process_name, window_title, start_timestamp, span],
-    )
-    .map_err(|e| format!("failed to append app usage log: {e}"))?;
-
-    Ok(true)
-}
-
-fn persist_idle_prompt_decision(
-    conn: &Connection,
-    prompt: &IdlePromptEntry,
-    decision: &str,
-) -> Result<bool, String> {
-    let (process_name, mapped_type, title) = match decision {
-        "LEARN" => ("__idle_learn__.exe", "LEARN", "Idle Segment · Learn"),
-        "REST" => ("__idle_rest__.exe", "REST", "Idle Segment · Rest"),
-        "IDLE" => ("__idle__.exe", "IGNORE", "Idle Segment · Unclassified"),
-        _ => return Err("invalid idle decision".to_string()),
-    };
-
-    let process_key = normalize_process_key(process_name);
-    upsert_app_rule_entry(conn, &process_key, mapped_type, "NORMAL")?;
-    append_usage_log_direct(
-        conn,
-        &process_key,
-        title,
-        prompt.start_timestamp,
-        prompt.duration_ms,
-    )
-}
-
-fn append_usage_log_record(
-    conn: &Connection,
-    process_name: &str,
-    window_title: &str,
-    start_timestamp: i64,
-    duration_ms: i64,
-) -> Result<(bool, Option<String>), String> {
-    let (processed, block_reason) = process_log_with_privacy(conn, process_name, window_title)?;
-    let Some((safe_process_name, safe_window_title)) = processed else {
-        return Ok((false, block_reason));
-    };
-
-    let stored = append_usage_log_direct(
-        conn,
-        &safe_process_name,
-        &safe_window_title,
-        start_timestamp,
-        duration_ms,
-    )?;
-    Ok((stored, block_reason))
 }
 
 #[tauri::command]

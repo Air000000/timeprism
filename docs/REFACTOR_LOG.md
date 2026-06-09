@@ -1489,3 +1489,87 @@ Follow-up:
 
 - Commit R-115.
 - Continue extracting app-usage-log append/privacy integration or foreground sampling state.
+
+## 2026-06-09: R-116 Usage Log Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- app usage logs
+- idle prompt persistence
+- privacy integration
+
+Intent:
+
+- Move app usage log append/merge helpers out of `src-tauri/src/lib.rs`.
+- Keep privacy processing, idle decision persistence, and command behavior unchanged.
+- Preserve existing idle segment titles exactly, including `Idle Segment · Learn`, `Idle Segment · Rest`, and `Idle Segment · Unclassified`.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/usage.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `append_usage_log_direct` | `services::usage` private helper | Same contiguous segment merge behavior |
+| `append_usage_log_record` | `services::usage::append_usage_log_record` | Still applies `services::privacy::process_log_with_privacy` before persistence |
+| `persist_idle_prompt_decision` | `services::usage::persist_idle_prompt_decision` | Still upserts idle pseudo-rules before writing a usage log |
+
+Behavior expected to stay the same:
+
+- Negative durations are still clamped to zero before persistence.
+- Contiguous logs with the same process/title still extend the latest row.
+- Privacy-filtered logs still return `(false, block_reason)` without writing.
+- Idle decisions still map `LEARN`, `REST`, and `IDLE` to the same pseudo-processes and titles.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `append_app_usage_log`, `capture_foreground_once`, and `resolve_idle_prompt` now delegate usage persistence to `services::usage`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended. Existing privacy processing is still called before app usage log persistence.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 19 tests passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- No usage-log-specific database characterization test was added in this batch; behavior is preserved by direct extraction and compile/test validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-115 commit.
+
+Follow-up:
+
+- Commit R-116.
+- Continue foreground sampling-state extraction or move whitelist/privacy commands fully behind service functions.
