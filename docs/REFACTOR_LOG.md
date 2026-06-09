@@ -1741,3 +1741,94 @@ Follow-up:
 
 - Commit R-118.
 - Continue foreground sampling-state extraction or command module thinning.
+
+## 2026-06-09: R-119 Foreground Sampling And Idle Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- foreground capture
+- idle prompts
+- diagnostics
+
+Intent:
+
+- Move foreground sampling state, diagnostics, idle prompt queue, idle memory, and foreground capture command bodies out of `src-tauri/src/lib.rs`.
+- Keep existing platform capture wrappers in `services::foreground`.
+- Keep Tauri command names, payloads, diagnostics, and idle prompt behavior unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/foreground.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `ForegroundSampleState`, `ForegroundSnapshot`, and `FOREGROUND_SAMPLE_STATE` | `services::foreground` | Same in-memory lifetime |
+| `push_foreground_diagnostic` | `services::foreground` private helper | Same 60-entry cap |
+| `capture_foreground_once` body | `services::foreground::capture_foreground_once` | Command shell remains in `lib.rs` |
+| `list_pending_idle_prompts` body | `services::foreground::list_pending_idle_prompts` | Same cap and sorting |
+| `resolve_idle_prompt` body | `services::foreground::resolve_idle_prompt` | Same decisions, skip defer, and remember-this-session behavior |
+| `get_idle_memory_state` body | `services::foreground::get_idle_memory_state` | Same returned memory shape |
+| `clear_idle_memory_state` body | `services::foreground::clear_idle_memory_state` | Same clear behavior |
+| `list_foreground_capture_diagnostics` body | `services::foreground::list_foreground_capture_diagnostics` | Same dedupe and priority sort |
+
+Behavior expected to stay the same:
+
+- Idle threshold remains `300_000` ms.
+- Idle prompts are still capped at 20 pending entries.
+- Diagnostics are still capped at 60 entries.
+- First foreground sample still establishes a baseline only.
+- Foreground elapsed span still clamps to `500..=60000` ms.
+- Diagnostic sorting still prioritizes unsaved rules, then unstored logs, then recency.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `capture_foreground_once`, `list_pending_idle_prompts`, `resolve_idle_prompt`, `get_idle_memory_state`, `clear_idle_memory_state`, and `list_foreground_capture_diagnostics` now delegate to `services::foreground`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended. Foreground persistence still calls `services::usage`, which still applies privacy processing.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 19 tests passed.
+
+Manual smoke tests:
+
+- Not run. This batch did not manually sample foreground windows or resolve idle prompts in the running app.
+
+Risks:
+
+- Foreground and idle prompt state remain in memory as before; this batch does not change restart behavior.
+- Foreground behavior is compile/test validated but still needs a manual runtime smoke test before release.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-118 commit.
+
+Follow-up:
+
+- Commit R-119.
+- Continue with command module thinning or a phase gate review for backend extraction.
