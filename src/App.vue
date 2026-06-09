@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import AppTopNav from "./components/AppTopNav.vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
 import IdlePromptBanner from "./components/IdlePromptBanner.vue";
 import InsightsView from "./components/InsightsView.vue";
 import SettingsView from "./components/SettingsView.vue";
-import type {
-  HomeViewContext,
-} from "./components/viewContexts";
 import { useAutoCaptureSampler } from "./composables/useAutoCaptureSampler";
 import {
   useAppNavigation,
@@ -26,6 +23,7 @@ import { useHomeData } from "./composables/useHomeData";
 import { useHomeOverview } from "./composables/useHomeOverview";
 import { useHomeRhythm } from "./composables/useHomeRhythm";
 import { useHomeSchedule } from "./composables/useHomeSchedule";
+import { useHomeViewContext } from "./composables/useHomeViewContext";
 import { useIdlePromptBannerContext } from "./composables/useIdlePromptBannerContext";
 import { useInsightsData } from "./composables/useInsightsData";
 import { useInsightsSectionNavigation } from "./composables/useInsightsSectionNavigation";
@@ -335,6 +333,38 @@ const {
   refreshHomeData,
   refreshGuardData,
 });
+const homeCtx = useHomeViewContext({
+  tx,
+  formatSeconds,
+  todayLearnSeconds,
+  currentStatusLabel,
+  currentStatusTone,
+  goalProgressPct,
+  goalProgressFillNum,
+  goalOverflowTier,
+  recentSummary,
+  homeScheduleItems,
+  reminderListForPanel,
+  reminderDueText,
+  toDateTimeLocalValue,
+  timeMinutesLabel,
+  handleUpsertReminder,
+  handleDeleteReminder,
+  handleReminderDone,
+  handleReminderReorder,
+  handleReminderSnooze,
+  reminderActionLoading,
+  shiftHeatmapMonth,
+  monthTitleText,
+  weekHeaders,
+  calendarHeatmapCells,
+  heatmapCellClass,
+  heatmapDayText,
+  pendingRuleProcesses,
+  idlePrompts,
+  dueReminderCount,
+  homeMonthRhythmBars,
+});
 
 function switchHistorySubView(next: HistorySubViewKey) {
   selectHistoryView(next);
@@ -375,39 +405,6 @@ function onLocaleChange(event: Event) {
     locale.value = input.value;
   }
 }
-
-const homeCtx = computed(() => ({
-  tx,
-  formatSeconds,
-  todayLearnSeconds: todayLearnSeconds.value,
-  currentStatusLabel: currentStatusLabel.value,
-  currentStatusTone: currentStatusTone.value,
-  goalProgressPct: goalProgressPct.value,
-  goalProgressFillNum: goalProgressFillNum.value,
-  goalOverflowTier: goalOverflowTier.value,
-  recentSummary: recentSummary.value,
-  homeScheduleItems: homeScheduleItems.value,
-  reminderListForPanel: reminderListForPanel.value,
-  reminderDueText,
-  toDateTimeLocalValue,
-  timeMinutesLabel,
-  handleUpsertReminder,
-  handleDeleteReminder,
-  handleReminderDone,
-  handleReminderReorder,
-  handleReminderSnooze,
-  reminderActionLoading: reminderActionLoading.value,
-  shiftHeatmapMonth,
-  monthTitleText: monthTitleText.value,
-  weekHeaders: weekHeaders.value,
-  calendarHeatmapCells: calendarHeatmapCells.value,
-  heatmapCellClass,
-  heatmapDayText,
-  pendingRuleCount: pendingRuleProcesses.value.length,
-  idlePromptCount: idlePrompts.value.length,
-  dueReminderCount: dueReminderCount.value,
-  homeMonthRhythmBars: homeMonthRhythmBars.value,
-}) satisfies HomeViewContext);
 
 onMounted(async () => {
   initLocale();

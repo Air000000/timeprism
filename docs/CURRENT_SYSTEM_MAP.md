@@ -55,6 +55,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHomeOverview.ts`: Home summary state, goal progress, recent activity summary, pending counts, and status labels.
 - `src/composables/useHomeRhythm.ts`: Home seven-day rhythm bar derivation from usage-stack data.
 - `src/composables/useHomeSchedule.ts`: Home reminder visibility filtering and due-text presentation.
+- `src/composables/useHomeViewContext.ts`: computed Home view context assembly from Home data, reminders, heatmap, rhythm, and status state.
 - `src/composables/useIdlePromptBannerContext.ts`: computed top-level idle prompt banner context assembly.
 - `src/composables/useInsightsData.ts`: Insights top-app/all-time/recent-log loading, all-time filters, and visible Insights derived view data.
 - `src/composables/useInsightsSectionNavigation.ts`: Insights section event target switching, DOM flash highlighting, and flash timer cleanup.

@@ -5086,3 +5086,82 @@ Follow-up:
 
 - Commit R-157.
 - Extract Home context after this contract alignment.
+
+## 2026-06-09: R-158 Home View Context Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Home context assembly
+
+Intent:
+
+- Move Home view context assembly out of `src/App.vue` after aligning the Home context contract in R-157.
+- Complete extraction of the main top-level view context computed blocks.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useHomeViewContext.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `homeCtx` computed block | `useHomeViewContext` | Same `HomeViewContext` shape after R-157 cleanup |
+
+Behavior expected to stay the same:
+
+- Home view still receives the same declared Home context fields for overview, reminders, heatmap, pending counts, due reminders, and rhythm bars.
+- Home data loading remains in `useHomeData`; Home summary derivation remains in `useHomeOverview`; reminder mutations remain in `useReminders`.
+
+Behavior intentionally changed:
+
+- None in this batch.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this context extraction batch.
+
+Risks:
+
+- Home overview/reminder/heatmap behavior was validated by typecheck/build only, not by S-300/S-400 interactive smoke testing.
+- The extracted Home context has a broad parameter list; future work may group Home state into narrower view models.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-157.
+
+Follow-up:
+
+- Commit R-158.
+- Run a main-window smoke pass before deeper lifecycle or context consolidation.
