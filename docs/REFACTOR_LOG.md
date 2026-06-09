@@ -5014,3 +5014,75 @@ Follow-up:
 
 - Commit R-156.
 - Review Home context separately because it currently includes extra fields beyond the declared `HomeViewContext`.
+
+## 2026-06-09: R-157 Home Context Contract Cleanup
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend cleanup
+- Home context assembly
+
+Intent:
+
+- Remove unused extra fields from `homeCtx` before extracting the Home context assembly.
+- Align the `homeCtx` object with the declared `HomeViewContext` contract.
+
+Files changed:
+
+- `src/App.vue`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to stay the same:
+
+- Home view receives the same fields it actually reads.
+- `HomeViewContext` remains unchanged.
+
+Behavior intentionally changed:
+
+- `homeCtx` no longer carries five undeclared and unused extra fields/handlers: `todayRestSeconds`, `openGuardWorkflow`, `homeMonthGoalProgress`, `homeMonthActiveStreakDays`, and `homePendingSummary`.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `rg` confirmed those extra field names were not referenced by `src/components/HomeView.vue` or `src/components/viewContexts.ts` after cleanup.
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this cleanup batch.
+
+Risks:
+
+- The removed values are still produced by their source composables, but no current Home consumer reads them.
+- This is a contract cleanup, not an interactive Home smoke validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-156.
+
+Follow-up:
+
+- Commit R-157.
+- Extract Home context after this contract alignment.

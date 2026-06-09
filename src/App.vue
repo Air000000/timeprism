@@ -63,7 +63,6 @@ const {
   historySubViews,
   selectHistoryView,
   selectMainView,
-  selectGuardView,
 } = useAppNavigation(tx);
 const {
   scrollToInsightsSection,
@@ -151,8 +150,6 @@ const {
   heatmapDayText,
   shiftHeatmapMonth,
   getHeatmapFetchDays,
-  homeMonthGoalProgress,
-  homeMonthActiveStreakDays,
 } = useHeatmapCalendar({
   locale,
   learnHeatmap,
@@ -300,7 +297,6 @@ const guardCtx = useGuardViewContext({
 const {
   todaySummary,
   todayLearnSeconds,
-  todayRestSeconds,
   goalProgressPct,
   goalProgressFillNum,
   goalOverflowTier,
@@ -308,7 +304,6 @@ const {
   dueReminderCount,
   currentStatusLabel,
   currentStatusTone,
-  homePendingSummary,
 } = useHomeOverview({
   tx,
   learnGoalSliderMinutes,
@@ -344,11 +339,6 @@ const {
 function switchHistorySubView(next: HistorySubViewKey) {
   selectHistoryView(next);
   void refreshInsightsData();
-}
-
-function openGuardWorkflow() {
-  selectGuardView();
-  void refreshGuardData();
 }
 
 function setMainView(next: MainViewKey) {
@@ -390,7 +380,6 @@ const homeCtx = computed(() => ({
   tx,
   formatSeconds,
   todayLearnSeconds: todayLearnSeconds.value,
-  todayRestSeconds: todayRestSeconds.value,
   currentStatusLabel: currentStatusLabel.value,
   currentStatusTone: currentStatusTone.value,
   goalProgressPct: goalProgressPct.value,
@@ -414,15 +403,11 @@ const homeCtx = computed(() => ({
   calendarHeatmapCells: calendarHeatmapCells.value,
   heatmapCellClass,
   heatmapDayText,
-  openGuardWorkflow,
   pendingRuleCount: pendingRuleProcesses.value.length,
   idlePromptCount: idlePrompts.value.length,
   dueReminderCount: dueReminderCount.value,
   homeMonthRhythmBars: homeMonthRhythmBars.value,
-  homeMonthGoalProgress: homeMonthGoalProgress.value,
-  homeMonthActiveStreakDays: homeMonthActiveStreakDays.value,
-  homePendingSummary: homePendingSummary.value,
-}) satisfies HomeViewContext & Record<string, unknown>);
+}) satisfies HomeViewContext);
 
 onMounted(async () => {
   initLocale();
