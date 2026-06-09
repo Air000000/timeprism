@@ -37,11 +37,20 @@ function initThemeMode() {
   applyTheme(prefersDark ? "dark" : "light");
 }
 
+function initThemeModeSafely() {
+  try {
+    initThemeMode();
+  } catch {
+    applyTheme("light");
+  }
+}
+
 export function useThemeMode() {
   return {
     themeMode,
     applyTheme,
     toggleThemeMode,
     initThemeMode,
+    initThemeModeSafely,
   };
 }

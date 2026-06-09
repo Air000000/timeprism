@@ -5391,3 +5391,81 @@ Follow-up:
 
 - Commit R-161.
 - Consider Settings UI smoke testing before changing locale or theme behavior further.
+
+## 2026-06-09: R-162 Theme Init Fallback Consolidation
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- theme lifecycle
+
+Intent:
+
+- Move the theme initialization fallback from `App.vue` into `useThemeMode`.
+- Keep the existing lower-level `applyTheme` and `initThemeMode` composable API available.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useThemeMode.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `try initThemeMode() / catch applyTheme("light")` | `initThemeModeSafely` | Same light-theme fallback |
+
+Behavior expected to stay the same:
+
+- Theme initialization still reads localStorage, then system preference, and falls back to light if initialization throws.
+- Settings view still toggles theme through the same `toggleThemeMode` handler.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this theme lifecycle extraction batch.
+
+Risks:
+
+- Theme switching was validated by typecheck/build only, not by Settings UI smoke testing.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-161.
+
+Follow-up:
+
+- Commit R-162.
+- Consider Settings UI smoke testing before changing theme behavior further.

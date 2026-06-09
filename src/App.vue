@@ -47,7 +47,7 @@ import {
 
 const { locale, tx, initLocale, watchLocaleChanges } = useLocale();
 watchLocaleChanges();
-const { themeMode, applyTheme, toggleThemeMode, initThemeMode } = useThemeMode();
+const { themeMode, toggleThemeMode, initThemeModeSafely } = useThemeMode();
 const {
   formatClock,
   mappedTypeText,
@@ -406,11 +406,7 @@ function onLocaleChange(event: Event) {
 
 onMounted(async () => {
   initLocale();
-  try {
-    initThemeMode();
-  } catch {
-    applyTheme("light");
-  }
+  initThemeModeSafely();
 
   await loadHeatmapGoalSecondsSetting();
 
