@@ -17,17 +17,19 @@ import {
 	type PetDockState,
 	type PetWindowSettleResult,
 } from "./lib/petDock";
+import {
+	PET_CHARACTER_DEFAULT_SRC,
+	PET_CHARACTER_DOCKED_LEFT_SRC,
+	PET_CHARACTER_DOCKED_RIGHT_SRC,
+	PET_CHARACTER_PRIMARY_SRC,
+	getPetCharacterSrc,
+	savePetCharacterSrc,
+} from "./lib/petCharacter";
 import { formatSeconds } from "./lib/time";
 import "./pet.css";
 
 const petWindow = getCurrentWindow();
 const EDGE_SNAP_THRESHOLD = 72;
-const PET_CHARACTER_STORAGE_KEY = "timeprism.pet.character";
-const PET_CHARACTER_PRIMARY_SRC = "/慕沛灵Q版桌宠形象.png";
-const PET_CHARACTER_LEGACY_PRIMARY_SRC = "/pet-character.png";
-const PET_CHARACTER_DEFAULT_SRC = "/pet-character-default.svg";
-const PET_CHARACTER_DOCKED_LEFT_SRC = "/左侧.png";
-const PET_CHARACTER_DOCKED_RIGHT_SRC = "/右侧.png";
 
 function getLocale(): LocaleCode {
 	return getStoredOrBrowserLocale();
@@ -131,21 +133,6 @@ function applyLocalizedStaticText() {
 	}
 }
 
-function getPetCharacterSrc(): string {
-	try {
-		const saved = window.localStorage.getItem(PET_CHARACTER_STORAGE_KEY)?.trim();
-		if (saved) {
-			if (saved === PET_CHARACTER_LEGACY_PRIMARY_SRC) {
-				return PET_CHARACTER_PRIMARY_SRC;
-			}
-			return saved;
-		}
-	} catch {
-		// Ignore storage access failures in restricted environments.
-	}
-	return PET_CHARACTER_PRIMARY_SRC;
-}
-
 function applyPetCharacter() {
 	characterImage.src = getPetCharacterSrc();
 	characterImage.onerror = () => {
@@ -180,16 +167,7 @@ function setPetState(next: PetDockState) {
 }
 
 function setPetCharacterSrc(src: string) {
-	const normalized = src.trim();
-	try {
-		if (!normalized) {
-			window.localStorage.removeItem(PET_CHARACTER_STORAGE_KEY);
-		} else {
-			window.localStorage.setItem(PET_CHARACTER_STORAGE_KEY, normalized);
-		}
-	} catch {
-		// Ignore storage failures and still try to apply to current session.
-	}
+	savePetCharacterSrc(src);
 	applyDockedAppearance();
 }
 

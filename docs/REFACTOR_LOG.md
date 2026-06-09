@@ -6338,3 +6338,87 @@ Follow-up:
 
 - Commit R-173.
 - Continue with small pet helper extractions before changing drag/window event flow.
+
+## 2026-06-09: R-174 Pet Character Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shared helpers
+- pet window
+
+Intent:
+
+- Move pet character image paths, legacy path normalization, and localStorage persistence out of `src/pet.ts`.
+- Keep image application, docked appearance, and the global `setTimePrismPetCharacter` hook in `src/pet.ts`.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petCharacter.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| pet character image constants | `src/lib/petCharacter.ts` | Same primary/default/docked image paths |
+| legacy primary image normalization | `resolvePetCharacterSrc` | Same `/pet-character.png` to primary image mapping |
+| localStorage read | `getPetCharacterSrc` | Same `timeprism.pet.character` key and primary fallback |
+| localStorage write/remove | `savePetCharacterSrc` | Same empty-string remove behavior |
+
+Behavior expected to stay the same:
+
+- Pet initial template image still uses the primary character image.
+- Saved custom pet character paths still override the primary image.
+- The legacy `/pet-character.png` saved path still normalizes to the current primary image.
+- Clearing the pet character source still removes the localStorage override and falls back to the primary image.
+- Docked left/right images and default fallback image paths are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None; this preserves the existing localStorage-only character path behavior.
+
+Startup/performance impact:
+
+- None expected; localStorage reads/writes remain in the same user-visible flows.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this pet character helper extraction batch.
+
+Risks:
+
+- Pet image fallback/customization behavior was validated by typecheck/build only, not by opening the pet window with custom localStorage values.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-173.
+
+Follow-up:
+
+- Commit R-174.
+- Continue with small pet helper extractions before changing prompt, drag, or window event flow.
