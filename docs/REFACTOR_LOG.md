@@ -11092,3 +11092,76 @@ Follow-up:
 
 - Commit R-233.
 - Run a backend checkpoint after commit before continuing the next frontend helper batch.
+
+## 2026-06-09: R-234 Cross-Stack Checkpoint After Heatmap Progress Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the heatmap progress helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-233 reduced `useHeatmapCalendar.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Heatmap progress helper changes from R-233 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace injected-clock tests for date-boundary heatmap behavior.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-234.
+- Continue with low-risk helper extraction only where behavior can be preserved and checked quickly.
