@@ -7200,3 +7200,82 @@ Follow-up:
 
 - Commit R-184.
 - Continue only with small, reversible batches until a detailed smoke checklist result is recorded.
+
+## 2026-06-09: R-185 Pet Panel Week Header Text Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet panel
+- locale text
+
+Intent:
+
+- Move pet-panel week header label selection out of `src/pet-panel.ts`.
+- Keep week header DOM rendering in `src/pet-panel.ts` for this small batch.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelText.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| zh/en pet-panel week header labels | `petPanelWeekHeaders` | Same Chinese single-character labels and same English single-letter labels |
+
+Behavior expected to stay the same:
+
+- Pet-panel heatmap week header labels remain unchanged in Chinese and English.
+- `src/pet-panel.ts` still owns creating and appending the header DOM nodes.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same label array is produced during panel refresh/render.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this week-header helper extraction batch.
+
+Risks:
+
+- Pet-panel week header display was validated by typecheck/build only, not by opening the panel.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-184.
+
+Follow-up:
+
+- Commit R-185.
+- Continue with only small pet-panel text/render helper extractions until a detailed smoke checklist result is recorded.

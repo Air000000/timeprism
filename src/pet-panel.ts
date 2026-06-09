@@ -9,6 +9,7 @@ import {
   monthCellRows,
   pickCurrentBusinessDay,
 } from "./lib/petPanelMetrics";
+import { petPanelWeekHeaders } from "./lib/petPanelText";
 import { formatSeconds } from "./lib/time";
 import "./pet-panel.css";
 
@@ -39,10 +40,7 @@ const {
 
 function renderWeekHeaders() {
   miniWeekHeader.replaceChildren();
-  const weekHeaders = getLocale() === "zh-CN"
-    ? ["日", "一", "二", "三", "四", "五", "六"]
-    : ["S", "M", "T", "W", "T", "F", "S"];
-  for (const w of weekHeaders) {
+  for (const w of petPanelWeekHeaders(getLocale())) {
     const node = document.createElement("span");
     node.textContent = w;
     miniWeekHeader.appendChild(node);
