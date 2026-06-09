@@ -2982,3 +2982,90 @@ Follow-up:
 
 - Commit R-131.
 - Continue Guard extraction by moving data loading and mutation handlers into a focused composable.
+
+## 2026-06-09: R-132 Guard Data Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- guard
+
+Intent:
+
+- Move Guard data loading, pending-rule/idle/diagnostic state, rule filtering/sorting, idle resolution, rule mutations, diagnostic text, and Guard input handlers out of `src/App.vue`.
+- Keep App-level lifecycle, polling, and capture timer orchestration in `src/App.vue`.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useGuardData.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Guard refs: auto-capture, feedback, diagnostics, app rules, pending rules, idle prompts, rule filters | `useGuardData` | Same defaults |
+| `filteredSortedRules`, `currentIdlePrompt` | `useGuardData` | Same sort/filter behavior |
+| `refreshGuardData` | `useGuardData` | Same loading guard and same 5-way API fetch |
+| `handleResolveIdle` | `useGuardData` | Same decisions, remember-choice behavior, feedback, and refresh call |
+| diagnostic/rule helpers and save handlers | `useGuardData` | Same API payloads and feedback |
+| Guard input handlers | `useGuardData` | Same checkbox/search/sort/mapped-type behavior |
+
+Behavior expected to stay the same:
+
+- Guard refresh still loads diagnostics, rules, pending apps, pending idle prompts, and idle memory.
+- Idle prompt decisions still resolve the same prompt and refresh data afterward.
+- Pending rule and diagnostic save actions still save the same rule payloads.
+- Rule search/sort and mapped-type edits behave the same.
+- Auto-capture checkbox still toggles the same `autoCaptureEnabled` state used by the capture timer.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None. Existing frontend command wrappers are unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- No intended privacy behavior change. Capture diagnostics and privacy block text were moved only.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `rg -n "listAppRules|listForegroundCaptureDiagnostics|getIdleMemoryState|resolveIdlePrompt|saveAppRule|type AppRule|type ForegroundCaptureDiagnostic|type IdleMemoryState|PendingRuleProcess|loadingGuard|appRules|function onAutoCaptureToggle|function handleResolveIdle|const filteredSortedRules" src/App.vue src/composables/useGuardData.ts` confirmed Guard data/action dependencies now live in `useGuardData.ts` except Home overview's `listPendingRuleProcesses`.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Guard interactions were validated by typecheck/build only, not by interactive S-500 smoke testing.
+- App still owns the foreground capture timer and top-level idle prompt inline banner.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-131.
+
+Follow-up:
+
+- Commit R-132.
+- Consider extracting the inline idle prompt banner or continuing with Insights/Home feature-state cleanup.
