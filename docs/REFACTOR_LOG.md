@@ -9756,3 +9756,86 @@ Follow-up:
 
 - Commit R-216.
 - Continue with low-risk frontend-helper batches unless detailed reminder UI smoke results are recorded.
+
+## 2026-06-09: R-217 Home Overview Status Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Home view
+- overview status
+
+Intent:
+
+- Move Home overview current-status label, status tone, and pending-summary text branches out of `useHomeOverview.ts`.
+- Keep Home overview refs, computed bindings, due-reminder counting, recent-summary text, and data ownership in the composable.
+
+Files changed:
+
+- `src/composables/useHomeOverview.ts`
+- `src/lib/homeOverviewStatus.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| current-status label branches | `src/lib/homeOverviewStatus.ts::homeCurrentStatusLabel` | Same idle-prompt, due-reminder, pending-rule, auto-capture, and paused priority |
+| current-status tone branches | `src/lib/homeOverviewStatus.ts::homeCurrentStatusTone` | Same alert/warn/ok/idle priority |
+| pending-summary text construction | `src/lib/homeOverviewStatus.ts::homePendingSummaryText` | Same pending app, idle review, reminder, empty-state, and separator behavior |
+
+Behavior expected to stay the same:
+
+- Home overview status label still prioritizes idle prompts, then due reminders, then pending app rules, then auto-capture state.
+- Home overview status tone still maps idle prompts to alert, due reminders/app rules to warn, enabled capture to ok, and paused capture to idle.
+- Home pending summary still lists pending app, idle review, and reminder counts with the same localized text.
+- `useHomeOverview` still owns the reactive refs and computed values returned to the Home view context.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same small text branches now run through a helper module.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home overview status helper extraction batch.
+
+Risks:
+
+- Home overview status display was validated by typecheck/build only, not by manually forcing idle-prompt, due-reminder, pending-rule, and capture-paused states.
+
+Rollback:
+
+- Revert this batch to move Home overview status label, tone, and pending-summary text back into `useHomeOverview.ts`.
+
+Follow-up:
+
+- Commit R-217.
+- Continue with a backend checkpoint after commit.

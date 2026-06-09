@@ -6,6 +6,13 @@ import type {
   Reminder,
   TodaySummary,
 } from "../api";
+import {
+  homeCurrentStatusLabel,
+  homeCurrentStatusTone,
+  homePendingSummaryText,
+  type HomeOverviewStatusCounts,
+  type HomeStatusTone,
+} from "../lib/homeOverviewStatus";
 
 type TranslateFn = (zh: string, en: string) => string;
 
@@ -70,51 +77,18 @@ export function useHomeOverview({
     return reminders.value.filter((item) => !item.done && item.next_due_timestamp <= now).length;
   });
 
-  const currentStatusLabel = computed(() => {
-    if (idlePrompts.value.length > 0) {
-      return tx("离开时段待确认", "Idle segments pending");
-    }
-    if (dueReminderCount.value > 0) {
-      return tx(`到点提醒 ${dueReminderCount.value} 条`, `${dueReminderCount.value} reminders due`);
-    }
-    if (pendingRuleProcesses.value.length > 0) {
-      return tx("待处理软件规则", "App rules pending");
-    }
-    if (autoCaptureEnabled.value) {
-      return tx("自动采样运行中", "Auto capture running");
-    }
-    return tx("自动采样已暂停", "Auto capture paused");
-  });
+  function currentStatusCounts(): HomeOverviewStatusCounts {
+    return {
+      idlePromptCount: idlePrompts.value.length,
+      dueReminderCount: dueReminderCount.value,
+      pendingRuleProcessCount: pendingRuleProcesses.value.length,
+      autoCaptureEnabled: autoCaptureEnabled.value,
+    };
+  }
 
-  const currentStatusTone = computed<"ok" | "warn" | "alert" | "idle">(() => {
-    if (idlePrompts.value.length > 0) {
-      return "alert";
-    }
-    if (dueReminderCount.value > 0 || pendingRuleProcesses.value.length > 0) {
-      return "warn";
-    }
-    if (autoCaptureEnabled.value) {
-      return "ok";
-    }
-    return "idle";
-  });
-
-  const homePendingSummary = computed(() => {
-    const parts: string[] = [];
-    if (pendingRuleProcesses.value.length > 0) {
-      parts.push(tx(`待分类 ${pendingRuleProcesses.value.length}`, `${pendingRuleProcesses.value.length} pending apps`));
-    }
-    if (idlePrompts.value.length > 0) {
-      parts.push(tx(`待确认 ${idlePrompts.value.length}`, `${idlePrompts.value.length} idle reviews`));
-    }
-    if (dueReminderCount.value > 0) {
-      parts.push(tx(`提醒 ${dueReminderCount.value}`, `${dueReminderCount.value} reminders`));
-    }
-    if (parts.length === 0) {
-      return tx("当前没有新的待处理项，首页会保持安静。", "No pending items right now, so home stays quiet.");
-    }
-    return parts.join(" · ");
-  });
+  const currentStatusLabel = computed(() => homeCurrentStatusLabel(currentStatusCounts(), tx));
+  const currentStatusTone = computed<HomeStatusTone>(() => homeCurrentStatusTone(currentStatusCounts()));
+  const homePendingSummary = computed(() => homePendingSummaryText(currentStatusCounts(), tx));
 
   return {
     todaySummary,

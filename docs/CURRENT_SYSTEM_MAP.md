@@ -54,7 +54,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar cells, cell classes, fetch-window calculation, and month progress summaries.
 - `src/composables/useHeatmapGoalSetting.ts`: heatmap goal slider state, saved goal loading, 15-minute normalization, debounced persistence, and timer cleanup.
 - `src/composables/useHomeData.ts`: Home data refresh orchestration for summary, logs, heatmap, pending work, reminders, and rhythm stack.
-- `src/composables/useHomeOverview.ts`: Home summary state, goal progress, recent activity summary, pending counts, and status labels.
+- `src/composables/useHomeOverview.ts`: Home summary state, goal progress, recent activity summary, pending counts, and status-helper binding.
 - `src/composables/useHomeReminderPanel.ts`: Home reminder modal draft state, feedback, quick actions, weekly-day chips, and drag/drop reorder handling.
 - `src/composables/useHomeRhythm.ts`: Home seven-day rhythm bar derivation from usage-stack data.
 - `src/composables/useHomeRhythmTooltip.ts`: Home rhythm summary text, compact duration formatting, and hover-tooltip state/placement.
@@ -79,6 +79,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/guardDiagnostics.ts`: Guard foreground-capture diagnostic reason text, diagnostic rule text, and save eligibility helpers.
 - `src/lib/guardIdle.ts`: Guard idle-decision feedback tone/text helpers.
 - `src/lib/guardRules.ts`: Guard app-rule search/sort helpers plus rule sort-key and mapped-type guards.
+- `src/lib/homeOverviewStatus.ts`: Home current-status label, status tone, and pending-summary text helpers.
 - `src/lib/petCharacter.ts`: pet character image paths, legacy path normalization, and localStorage persistence helpers.
 - `src/lib/petContextMenu.ts`: pet-window context menu item definitions and panel-mode toggle wiring.
 - `src/lib/petDock.ts`: pure pet-window dock state types, dock-edge mapping, and settle-state conversion helpers.
