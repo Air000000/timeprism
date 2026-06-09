@@ -10382,3 +10382,86 @@ Follow-up:
 
 - Commit R-224.
 - Continue with low-risk frontend-helper batches unless detailed Home rhythm smoke results are recorded.
+
+## 2026-06-09: R-225 Home Rhythm Bar Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Home view
+- rhythm bars
+
+Intent:
+
+- Move Home seven-day rhythm bar construction, scaling, and segment-height calculation out of `useHomeRhythm.ts`.
+- Keep `useHomeRhythm.ts` as the Vue computed adapter over `homeUsageStack`.
+
+Files changed:
+
+- `src/composables/useHomeRhythm.ts`
+- `src/lib/homeRhythmBars.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| seven-day rhythm day-key window | `src/lib/homeRhythmBars.ts::buildHomeRhythmBars` | Same current-day anchored 7-day range |
+| rhythm bar height scaling | `src/lib/homeRhythmBars.ts::homeRhythmHeightForRatio` | Same 18px minimum, 176px maximum, ratio scaling, and rounding |
+| learn/rest segment heights | `src/lib/homeRhythmBars.ts::buildHomeRhythmBars` | Same proportional split and minimum segment height behavior |
+
+Behavior expected to stay the same:
+
+- Home rhythm bars still cover the same seven local day keys.
+- Each bar still derives the same learn, rest, computer total, total, label, and today marker values.
+- Bar heights and learn/rest segment heights still use the same minimum, maximum, ratio, and pixel string values.
+- `useHomeRhythm` still returns `homeMonthRhythmBars` as a computed value.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same small array and height calculations now run through a helper module.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home rhythm bar helper extraction batch.
+
+Risks:
+
+- Home rhythm chart display was validated by typecheck/build only, not by manually inspecting bar heights and segment splits.
+
+Rollback:
+
+- Revert this batch to move rhythm bar construction and height calculations back into `useHomeRhythm.ts`.
+
+Follow-up:
+
+- Commit R-225.
+- Continue with a backend checkpoint after commit.
