@@ -10465,3 +10465,76 @@ Follow-up:
 
 - Commit R-225.
 - Continue with a backend checkpoint after commit.
+
+## 2026-06-09: R-226 Cross-Stack Checkpoint After Home Rhythm Bar Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the Home rhythm bar helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-225 reduced `useHomeRhythm.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Home rhythm bar helper changes from R-225 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace detailed Home rhythm chart smoke tests.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-226.
+- Continue with low-risk frontend-helper batches unless detailed Home rhythm smoke results are recorded.
