@@ -5935,3 +5935,85 @@ Follow-up:
 
 - Commit R-168.
 - Consider a validation checkpoint before refactoring `refreshData`, because it still coordinates Home, Insights, Guard, and Settings refresh paths.
+
+## 2026-06-09: R-169 Main Data Refresh Coordinator Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- main-window refresh orchestration
+
+Intent:
+
+- Move the global `refreshData` orchestration out of `src/App.vue`.
+- Preserve the stable callback that Settings, Reminders, Insights, and Guard receive before all concrete refresh handlers have been created.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useMainDataRefresh.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `refreshData` branch logic | `useMainDataRefresh` | Still refreshes Home first, then the currently active Insights/Guard/Settings data |
+| Cross-composable refresh dependency | `bindMainDataRefreshHandlers` | Keeps a stable `refreshData` function available during setup and binds concrete handlers after creation |
+
+Behavior expected to stay the same:
+
+- Writes from Settings, Reminders, Insights filters, and Guard actions still trigger the same global refresh callback.
+- Global refresh still refreshes Home data first.
+- When the active main view is Insights, Guard, or Settings/Privacy, global refresh still refreshes that view's data after Home.
+- Home-only refresh still stops after Home.
+
+Behavior intentionally changed:
+
+- None in normal runtime flow.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the coordinator keeps one stable closure and stores handler references after setup wiring reaches them.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this refresh-coordinator extraction batch.
+
+Risks:
+
+- If a future setup-time side effect calls `refreshData` before `bindMainDataRefreshHandlers`, the coordinator will throw `Main data refresh handlers are not bound.`; current composables only call it from user/event handlers after setup.
+- Navigation and write-triggered refresh behavior was validated by typecheck/build only, not by interactive click-through smoke tests.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-168.
+
+Follow-up:
+
+- Commit R-169.
+- Run an interactive main-window smoke pass before making broader wiring changes, especially around write-triggered refresh paths.

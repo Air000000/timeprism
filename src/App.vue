@@ -26,6 +26,7 @@ import { useInsightsViewContext } from "./composables/useInsightsViewContext";
 import { useLazySettingsMount } from "./composables/useLazySettingsMount";
 import { useLocale } from "./composables/useLocale";
 import { useMainDataBuffers } from "./composables/useMainDataBuffers";
+import { useMainDataRefresh } from "./composables/useMainDataRefresh";
 import { useMainRefreshPolling } from "./composables/useMainRefreshPolling";
 import { useMainViewActions } from "./composables/useMainViewActions";
 import { useMainWindowLifecycle } from "./composables/useMainWindowLifecycle";
@@ -57,6 +58,7 @@ const {
   selectHistoryView,
   selectMainView,
 } = useAppNavigation(tx);
+const { bindMainDataRefreshHandlers, refreshData } = useMainDataRefresh(currentMainView);
 const {
   startInsightsSectionNavigationListener,
   cleanupInsightsSectionNavigation,
@@ -328,6 +330,12 @@ const { refreshHomeData } = useHomeData({
   getHeatmapGoalSeconds,
   setErrorMessage,
 });
+bindMainDataRefreshHandlers({
+  refreshHomeData,
+  refreshInsightsData,
+  refreshGuardData,
+  refreshSettingsData,
+});
 const {
   startMainRefreshPolling,
   stopMainRefreshPolling,
@@ -368,17 +376,6 @@ const homeCtx = useHomeViewContext({
   dueReminderCount,
   homeMonthRhythmBars,
 });
-
-async function refreshData() {
-  await refreshHomeData();
-  if (currentMainView.value === "insights") {
-    await refreshInsightsData();
-  } else if (currentMainView.value === "guard") {
-    await refreshGuardData();
-  } else if (currentMainView.value === "privacy") {
-    await refreshSettingsData();
-  }
-}
 
 useMainWindowLifecycle({
   initLocale,

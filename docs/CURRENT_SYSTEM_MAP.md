@@ -64,6 +64,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useLazySettingsMount.ts`: settings view lazy mount state, immediate refresh-on-open, warmup refresh timer, and cleanup.
 - `src/composables/useLocale.ts`: main-window locale state, translation helper, Settings language select handler, document language sync, change watcher, and localStorage persistence.
 - `src/composables/useMainDataBuffers.ts`: shared main-window data buffers for recent logs, heatmap cells, and Home usage stack.
+- `src/composables/useMainDataRefresh.ts`: stable main-window global refresh callback and late-bound refresh handler coordination.
 - `src/composables/useMainRefreshPolling.ts`: main-window 5-second Home refresh polling and Guard refresh while Guard is active.
 - `src/composables/useMainViewActions.ts`: main-window tab/subview selection actions and their refresh side effects.
 - `src/composables/useMainWindowLifecycle.ts`: main-window mount/unmount startup and cleanup sequence.
