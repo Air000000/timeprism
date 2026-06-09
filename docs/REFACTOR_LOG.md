@@ -1150,3 +1150,88 @@ Follow-up:
 
 - Commit R-111.
 - Continue foreground extraction by moving sampling-state helpers or idle prompt coordination in a small follow-up batch.
+
+## 2026-06-09: R-112 Startup Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- startup integration
+- backend platform services
+
+Intent:
+
+- Move Windows startup registry query/update logic out of `src-tauri/src/lib.rs`.
+- Keep Tauri command names, return shapes, Windows registry path/value, error strings, and non-Windows fallbacks unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/startup.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `src-tauri/src/lib.rs::WINDOWS_RUN_REGISTRY_PATH` | `src-tauri/src/services/startup.rs::WINDOWS_RUN_REGISTRY_PATH` | Private Windows-only constant |
+| `src-tauri/src/lib.rs::WINDOWS_RUN_VALUE_NAME` | `src-tauri/src/services/startup.rs::WINDOWS_RUN_VALUE_NAME` | Private Windows-only constant |
+| `src-tauri/src/lib.rs::query_auto_start_enabled_internal` | `src-tauri/src/services/startup.rs::get_auto_start_enabled_state` | Same `reg query` behavior |
+| `src-tauri/src/lib.rs::set_auto_start_enabled_internal` | `src-tauri/src/services/startup.rs::set_auto_start_enabled_state` | Same `reg add/delete` behavior |
+
+Behavior expected to stay the same:
+
+- Windows startup value remains `TimePrism`.
+- Windows registry path remains `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
+- Enabling startup still writes the current executable path as a quoted `REG_SZ`.
+- Disabling startup still returns `false` if the delete command reports a non-success status.
+- Non-Windows commands still return `false`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `get_auto_start_enabled` now delegates to `services::startup`.
+- `set_auto_start_enabled` now delegates to `services::startup`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 17 tests passed.
+
+Manual smoke tests:
+
+- Not run. This batch did not execute registry-writing commands.
+
+Risks:
+
+- Registry behavior is compile-validated only in this batch; manual Windows startup toggling should be smoke-tested before release packaging.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-111 commit.
+
+Follow-up:
+
+- Commit R-112.
+- Continue with foreground sampling-state extraction or window service extraction.
