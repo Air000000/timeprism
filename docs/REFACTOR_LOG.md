@@ -8404,3 +8404,78 @@ Follow-up:
 
 - Commit R-199.
 - Continue with small component/template extractions or record detailed Home view smoke results.
+
+## 2026-06-09: R-200 Cross-Stack Checkpoint After Home Composables
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend composable
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the Home rhythm tooltip and reminder panel composable extraction batches do not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-198 and R-199 reduced `src/components/HomeView.vue`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Home composable changes from R-198 and R-199 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace a detailed Home UI smoke pass for reminder modal actions, drag/drop reorder, and rhythm tooltip hover.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-200.
+- Continue with low-risk frontend-helper/component batches unless a detailed Home smoke pass is recorded.
