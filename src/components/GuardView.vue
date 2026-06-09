@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const props = defineProps<{ ctx: any }>();
+import type { GuardViewContext } from "./viewContexts";
+
+const props = defineProps<{ ctx: GuardViewContext }>();
 </script>
 
 <template>

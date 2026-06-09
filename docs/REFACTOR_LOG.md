@@ -2319,3 +2319,85 @@ Follow-up:
 
 - Commit R-124.
 - Continue Phase 3 by preparing typed view context contracts or extracting another state-only shell composable.
+
+## 2026-06-09: R-125 Guard View Context Typing
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shell
+- typed component contracts
+- guard
+
+Intent:
+
+- Replace the existing `ctx: any` contract in `src/components/GuardView.vue` with a typed Guard view context.
+- Let `src/App.vue` construct `guardCtx` against the same contract so missing or mismatched fields fail at typecheck time.
+
+Files changed:
+
+- `src/App.vue`
+- `src/components/GuardView.vue`
+- `src/components/viewContexts.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| implicit Guard `ctx` shape | `src/components/viewContexts.ts` | New `GuardViewContext` type |
+| broad `ctx: any` in `GuardView.vue` | `ctx: GuardViewContext` | Template behavior unchanged |
+| untyped `guardCtx` computed return | `computed<GuardViewContext>` | Compile-time field coverage for App-to-Guard boundary |
+
+Behavior expected to stay the same:
+
+- Guard stepper, pending app actions, idle resolution, rule editing, and diagnostics use the same props and handlers.
+- No template text, command call, or view flow was intentionally changed.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected. Type-only runtime impact.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this type-contract batch.
+
+Risks:
+
+- Guard interactions were validated by typecheck/build only, not by interactive smoke testing.
+- `HomeView.vue` and `InsightsView.vue` still use existing `ctx: any` and need separate batches.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-124 commit.
+
+Follow-up:
+
+- Commit R-125.
+- Add typed contexts for `InsightsView.vue` and `HomeView.vue` in separate small batches.
