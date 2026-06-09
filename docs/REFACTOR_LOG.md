@@ -1894,3 +1894,98 @@ Rollback point:
 Next phase:
 
 - Phase 3/command-shell thinning: move command wrappers out of `src-tauri/src/lib.rs` into feature command modules, then continue frontend shell/API cleanup.
+
+## 2026-06-09: R-120 Frontend API Command Wrapper Split
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend API
+
+Intent:
+
+- Split frontend Tauri command wrapper functions out of the broad `src/api.ts` compatibility file.
+- Keep all existing frontend import paths working through `src/api.ts`.
+- Preserve command names, argument casing, defaults, and TypeScript return types.
+
+Files changed:
+
+- `src/api.ts`
+- `src/api/commands/index.ts`
+- `src/api/commands/analytics.ts`
+- `src/api/commands/categories.ts`
+- `src/api/commands/foreground.ts`
+- `src/api/commands/privacy.ts`
+- `src/api/commands/reminders.ts`
+- `src/api/commands/rules.ts`
+- `src/api/commands/sessions.ts`
+- `src/api/commands/startup.ts`
+- `src/api/commands/usage.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Analytics API wrappers | `src/api/commands/analytics.ts` | Summary, top apps, heatmap, usage stack, recent logs |
+| Category API wrappers | `src/api/commands/categories.ts` | List/create categories |
+| Foreground/idle API wrappers | `src/api/commands/foreground.ts` | Capture diagnostics and idle prompts |
+| Privacy API wrappers | `src/api/commands/privacy.ts` | Settings and whitelist |
+| Reminder API wrappers | `src/api/commands/reminders.ts` | Reminder CRUD, done, snooze, ordering |
+| Rule/focus API wrappers | `src/api/commands/rules.ts` | App rules, pending processes, focus guard |
+| Session API wrappers | `src/api/commands/sessions.ts` | Start/stop task session |
+| Startup API wrappers | `src/api/commands/startup.ts` | Auto-start get/set |
+| Usage API wrappers | `src/api/commands/usage.ts` | Manual app usage append |
+
+Behavior expected to stay the same:
+
+- Existing imports from `src/api.ts` continue to work.
+- Type exports from `src/api.ts` continue to work.
+- All wrapper function names and defaults are unchanged.
+- Tauri command names and payload casing are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None on the backend. This is a frontend wrapper organization change only.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Build output now has smaller command-wrapper chunks, but runtime behavior is expected to stay the same.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- `dist-codex-check/` is generated and ignored by git; cleanup remains blocked by safety review in this session.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the Phase 2 gate commit.
+
+Follow-up:
+
+- Commit R-120.
+- Continue frontend shell extraction by reducing `src/App.vue` responsibilities and replacing broad `ctx: any` component contracts.

@@ -35,7 +35,7 @@ Important sibling folders in the larger workspace:
 - `src/api.ts`: compatibility API surface that keeps existing frontend imports stable.
 - `src/api/client.ts`: thin typed wrapper around Tauri `invoke`.
 - `src/api/types.ts`: shared frontend API response/input-adjacent types.
-- `src/api/commands/`: reserved home for future command wrapper splits.
+- `src/api/commands/`: frontend Tauri command wrappers grouped by feature domain.
 - `src/components/HomeView.vue`: home surface.
 - `src/components/InsightsView.vue`: history and usage views.
 - `src/components/GuardView.vue`: pending apps, idle queue, rules, diagnostics.
