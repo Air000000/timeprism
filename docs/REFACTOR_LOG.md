@@ -7839,3 +7839,78 @@ Follow-up:
 
 - Commit R-192.
 - Continue with small pet-panel DOM helpers or record detailed pet-panel smoke results.
+
+## 2026-06-09: R-193 Cross-Stack Checkpoint After Pet Panel DOM Helpers
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the pet-panel DOM helper extraction batches do not break Rust/Tauri compile checks.
+- Record a clean checkpoint after week-header, heatmap-grid, and usage-stack DOM rendering moved into `src/lib/petPanelDom.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Pet-panel frontend helper changes from R-189 through R-192 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace a detailed UI smoke pass for opening the pet panel and switching between heatmap and stack modes.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-193.
+- Continue only with small, reversible pet-panel/frontend-helper batches unless a detailed UI smoke pass is recorded.
