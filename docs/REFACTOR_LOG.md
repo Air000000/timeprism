@@ -5165,3 +5165,72 @@ Follow-up:
 
 - Commit R-158.
 - Run a main-window smoke pass before deeper lifecycle or context consolidation.
+
+## 2026-06-09: R-159 View Context Extraction Health Checkpoint
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- validation
+- frontend context extraction checkpoint
+
+Intent:
+
+- Record a clean checkpoint after extracting IdlePromptBanner, Settings, Insights, Guard, and Home view contexts.
+- Validate that the Rust Tauri side still checks after the frontend context extraction sequence.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to stay the same:
+
+- No source behavior changed in this docs-only checkpoint.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `git status --short --branch` showed a clean `refactor/architecture` worktree before the checkpoint note.
+- `cargo check` from `src-tauri` passed.
+- R-153 through R-158 each passed `pnpm.cmd run typecheck`, `pnpm.cmd run build:check`, `git diff --check`, and `git diff --cached --check` before commit.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint confirms compilation and traceability, not interactive UI behavior.
+- A main-window smoke pass remains recommended before deeper lifecycle consolidation.
+
+Rollback:
+
+- No source rollback needed for this docs-only checkpoint.
+- Revert this checkpoint commit if the validation note is not wanted.
+
+Follow-up:
+
+- Commit R-159.
+- Consider interactive S-100/S-200/S-300/S-500/S-600/S-700 smoke testing or continue with smaller lifecycle extraction.
