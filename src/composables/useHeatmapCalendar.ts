@@ -1,5 +1,6 @@
 import { computed, ref, type Ref } from "vue";
 import type { LearnHeatmapCell } from "../api";
+import { heatmapCellClassNames } from "../lib/heatmapCalendarClasses";
 import {
   buildCalendarHeatmapCells,
   buildFullMonthHeatmap,
@@ -11,7 +12,7 @@ import {
   heatmapWeekHeaders,
 } from "../lib/heatmapCalendarText";
 import type { LocaleCode } from "../lib/locale";
-import { currentLocalDayKey, localDayKeyFromDate } from "../lib/time";
+import { localDayKeyFromDate } from "../lib/time";
 
 type UseHeatmapCalendarOptions = {
   locale: Ref<LocaleCode>;
@@ -85,33 +86,8 @@ export function useHeatmapCalendar({
     return streak;
   });
 
-  function isFutureDay(dayKey: string): boolean {
-    return dayKey > currentLocalDayKey();
-  }
-
-  function isTodayDay(dayKey: string): boolean {
-    return dayKey === currentLocalDayKey();
-  }
-
   function heatmapCellClass(cell: LearnHeatmapCell): string[] {
-    const classes = ["heat-cell", cell.level.toLowerCase()];
-    if (cell.level === "GREEN") {
-      const ratio = cell.learn_seconds / currentMonthGreenMaxSeconds.value;
-      if (ratio >= 0.88) {
-        classes.push("green-4");
-      } else if (ratio >= 0.72) {
-        classes.push("green-3");
-      } else if (ratio >= 0.56) {
-        classes.push("green-2");
-      } else {
-        classes.push("green-1");
-      }
-    }
-    classes.push(isFutureDay(cell.day) ? "future-date" : "past-date");
-    if (isTodayDay(cell.day)) {
-      classes.push("today-cell");
-    }
-    return classes;
+    return heatmapCellClassNames(cell, currentMonthGreenMaxSeconds.value);
   }
 
   function heatmapDayText(dayKey: string): string {

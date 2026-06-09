@@ -51,7 +51,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, rule mutations, idle resolution, and Guard input handlers.
 - `src/composables/useGuardViewContext.ts`: computed Guard view context assembly from Guard data, workflow state, formatters, and handlers.
 - `src/composables/useGuardWorkflow.ts`: guard workflow step completion/unlock state, labels, review completion, and reset watcher.
-- `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar computed adapters, cell classes, fetch-window calculation, and month progress summaries.
+- `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar computed adapters, cell-class adapter, fetch-window calculation, and month progress summaries.
 - `src/composables/useHeatmapGoalSetting.ts`: heatmap goal slider state, saved goal loading, 15-minute normalization, debounced persistence, and timer cleanup.
 - `src/composables/useHomeData.ts`: Home data refresh orchestration for summary, logs, heatmap, pending work, reminders, and rhythm stack.
 - `src/composables/useHomeOverview.ts`: Home summary state, goal progress, recent activity summary, pending counts, and status-helper binding.
@@ -80,6 +80,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/guardDiagnostics.ts`: Guard foreground-capture diagnostic reason text, diagnostic rule text, and save eligibility helpers.
 - `src/lib/guardIdle.ts`: Guard idle-decision feedback tone/text helpers.
 - `src/lib/guardRules.ts`: Guard app-rule search/sort helpers plus rule sort-key and mapped-type guards.
+- `src/lib/heatmapCalendarClasses.ts`: heatmap cell class-name construction for level, green intensity, future/past, and today markers.
 - `src/lib/heatmapCalendarGrid.ts`: heatmap full-month cell backfill and fixed 42-slot calendar grid construction helpers.
 - `src/lib/heatmapCalendarText.ts`: heatmap month keys, localized month/week labels, and day-number label helpers.
 - `src/lib/homeOverviewStatus.ts`: Home current-status label, status tone, and pending-summary text helpers.

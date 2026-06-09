@@ -10851,3 +10851,85 @@ Follow-up:
 
 - Commit R-230.
 - Continue with low-risk frontend-helper batches unless detailed heatmap UI smoke results are recorded.
+
+## 2026-06-09: R-231 Heatmap Cell Class Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Home view
+- heatmap calendar
+
+Intent:
+
+- Move heatmap cell class-name construction out of `useHeatmapCalendar.ts`.
+- Keep the current-month green maximum computation and the public `heatmapCellClass` adapter in the composable.
+
+Files changed:
+
+- `src/composables/useHeatmapCalendar.ts`
+- `src/lib/heatmapCalendarClasses.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| heatmap level and green-intensity class rules | `src/lib/heatmapCalendarClasses.ts::heatmapCellClassNames` | Same `heat-cell`, level, green-1..green-4 thresholds |
+| future/past/today class rules | `src/lib/heatmapCalendarClasses.ts::heatmapCellClassNames` | Same local day-key comparisons and class names |
+
+Behavior expected to stay the same:
+
+- Heatmap cells still receive the same base, level, green intensity, future/past, and today classes.
+- Green intensity thresholds remain 0.88, 0.72, and 0.56 against the current month green max.
+- `useHeatmapCalendar` still exposes `heatmapCellClass` with the same signature to Home view context.
+- Calendar grid, labels, goal progress, active streak, month navigation, and fetch-window behavior remain unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same class array construction now runs through a helper function.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this heatmap cell class helper extraction batch.
+
+Risks:
+
+- Heatmap cell visual styling was validated by typecheck/build only, not by manually checking future, today, gray, and green-intensity cells.
+
+Rollback:
+
+- Revert this batch to move heatmap cell class construction back into `useHeatmapCalendar.ts`.
+
+Follow-up:
+
+- Commit R-231.
+- Continue with a backend checkpoint after commit.
