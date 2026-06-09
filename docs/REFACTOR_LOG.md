@@ -9683,3 +9683,76 @@ Follow-up:
 
 - Commit R-215.
 - Continue with a backend checkpoint after commit.
+
+## 2026-06-09: R-216 Cross-Stack Checkpoint After Reminder Weekday Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the reminder weekday helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-215 shared weekday/default/normalization helpers across reminder modules.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Reminder weekday helper changes from R-215 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace detailed Home reminder panel smoke tests for weekday chips and weekly reminder save behavior.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-216.
+- Continue with low-risk frontend-helper batches unless detailed reminder UI smoke results are recorded.
