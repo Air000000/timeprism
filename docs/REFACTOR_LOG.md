@@ -6825,3 +6825,83 @@ Follow-up:
 
 - Commit R-179.
 - Prefer a checkpoint or interactive pet smoke pass before extracting more prompt behavior.
+
+## 2026-06-09: R-180 Pet Process Name Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet window
+- prompt text
+
+Intent:
+
+- Move pet-specific process name cleanup out of `src/pet.ts`.
+- Keep the main-window `cleanProcessName` helper unchanged because it has a broader formatting surface.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petProcessName.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| pet process name cleanup | `cleanPetProcessName` | Same idle pseudo-process labels and trailing `.exe` removal |
+
+Behavior expected to stay the same:
+
+- Pet pending-rule prompt details still display the same cleaned process name.
+- Pet idle pseudo-process names still map to the same short away-segment labels.
+- Normal process names still have a trailing `.exe` suffix removed.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the helper runs in the same prompt descriptor path.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this pet process-name helper extraction batch.
+
+Risks:
+
+- Pending-rule prompt display text was validated by typecheck/build only, not by triggering a live pending-rule prompt.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-179.
+
+Follow-up:
+
+- Commit R-180.
+- Run a checkpoint before touching pet drag/window behavior.

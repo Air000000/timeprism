@@ -78,6 +78,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/petDom.ts`: pet-window initial shell template rendering and required DOM element lookup helpers.
 - `src/lib/petPanelMetrics.ts`: pure pet-panel heatmap sizing/fetch-window and usage-stack day selection helpers.
 - `src/lib/petPromptDom.ts`: pet prompt bubble DOM show/hide/render helpers and action button disabled-state handling.
+- `src/lib/petProcessName.ts`: pet-window process name cleanup for idle pseudo-processes and `.exe` suffixes.
 - `src/lib/petPrompts.ts`: pet prompt DTO types plus pure snooze pruning, availability filtering, and active prompt selection helpers.
 - `src/lib/petReminderText.ts`: pet reminder due-text formatting for daily, weekly, and one-time reminders.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.

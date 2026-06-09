@@ -40,6 +40,7 @@ import {
 	renderPromptBubble,
 	type PromptBubbleState,
 } from "./lib/petPromptDom";
+import { cleanPetProcessName } from "./lib/petProcessName";
 import { formatPetReminderDueText } from "./lib/petReminderText";
 import { formatSeconds } from "./lib/time";
 import "./pet.css";
@@ -53,15 +54,6 @@ function getLocale(): LocaleCode {
 
 function tx(zh: string, en: string): string {
 	return translateForLocale(getLocale(), zh, en);
-}
-
-function cleanPetProcessName(name: string): string {
-	return name
-		.replace(/^__idle_learn__\.exe$/i, tx("离开时段（学习）", "Away Segment (Learn)"))
-		.replace(/^__idle_rest__\.exe$/i, tx("离开时段（休息）", "Away Segment (Break)"))
-		.replace(/^__idle__\.exe$/i, tx("离开时段", "Away Segment"))
-		.replace(/\.exe$/i, "")
-		.trim();
 }
 
 let petState: PetDockState = "free";
@@ -347,7 +339,9 @@ async function refreshPromptBubble() {
 			descriptors.push({
 				key,
 				title: tx("新软件待判定", "New App Needs Classification"),
-				detail: `${cleanPetProcessName(process)} · ${formatSeconds(Math.max(0, pending.total_seconds))}`,
+				detail: `${cleanPetProcessName(process, tx)} · ${formatSeconds(
+					Math.max(0, pending.total_seconds),
+				)}`,
 				actions: [
 					{
 						label: tx("学习", "Learn"),
