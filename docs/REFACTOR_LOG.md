@@ -10622,3 +10622,76 @@ Follow-up:
 
 - Commit R-227.
 - Continue with a backend checkpoint after commit.
+
+## 2026-06-09: R-228 Cross-Stack Checkpoint After Heatmap Calendar Text Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the heatmap calendar text helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-227 reduced `useHeatmapCalendar.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Heatmap calendar text helper changes from R-227 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace detailed heatmap calendar label smoke tests in both locales.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-228.
+- Continue with low-risk frontend-helper batches unless detailed heatmap UI smoke results are recorded.
