@@ -4143,3 +4143,87 @@ Follow-up:
 
 - Commit R-145.
 - Continue with smaller shell/context extractions before changing refresh orchestration.
+
+## 2026-06-09: R-146 Heatmap Goal Setting Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Home/Insights shared heatmap preference
+
+Intent:
+
+- Move heatmap goal slider state, saved-goal loading, 15-minute normalization, debounced persistence, and cleanup out of `src/App.vue`.
+- Keep `App.vue` focused on wiring the heatmap goal into Home/Insights data refresh and Home overview context.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useHeatmapGoalSetting.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `learnGoalSliderMinutes` state | `useHeatmapGoalSetting` | Still returned to `App.vue` for Home overview |
+| `getHeatmapGoalSeconds` / slider normalization | `useHeatmapGoalSetting` | Existing read-time sync behavior preserved |
+| heatmap goal API load/save timer | `useHeatmapGoalSetting` | Same backend commands, same debounce value |
+| on-unmount timer cleanup | `cleanupHeatmapGoalSetting` | Called from `App.vue` unmount hook |
+
+Behavior expected to stay the same:
+
+- Saved heatmap goal seconds are loaded on main-window mount and rounded to 15-minute slider steps.
+- Home and Insights heatmap fetches still call the same `getHeatmapGoalSeconds` function shape.
+- Debounced save still uses `setHeatmapGoalSecondsSetting` with the same 260ms delay.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None. Existing frontend calls still target `get_heatmap_goal_seconds_setting` and `set_heatmap_goal_seconds_setting` through the API layer.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- No intended startup or performance change; the saved-goal load still runs during main-window mount.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Existing heatmap-goal persistence semantics were preserved, including the current read-time sync/save scheduling behavior.
+- Home/Insights heatmap behavior was validated by typecheck/build only, not by interactive S-300 or S-700 smoke testing.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-145.
+
+Follow-up:
+
+- Commit R-146.
+- Consider a separate, explicit hardening batch for heatmap-goal save scheduling if runtime smoke testing shows repeated saves.

@@ -23,6 +23,7 @@ import { useDisplayFormatters } from "./composables/useDisplayFormatters";
 import { useGuardData } from "./composables/useGuardData";
 import { useGuardWorkflow } from "./composables/useGuardWorkflow";
 import { useHeatmapCalendar } from "./composables/useHeatmapCalendar";
+import { useHeatmapGoalSetting } from "./composables/useHeatmapGoalSetting";
 import { useHomeData } from "./composables/useHomeData";
 import { useHomeOverview } from "./composables/useHomeOverview";
 import { useHomeRhythm } from "./composables/useHomeRhythm";
@@ -39,8 +40,6 @@ import {
 } from "./lib/time";
 import {
   captureForegroundOnce,
-  getHeatmapGoalSecondsSetting,
-  setHeatmapGoalSecondsSetting,
   type LearnHeatmapCell,
   type RecentLog,
   type UsageStackDay,
@@ -102,9 +101,14 @@ const {
 const recentLogs = ref<RecentLog[]>([]);
 const learnHeatmap = ref<LearnHeatmapCell[]>([]);
 const homeUsageStack = ref<UsageStackDay[]>([]);
-const learnGoalSliderMinutes = ref(120);
 const error = ref("");
 const privacyViewMounted = ref(false);
+const {
+  learnGoalSliderMinutes,
+  getHeatmapGoalSeconds,
+  loadHeatmapGoalSecondsSetting,
+  cleanupHeatmapGoalSetting,
+} = useHeatmapGoalSetting({ setErrorMessage });
 const { homeMonthRhythmBars } = useHomeRhythm(homeUsageStack);
 const {
   monthTitleText,
@@ -232,20 +236,6 @@ function switchHistorySubView(next: HistorySubViewKey) {
   void refreshInsightsData();
 }
 
-function syncGoalFromSlider() {
-  let total = Number.isFinite(learnGoalSliderMinutes.value)
-    ? Math.round(learnGoalSliderMinutes.value / 15) * 15
-    : 120;
-  total = Math.min(1440, Math.max(0, total));
-  learnGoalSliderMinutes.value = total;
-  schedulePersistHeatmapGoal();
-}
-
-function getHeatmapGoalSeconds(): number {
-  syncGoalFromSlider();
-  return learnGoalSliderMinutes.value * 60;
-}
-
 function openGuardWorkflow() {
   selectGuardView();
   void refreshGuardData();
@@ -284,25 +274,7 @@ let pollTimer: number | null = null;
 let captureTimer: number | null = null;
 let navigateSectionUnlisten: UnlistenFn | null = null;
 let sectionFlashTimer: number | null = null;
-let heatmapGoalSaveTimer: number | null = null;
 let settingsWarmTimer: number | null = null;
-
-function schedulePersistHeatmapGoal() {
-  if (heatmapGoalSaveTimer !== null) {
-    window.clearTimeout(heatmapGoalSaveTimer);
-    heatmapGoalSaveTimer = null;
-  }
-
-  heatmapGoalSaveTimer = window.setTimeout(async () => {
-    try {
-      await setHeatmapGoalSecondsSetting(getHeatmapGoalSeconds());
-    } catch (e) {
-      setErrorMessage(e);
-    } finally {
-      heatmapGoalSaveTimer = null;
-    }
-  }, 260);
-}
 
 function onLocaleChange(event: Event) {
   const input = event.target as HTMLSelectElement;
@@ -473,13 +445,7 @@ onMounted(async () => {
     applyTheme("light");
   }
 
-  try {
-    const savedGoalSeconds = await getHeatmapGoalSecondsSetting();
-    const minutes = Math.round(savedGoalSeconds / 60 / 15) * 15;
-    learnGoalSliderMinutes.value = Math.min(1440, Math.max(0, minutes));
-  } catch (e) {
-    setErrorMessage(e);
-  }
+  await loadHeatmapGoalSecondsSetting();
 
   resetGuardFeedback();
   resetPrivacyFeedback();
@@ -543,10 +509,7 @@ onUnmounted(() => {
     window.clearTimeout(sectionFlashTimer);
     sectionFlashTimer = null;
   }
-  if (heatmapGoalSaveTimer !== null) {
-    window.clearTimeout(heatmapGoalSaveTimer);
-    heatmapGoalSaveTimer = null;
-  }
+  cleanupHeatmapGoalSetting();
 });
 </script>
 
