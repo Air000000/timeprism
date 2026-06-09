@@ -6660,3 +6660,86 @@ Follow-up:
 
 - Commit R-177.
 - Continue with small pet prompt rendering or summary helper extractions, or run interactive pet smoke testing before touching drag/window behavior.
+
+## 2026-06-09: R-178 Pet Prompt Bubble DOM Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet window
+- prompt bubble DOM
+
+Intent:
+
+- Move prompt bubble show/hide/render DOM code out of `src/pet.ts`.
+- Keep prompt descriptor construction, Tauri command actions, prompt refresh, and action error text in `src/pet.ts`.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petPromptDom.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| prompt bubble hide DOM mutation | `hidePromptBubble` | Same state reset, class removal, and child clearing |
+| prompt bubble title/detail/action DOM render | `renderPromptBubble` | Same classes, text assignment, and visible/down class handling |
+| action button disabled/re-enable flow | `renderPromptBubble` | Same button guard, all-button disable during action, and finally re-enable |
+
+Behavior expected to stay the same:
+
+- The same prompt key is not re-rendered while the bubble is already visible.
+- Prompt title/detail/action markup and classes are unchanged.
+- Prompt action buttons are disabled while an action is running and re-enabled afterward.
+- Prompt action errors still flow through the same pet mood/error reporter text from `src/pet.ts`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; prompt DOM is rendered in the same refresh path.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this prompt bubble DOM helper extraction batch.
+
+Risks:
+
+- Prompt bubble rendering and button behavior were validated by typecheck/build only, not by interacting with live reminder/idle/rule prompts.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-177.
+
+Follow-up:
+
+- Commit R-178.
+- Consider a pet-window smoke pass before extracting drag/window behavior; otherwise continue with pure summary/text helpers.

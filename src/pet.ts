@@ -32,10 +32,14 @@ import {
 	pruneExpiredPromptSnoozes,
 	type IdlePromptLite,
 	type PendingRuleProcessLite,
-	type PromptAction,
 	type PromptDescriptor,
 	type ReminderLite,
 } from "./lib/petPrompts";
+import {
+	hidePromptBubble,
+	renderPromptBubble,
+	type PromptBubbleState,
+} from "./lib/petPromptDom";
 import { formatSeconds } from "./lib/time";
 import "./pet.css";
 
@@ -140,7 +144,7 @@ function setPetCharacterSrc(src: string) {
 (window as Window & { setTimePrismPetCharacter?: (src: string) => void }).setTimePrismPetCharacter = setPetCharacterSrc;
 
 const promptSnoozeUntilByKey = new Map<string, number>();
-let currentPromptKey = "";
+const promptBubbleState: PromptBubbleState = { currentPromptKey: "" };
 
 async function setPanelMode(next: "summary" | "heatmap" | "stack") {
 	currentPanelMode = next;
@@ -214,12 +218,6 @@ function reportActionError(shortText: string, detail: unknown) {
 	console.error(`[pet] ${shortText}`, detail);
 }
 
-function hidePromptBubble() {
-	currentPromptKey = "";
-	promptBubble.classList.remove("visible", "down");
-	promptBubble.replaceChildren();
-}
-
 function closeContextMenu() {
 	// Native context menu is ephemeral and managed by the OS.
 }
@@ -270,62 +268,6 @@ async function openContextMenu(clientX: number, clientY: number) {
 	} catch (e) {
 		reportActionError(tx("右键菜单打开失败", "Context menu failed"), e);
 	}
-}
-
-function renderPromptBubble(
-	promptKey: string,
-	title: string,
-	detail: string,
-	actions: PromptAction[],
-) {
-	if (currentPromptKey === promptKey && promptBubble.classList.contains("visible")) {
-		return;
-	}
-
-	currentPromptKey = promptKey;
-	promptBubble.replaceChildren();
-
-	const titleEl = document.createElement("div");
-	titleEl.className = "prompt-title";
-	titleEl.textContent = title;
-
-	const detailEl = document.createElement("div");
-	detailEl.className = "prompt-detail";
-	detailEl.textContent = detail;
-
-	const actionWrap = document.createElement("div");
-	actionWrap.className = "prompt-actions";
-
-	const buttons: HTMLButtonElement[] = [];
-	for (const action of actions) {
-		const button = document.createElement("button");
-		button.type = "button";
-		button.className = "prompt-action";
-		button.textContent = action.label;
-		button.addEventListener("click", async () => {
-			if (button.disabled) {
-				return;
-			}
-			for (const btn of buttons) {
-				btn.disabled = true;
-			}
-			try {
-				await action.run();
-			} catch (e) {
-				reportActionError(tx("提示操作失败", "Action failed"), e);
-			} finally {
-				for (const btn of buttons) {
-					btn.disabled = false;
-				}
-			}
-		});
-		buttons.push(button);
-		actionWrap.appendChild(button);
-	}
-
-	promptBubble.append(titleEl, detailEl, actionWrap);
-	promptBubble.classList.remove("down");
-	promptBubble.classList.add("visible");
 }
 
 async function refreshPromptBubble() {
@@ -478,15 +420,23 @@ async function refreshPromptBubble() {
 		pruneExpiredPromptSnoozes(promptSnoozeUntilByKey, nowMs);
 		const active = pickActivePromptDescriptor(
 			availablePromptDescriptors(descriptors, promptSnoozeUntilByKey, nowMs),
-			currentPromptKey,
+			promptBubbleState.currentPromptKey,
 		);
 
 		if (!active) {
-			hidePromptBubble();
+			hidePromptBubble(promptBubble, promptBubbleState);
 			return;
 		}
 
-		renderPromptBubble(active.key, active.title, active.detail, active.actions);
+		renderPromptBubble({
+			promptBubble,
+			state: promptBubbleState,
+			promptKey: active.key,
+			title: active.title,
+			detail: active.detail,
+			actions: active.actions,
+			onActionError: (e) => reportActionError(tx("提示操作失败", "Action failed"), e),
+		});
 		return;
 	} catch (e) {
 		console.error("[pet] refresh prompt bubble failed", e);
