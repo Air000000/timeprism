@@ -3,11 +3,13 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
+import IdlePromptBanner from "./components/IdlePromptBanner.vue";
 import InsightsView from "./components/InsightsView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import type {
   GuardViewContext,
   HomeViewContext,
+  IdlePromptBannerContext,
   InsightsViewContext,
   SettingsViewContext,
 } from "./components/viewContexts";
@@ -138,6 +140,7 @@ const {
   handleUpdateExistingRule,
   handleSavePendingRule,
   onAutoCaptureToggle,
+  onIdleRememberChoiceChange,
   onRuleSearchInput,
   onRuleSortChange,
   onRuleMappedTypeChange,
@@ -1205,6 +1208,22 @@ async function scrollToInsightsSection(section: string) {
   flashInsightsSection(target);
 }
 
+const idlePromptBannerCtx = computed<IdlePromptBannerContext | null>(() => {
+  if (!currentIdlePrompt.value) {
+    return null;
+  }
+
+  return {
+    tx,
+    currentIdlePrompt: currentIdlePrompt.value,
+    formatIdlePromptSpan,
+    idleRememberChoice: idleRememberChoice.value,
+    onIdleRememberChoiceChange,
+    idleActionLoading: idleActionLoading.value,
+    handleResolveIdle,
+  };
+});
+
 const homeCtx = computed(() => ({
   tx,
   formatSeconds,
@@ -1462,21 +1481,7 @@ onUnmounted(() => {
     </section>
 
     <div class="content-scroll">
-      <section v-if="currentIdlePrompt" class="card idle-inline" :aria-label="tx('离开时段待确认', 'Idle Segment Confirmation')">
-        <h2>{{ tx("离开时段待确认", "Idle Segment Confirmation") }}</h2>
-        <p class="hint">{{ tx("系统空闲超过5分钟后触发，已回补完整时段。", "Triggered after 5+ minutes idle; full segment has been backfilled.") }}</p>
-        <p class="idle-span">{{ formatIdlePromptSpan(currentIdlePrompt) }}</p>
-        <div class="toggle-row" style="margin-top: 8px;">
-          <input id="idle-remember-choice" type="checkbox" v-model="idleRememberChoice" />
-          <label for="idle-remember-choice">{{ tx("记住本次选择（后续离开时段自动应用）", "Remember this choice for later idle segments") }}</label>
-        </div>
-        <div class="diag-actions" style="margin-top: 8px;">
-          <button type="button" :disabled="idleActionLoading" @click="handleResolveIdle('LEARN')">{{ tx("标记为学习", "Mark as Learn") }}</button>
-          <button type="button" :disabled="idleActionLoading" @click="handleResolveIdle('REST')">{{ tx("标记为休息", "Mark as Break") }}</button>
-          <button type="button" :disabled="idleActionLoading" @click="handleResolveIdle('IDLE')">{{ tx("标记为离开", "Mark as Away") }}</button>
-          <button type="button" :disabled="idleActionLoading" @click="handleResolveIdle('SKIP')">{{ tx("稍后提醒", "Remind me later") }}</button>
-        </div>
-      </section>
+      <IdlePromptBanner v-if="idlePromptBannerCtx" :ctx="idlePromptBannerCtx" />
 
       <HomeView v-if="currentMainView === 'home'" :ctx="homeCtx" />
       <InsightsView v-if="currentMainView === 'insights'" :ctx="insightsCtx" />

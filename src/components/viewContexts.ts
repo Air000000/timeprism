@@ -99,6 +99,16 @@ export type SettingsViewContext = {
   handleRemoveWhitelist: (processName: string) => Promise<void> | void;
 };
 
+export type IdlePromptBannerContext = {
+  tx: TranslateFn;
+  currentIdlePrompt: IdlePrompt;
+  formatIdlePromptSpan: (item: IdlePrompt) => string;
+  idleRememberChoice: boolean;
+  onIdleRememberChoiceChange: (event: Event) => void;
+  idleActionLoading: boolean;
+  handleResolveIdle: (decision: IdleDecision, promptId?: number) => Promise<void> | void;
+};
+
 export type InsightsViewContext = {
   tx: TranslateFn;
   historySubViews: HistorySubViewOption[];

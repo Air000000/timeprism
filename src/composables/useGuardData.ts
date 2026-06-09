@@ -262,6 +262,11 @@ export function useGuardData({
     autoCaptureEnabled.value = input.checked;
   }
 
+  function onIdleRememberChoiceChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    idleRememberChoice.value = input.checked;
+  }
+
   function onRuleSearchInput(event: Event) {
     const input = event.target as HTMLInputElement;
     ruleSearch.value = input.value;
@@ -305,6 +310,7 @@ export function useGuardData({
     handleUpdateExistingRule,
     handleSavePendingRule,
     onAutoCaptureToggle,
+    onIdleRememberChoiceChange,
     onRuleSearchInput,
     onRuleSortChange,
     onRuleMappedTypeChange,

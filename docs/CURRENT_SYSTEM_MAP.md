@@ -38,6 +38,7 @@ Important sibling folders in the larger workspace:
 - `src/api/commands/`: frontend Tauri command wrappers grouped by feature domain.
 - `src/components/viewContexts.ts`: typed component context contracts shared by `App.vue` and feature views.
 - `src/components/HomeView.vue`: home surface.
+- `src/components/IdlePromptBanner.vue`: top-level idle prompt confirmation banner.
 - `src/components/InsightsView.vue`: history and usage views.
 - `src/components/GuardView.vue`: pending apps, idle queue, rules, diagnostics.
 - `src/components/SettingsView.vue`: interface, startup, privacy sampling policy, and whitelist settings UI.

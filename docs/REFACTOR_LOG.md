@@ -3069,3 +3069,86 @@ Follow-up:
 
 - Commit R-132.
 - Consider extracting the inline idle prompt banner or continuing with Insights/Home feature-state cleanup.
+
+## 2026-06-09: R-133 Idle Prompt Banner Component Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- guard
+- idle prompt
+
+Intent:
+
+- Move the top-level idle prompt confirmation banner out of `src/App.vue`.
+- Keep idle prompt state and actions in `useGuardData`, while making App template a thinner shell.
+
+Files changed:
+
+- `src/App.vue`
+- `src/components/IdlePromptBanner.vue`
+- `src/components/viewContexts.ts`
+- `src/composables/useGuardData.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Inline idle prompt banner template in `App.vue` | `src/components/IdlePromptBanner.vue` | Same visible copy and buttons |
+| implicit idle banner fields | `IdlePromptBannerContext` in `src/components/viewContexts.ts` | Typed prompt, checkbox, loading, and action contract |
+| direct checkbox `v-model` in App template | `onIdleRememberChoiceChange` in `useGuardData` | Same boolean update behavior |
+
+Behavior expected to stay the same:
+
+- The banner still appears only when there is a current idle prompt.
+- The remember-choice checkbox still updates the same `idleRememberChoice` state.
+- Learn/Rest/Away/Skip buttons still call `handleResolveIdle` with the same decisions.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this component extraction batch.
+
+Risks:
+
+- Idle prompt banner interactions were validated by typecheck/build only, not by interactive S-500 smoke testing.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-132.
+
+Follow-up:
+
+- Commit R-133.
+- Continue Phase 4 with Insights/Home feature-state cleanup or close a scoped Phase 4 checkpoint for settings/reminders/guard.
