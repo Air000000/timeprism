@@ -2643,3 +2643,89 @@ Rollback point:
 Next phase:
 
 - Phase 4: feature extraction, starting with settings/privacy or reminders.
+
+## 2026-06-09: R-128 Settings View Component Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- settings/privacy
+
+Intent:
+
+- Move the Settings/Privacy page template out of `src/App.vue` into a feature view component.
+- Keep settings/privacy state and API handlers in `src/App.vue` for this batch, so the extraction is focused on the view boundary.
+- Add a typed settings view context to preserve App-to-settings field coverage.
+
+Files changed:
+
+- `src/App.vue`
+- `src/components/SettingsView.vue`
+- `src/components/viewContexts.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Settings/Privacy template block in `App.vue` | `src/components/SettingsView.vue` | Same sections: display, startup, sampling policy, whitelist |
+| implicit settings field usage | `SettingsViewContext` in `src/components/viewContexts.ts` | Typed context for settings component |
+| `v-model` for primitive App refs | explicit event handlers in `App.vue` | Language, auto-start, and whitelist input now update through handlers |
+
+Behavior expected to stay the same:
+
+- Settings page still mounts lazily through `privacyViewMounted`.
+- Language select still updates `locale`, and existing locale watcher still persists/applies it.
+- Theme toggle still calls `toggleThemeMode`.
+- Auto-start checkbox still updates `autoStartEnabled`; save still persists it.
+- Privacy setting fields still mutate the same `privacy` object before save.
+- Whitelist input/add/remove still calls the same App handlers.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None. Existing frontend handlers still call the same API wrappers.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- No intended privacy behavior change.
+
+Startup/performance impact:
+
+- No intended startup behavior change. The settings view is a component instead of an inline App template.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this component extraction batch.
+
+Risks:
+
+- Settings/privacy interactions were validated by typecheck/build only, not by interactive S-600 smoke testing.
+- Settings/privacy state still lives in `src/App.vue`; moving it to a feature composable remains future work.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the Phase 3 gate commit `db6dc27`.
+
+Follow-up:
+
+- Commit R-128.
+- Extract settings/privacy state and handlers into a focused composable or feature module.

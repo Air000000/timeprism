@@ -4,17 +4,21 @@ import type {
   IdlePrompt,
   LearnHeatmapCell,
   PendingRuleProcess,
+  PrivacySettings,
   RecentLog,
   Reminder,
   TopApp,
 } from "../api";
 import type { HistorySubViewKey } from "../composables/useAppNavigation";
+import type { LocaleCode } from "../composables/useLocale";
+import type { ThemeMode } from "../composables/useThemeMode";
 
 export type TranslateFn = (zh: string, en: string) => string;
 export type AllTimeFilter = "ALL" | "LEARN" | "REST";
 export type RuleMappedType = "LEARN" | "REST" | "IGNORE";
 export type IdleDecision = "LEARN" | "REST" | "IDLE" | "SKIP";
 export type RuleSortKey = "alpha_asc" | "alpha_desc" | "time_desc" | "time_asc";
+export type FeedbackTone = "info" | "ok" | "warn" | "error";
 
 export type HistorySubViewOption = {
   key: HistorySubViewKey;
@@ -83,6 +87,25 @@ export type HomeViewContext = {
   idlePromptCount: number;
   dueReminderCount: number;
   homeMonthRhythmBars: HomeRhythmBar[];
+};
+
+export type SettingsViewContext = {
+  tx: TranslateFn;
+  locale: LocaleCode;
+  onLocaleChange: (event: Event) => void;
+  themeMode: ThemeMode;
+  toggleThemeMode: () => void;
+  autoStartEnabled: boolean;
+  onAutoStartChange: (event: Event) => void;
+  privacy: PrivacySettings;
+  handleSavePrivacySettings: () => Promise<void> | void;
+  privacyFeedbackType: FeedbackTone;
+  privacyFeedback: string;
+  whitelistInput: string;
+  onWhitelistInput: (event: Event) => void;
+  handleAddWhitelist: () => Promise<void> | void;
+  whitelist: string[];
+  handleRemoveWhitelist: (processName: string) => Promise<void> | void;
 };
 
 export type InsightsViewContext = {
