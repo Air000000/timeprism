@@ -4629,3 +4629,72 @@ Follow-up:
 
 - Commit R-151.
 - Consider a main-window smoke pass before deeper lifecycle consolidation.
+
+## 2026-06-09: R-152 Main Window Extraction Health Checkpoint
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- validation
+- frontend shell checkpoint
+
+Intent:
+
+- Record a clean checkpoint after the R-144 through R-151 main-window shell/style/lifecycle extractions.
+- Validate that the Rust Tauri side still checks after the frontend-only refactor batches.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to stay the same:
+
+- No source behavior changed in this docs-only checkpoint.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `git status --short --branch` showed a clean `refactor/architecture` worktree before the checkpoint note.
+- `cargo check` from `src-tauri` passed.
+- R-144 through R-151 each passed `pnpm.cmd run typecheck`, `pnpm.cmd run build:check`, `git diff --check`, and `git diff --cached --check` before commit.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint confirms compilation and traceability, not interactive UI behavior.
+- Main-window smoke tests remain recommended before larger context or lifecycle consolidation.
+
+Rollback:
+
+- No source rollback needed for this docs-only checkpoint.
+- Revert this checkpoint commit if the validation note is not wanted.
+
+Follow-up:
+
+- Commit R-152.
+- Continue with context assembly extraction or run an interactive smoke pass.
