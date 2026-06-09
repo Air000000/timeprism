@@ -56,6 +56,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHomeSchedule.ts`: Home reminder visibility filtering and due-text presentation.
 - `src/composables/useInsightsData.ts`: Insights top-app/all-time/recent-log loading, all-time filters, and visible Insights derived view data.
 - `src/composables/useInsightsSectionNavigation.ts`: Insights section event target switching, DOM flash highlighting, and flash timer cleanup.
+- `src/composables/useLazySettingsMount.ts`: settings view lazy mount state, immediate refresh-on-open, warmup refresh timer, and cleanup.
 - `src/composables/useLocale.ts`: main-window locale state, translation helper, document language sync, and localStorage persistence.
 - `src/composables/useReminders.ts`: reminder list state, reminder sorting, upsert/delete/done/reorder/snooze actions, and reminder action loading.
 - `src/composables/useSettingsPrivacy.ts`: settings/privacy state, auto-start loading/saving, whitelist actions, and settings refresh cache.

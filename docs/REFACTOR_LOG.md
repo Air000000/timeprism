@@ -4465,3 +4465,86 @@ Follow-up:
 
 - Commit R-149.
 - Consider interactive capture smoke testing before further capture lifecycle changes.
+
+## 2026-06-09: R-150 Lazy Settings Mount Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Settings lifecycle
+
+Intent:
+
+- Move settings view lazy mount state and warmup timer cleanup out of `src/App.vue`.
+- Keep `App.vue` responsible for deciding when the Settings tab is selected and when mount/unmount lifecycle starts.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useLazySettingsMount.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `privacyViewMounted` state | `useLazySettingsMount` | Still consumed by the Settings view `v-if` |
+| zero-delay refresh when Settings is opened | `showSettingsViewAndRefresh` | Same `window.setTimeout(..., 0)` behavior |
+| 1200ms settings warmup timer | `startSettingsWarmup` | Same warmup delay |
+| warmup timer cleanup | `cleanupSettingsWarmup` | Called from `App.vue` unmount hook |
+
+Behavior expected to stay the same:
+
+- Settings view is still lazily mounted.
+- Opening Settings still mounts it and queues an immediate settings refresh.
+- Main-window mount still warms Settings data after 1200ms.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended; privacy settings loading/saving remains in `useSettingsPrivacy`.
+
+Startup/performance impact:
+
+- None expected; same warmup delay and refresh call timing.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this settings lifecycle extraction batch.
+
+Risks:
+
+- Settings open/warmup behavior was validated by typecheck/build only, not by S-600 interactive smoke testing.
+- The zero-delay refresh timer remains intentionally untracked, matching previous behavior.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-149.
+
+Follow-up:
+
+- Commit R-150.
+- Consider Settings/privacy interactive smoke testing before changing settings persistence behavior.

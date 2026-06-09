@@ -31,6 +31,7 @@ import { useHomeRhythm } from "./composables/useHomeRhythm";
 import { useHomeSchedule } from "./composables/useHomeSchedule";
 import { useInsightsData } from "./composables/useInsightsData";
 import { useInsightsSectionNavigation } from "./composables/useInsightsSectionNavigation";
+import { useLazySettingsMount } from "./composables/useLazySettingsMount";
 import { useLocale } from "./composables/useLocale";
 import { useReminders } from "./composables/useReminders";
 import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
@@ -86,6 +87,12 @@ const {
   onWhitelistInput,
 } = useSettingsPrivacy({ tx, refreshData, setErrorMessage });
 const {
+  privacyViewMounted,
+  showSettingsViewAndRefresh,
+  startSettingsWarmup,
+  cleanupSettingsWarmup,
+} = useLazySettingsMount({ refreshSettingsData });
+const {
   reminders,
   reminderActionLoading,
   reminderListForPanel,
@@ -110,7 +117,6 @@ const recentLogs = ref<RecentLog[]>([]);
 const learnHeatmap = ref<LearnHeatmapCell[]>([]);
 const homeUsageStack = ref<UsageStackDay[]>([]);
 const error = ref("");
-const privacyViewMounted = ref(false);
 const {
   learnGoalSliderMinutes,
   getHeatmapGoalSeconds,
@@ -264,10 +270,7 @@ function setMainView(next: MainViewKey) {
   } else if (next === "guard") {
     void refreshGuardData();
   } else if (next === "privacy") {
-    privacyViewMounted.value = true;
-    window.setTimeout(() => {
-      void refreshSettingsData();
-    }, 0);
+    showSettingsViewAndRefresh();
   }
 }
 
@@ -288,7 +291,6 @@ async function refreshData() {
 
 let pollTimer: number | null = null;
 let navigateSectionUnlisten: UnlistenFn | null = null;
-let settingsWarmTimer: number | null = null;
 
 function onLocaleChange(event: Event) {
   const input = event.target as HTMLSelectElement;
@@ -437,10 +439,7 @@ onMounted(async () => {
   resetGuardFeedback();
   resetPrivacyFeedback();
   void refreshHomeData();
-  settingsWarmTimer = window.setTimeout(() => {
-    privacyViewMounted.value = true;
-    void refreshSettingsData();
-  }, 1200);
+  startSettingsWarmup();
   pollTimer = window.setInterval(() => {
     void refreshHomeData();
     if (currentMainView.value === "guard") {
@@ -468,10 +467,7 @@ onUnmounted(() => {
     pollTimer = null;
   }
   stopAutoCaptureSampler();
-  if (settingsWarmTimer !== null) {
-    window.clearTimeout(settingsWarmTimer);
-    settingsWarmTimer = null;
-  }
+  cleanupSettingsWarmup();
   if (navigateSectionUnlisten) {
     navigateSectionUnlisten();
     navigateSectionUnlisten = null;
