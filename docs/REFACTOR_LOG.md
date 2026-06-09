@@ -5773,3 +5773,83 @@ Follow-up:
 
 - Commit R-166.
 - Prefer an interactive main-window smoke pass before refactoring `refreshData` or `setMainView`.
+
+## 2026-06-09: R-167 Main Window Lifecycle Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- main-window lifecycle
+
+Intent:
+
+- Move the main-window mount/unmount startup and cleanup sequence out of `src/App.vue`.
+- Keep the same startup order while leaving `refreshData` and `setMainView` behavior untouched.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useMainWindowLifecycle.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `onMounted` startup sequence | `useMainWindowLifecycle` | Same init/load/reset/refresh/start order |
+| `onUnmounted` cleanup sequence | `useMainWindowLifecycle` | Same stop/cleanup order |
+
+Behavior expected to stay the same:
+
+- Main-window mount still initializes locale and theme, loads the heatmap goal, resets feedback, refreshes Home data, starts warmup/polling/capture, and registers Insights section navigation.
+- Main-window unmount still stops polling/capture and cleans settings, Insights navigation, and heatmap goal timers.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; startup ordering and timer start points are preserved.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this lifecycle extraction batch.
+
+Risks:
+
+- Main-window runtime startup behavior was validated by typecheck/build only, not by S-100/S-300/S-500 smoke testing.
+- A release `timeprism.exe` process was already running before this batch, so release rebuild/smoke was intentionally deferred to avoid file-lock churn.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-166.
+
+Follow-up:
+
+- Commit R-167.
+- Prefer interactive main-window smoke testing before refactoring `refreshData` or `setMainView`.

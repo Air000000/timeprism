@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from "vue";
 import AppTopNav from "./components/AppTopNav.vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
@@ -32,6 +31,7 @@ import { useLazySettingsMount } from "./composables/useLazySettingsMount";
 import { useLocale } from "./composables/useLocale";
 import { useMainDataBuffers } from "./composables/useMainDataBuffers";
 import { useMainRefreshPolling } from "./composables/useMainRefreshPolling";
+import { useMainWindowLifecycle } from "./composables/useMainWindowLifecycle";
 import { useReminders } from "./composables/useReminders";
 import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
 import { useSettingsViewContext } from "./composables/useSettingsViewContext";
@@ -392,29 +392,22 @@ async function refreshData() {
   }
 }
 
-onMounted(async () => {
-  initLocale();
-  initThemeModeSafely();
-
-  await loadHeatmapGoalSecondsSetting();
-
-  resetGuardFeedback();
-  resetPrivacyFeedback();
-  void refreshHomeData();
-  startSettingsWarmup();
-  startMainRefreshPolling();
-
-  startAutoCaptureSampler();
-
-  await startInsightsSectionNavigationListener();
-});
-
-onUnmounted(() => {
-  stopMainRefreshPolling();
-  stopAutoCaptureSampler();
-  cleanupSettingsWarmup();
-  cleanupInsightsSectionNavigation();
-  cleanupHeatmapGoalSetting();
+useMainWindowLifecycle({
+  initLocale,
+  initThemeModeSafely,
+  loadHeatmapGoalSecondsSetting,
+  resetGuardFeedback,
+  resetPrivacyFeedback,
+  refreshHomeData,
+  startSettingsWarmup,
+  startMainRefreshPolling,
+  startAutoCaptureSampler,
+  startInsightsSectionNavigationListener,
+  stopMainRefreshPolling,
+  stopAutoCaptureSampler,
+  cleanupSettingsWarmup,
+  cleanupInsightsSectionNavigation,
+  cleanupHeatmapGoalSetting,
 });
 </script>
 
