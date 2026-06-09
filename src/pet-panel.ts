@@ -14,7 +14,13 @@ import {
   petPanelStackPercent,
   petPanelStackSignature,
 } from "./lib/petPanelStack";
-import { petPanelWeekHeaders } from "./lib/petPanelText";
+import {
+  petPanelBusinessDayText,
+  petPanelEmptyStackText,
+  petPanelModeTitle,
+  petPanelTotalText,
+  petPanelWeekHeaders,
+} from "./lib/petPanelText";
 import { formatSeconds } from "./lib/time";
 import "./pet-panel.css";
 
@@ -113,7 +119,7 @@ function renderStack(days: UsageStackDay[]) {
     panelStack.replaceChildren();
     const empty = document.createElement("div");
     empty.className = "mini-empty";
-    empty.textContent = tx("暂无今日色块", "No stack data for today");
+    empty.textContent = petPanelEmptyStackText(tx);
     panelStack.appendChild(empty);
     return;
   }
@@ -127,7 +133,7 @@ function renderStack(days: UsageStackDay[]) {
 
   const dayText = document.createElement("div");
   dayText.className = "stack-day";
-  dayText.textContent = tx(`业务日 ${day.day}`, `Business day ${day.day}`);
+  dayText.textContent = petPanelBusinessDayText(day.day, tx);
 
   const parts = buildPetPanelStackParts(day, tx);
 
@@ -151,16 +157,14 @@ function renderStack(days: UsageStackDay[]) {
 
   const meta = document.createElement("div");
   meta.className = "mini-stack-meta";
-  meta.textContent = tx(`总计 ${formatSeconds(day.total_seconds)}`, `Total ${formatSeconds(day.total_seconds)}`);
+  meta.textContent = petPanelTotalText(day.total_seconds, tx);
 
   panelStack.append(dayText, bar, meta);
 }
 
 function updateMode(next: "heatmap" | "stack") {
   mode = next;
-  panelTitle.textContent = next === "heatmap"
-    ? tx("学习日历", "Learning Calendar")
-    : tx("周活跃", "Weekly Activity");
+  panelTitle.textContent = petPanelModeTitle(next, tx);
   panelHeatmap.style.display = next === "heatmap" ? "grid" : "none";
   panelStack.style.display = next === "stack" ? "grid" : "none";
   heatPrevMonthBtn.style.display = next === "heatmap" ? "inline-grid" : "none";

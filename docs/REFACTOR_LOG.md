@@ -7360,3 +7360,86 @@ Follow-up:
 
 - Commit R-186.
 - Continue with small pet-panel render helpers or record detailed pet-panel smoke results.
+
+## 2026-06-09: R-187 Pet Panel Text Helper Expansion
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet panel
+- locale text
+
+Intent:
+
+- Move pet-panel mode titles, stack empty-state text, business-day label, and stack total label into `src/lib/petPanelText.ts`.
+- Keep DOM rendering and panel mode display toggles in `src/pet-panel.ts`.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelText.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| stack empty-state text | `petPanelEmptyStackText` | Same zh/en copy |
+| business-day stack label | `petPanelBusinessDayText` | Same day interpolation |
+| stack total label | `petPanelTotalText` | Same `formatSeconds` formatting |
+| heatmap/stack mode title | `petPanelModeTitle` | Same Learning Calendar / Weekly Activity labels |
+
+Behavior expected to stay the same:
+
+- Pet-panel mode title text remains unchanged.
+- Stack empty-state, business-day, and total labels remain unchanged.
+- `src/pet-panel.ts` still owns when those labels are rendered and which DOM nodes receive them.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; label generation is unchanged and still happens during render/update.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this text-helper expansion batch.
+
+Risks:
+
+- Pet-panel visible text was validated by typecheck/build only, not by opening heatmap and stack modes.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-186.
+
+Follow-up:
+
+- Commit R-187.
+- Continue with small render-helper extractions or record detailed pet-panel smoke results.
