@@ -6,6 +6,10 @@ import {
   dayKeyFromUnixSeconds,
   timeMinutesLabel,
 } from "./time";
+import {
+  normalizeReminderWeeklyDays,
+  reminderWeekdayShortLabel,
+} from "./reminderWeekdays";
 
 type TranslateFn = (zh: string, en: string) => string;
 
@@ -19,20 +23,12 @@ function formatReminderDateTime(unixSeconds: number, locale: LocaleCode): string
   });
 }
 
-function reminderWeekdayShortLabel(day: number, locale: LocaleCode): string {
-  const zh = ["日", "一", "二", "三", "四", "五", "六"];
-  const en = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return locale === "zh-CN" ? (zh[day] ?? `${day}`) : (en[day] ?? `${day}`);
-}
-
 export function formatReminderWeeklyDaysText(
   days: number[] | null | undefined,
   locale: LocaleCode,
   tx: TranslateFn,
 ): string {
-  const safe = (days ?? [])
-    .filter((day, index, arr) => Number.isInteger(day) && day >= 0 && day <= 6 && arr.indexOf(day) === index)
-    .sort((a, b) => a - b);
+  const safe = normalizeReminderWeeklyDays(days);
   if (safe.length === 0) {
     return tx("未选择", "No days");
   }

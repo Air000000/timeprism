@@ -1,5 +1,6 @@
 import type { Reminder } from "../api";
 import { parseClockToMinutes, parseDateTimeLocalToUnix } from "./time";
+import { normalizeReminderWeeklyDays } from "./reminderWeekdays";
 
 type TranslateFn = (zh: string, en: string) => string;
 
@@ -22,12 +23,6 @@ export type ReminderSavePayload = {
   weekly_days?: number[];
 };
 
-function normalizeWeeklyDays(days: number[] | undefined): number[] {
-  return (days ?? [])
-    .filter((day, index, arr) => Number.isInteger(day) && day >= 0 && day <= 6 && arr.indexOf(day) === index)
-    .sort((a, b) => a - b);
-}
-
 export function buildReminderSavePayload(
   input: ReminderUpsertInput,
   tx: TranslateFn,
@@ -49,7 +44,7 @@ export function buildReminderSavePayload(
 
     let weeklyDays: number[] | undefined;
     if (input.repeat_rule === "WEEKLY") {
-      weeklyDays = normalizeWeeklyDays(input.weekly_days);
+      weeklyDays = normalizeReminderWeeklyDays(input.weekly_days);
       if (weeklyDays.length === 0) {
         throw new Error(tx("请选择每周重复的日期", "Please choose at least one weekday"));
       }

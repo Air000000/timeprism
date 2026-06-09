@@ -9596,3 +9596,90 @@ Follow-up:
 
 - Commit R-214.
 - Continue with low-risk frontend-helper batches unless detailed Home reminder UI smoke results are recorded.
+
+## 2026-06-09: R-215 Reminder Weekday Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- reminders
+- Home reminder panel
+
+Intent:
+
+- Extract shared weekday option, default-weekday, weekday-label, and weekly-day normalization helpers.
+- Reduce duplicate weekday arrays and normalization logic across reminder save payloads, Home schedule text, and the Home reminder panel.
+- Keep reminder edit modal state, drag/drop reorder behavior, and API calls in `useHomeReminderPanel` and `useReminders`.
+
+Files changed:
+
+- `src/composables/useHomeReminderPanel.ts`
+- `src/lib/reminderSchedule.ts`
+- `src/lib/reminderUpsert.ts`
+- `src/lib/reminderWeekdays.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `DEFAULT_WEEKLY_DAYS` and weekday option array | `src/lib/reminderWeekdays.ts` | Same default Monday-Friday days and same Sun-Sat labels |
+| weekly-day normalization in `reminderUpsert.ts` | `src/lib/reminderWeekdays.ts::normalizeReminderWeeklyDays` | Same integer, range, de-duplication, and ascending-sort behavior |
+| weekday short label lookup in `reminderSchedule.ts` | `src/lib/reminderWeekdays.ts::reminderWeekdayShortLabel` | Same locale-specific labels and numeric fallback |
+
+Behavior expected to stay the same:
+
+- New weekly reminders still default to Monday-Friday.
+- Home reminder panel weekday chips still show the same localized labels.
+- Saving weekly reminders still filters invalid values, removes duplicates, sorts ascending, and requires at least one valid day.
+- Home schedule weekly-day text still filters invalid values, removes duplicates, sorts ascending, and falls back to the same empty text.
+- Editing an existing weekly reminder still copies and sorts existing `weekly_days` without adding new filtering in the edit-state path.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same small array operations now run through shared helpers.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this weekday helper extraction batch.
+
+Risks:
+
+- Home reminder panel chip rendering and weekly reminder save behavior were validated by typecheck/build only, not by manual UI smoke.
+
+Rollback:
+
+- Revert this batch to move weekday options, defaults, label lookup, and normalization back to their prior files.
+
+Follow-up:
+
+- Commit R-215.
+- Continue with a backend checkpoint after commit.

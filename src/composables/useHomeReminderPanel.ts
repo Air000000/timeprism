@@ -1,22 +1,13 @@
 import { ref } from "vue";
 import type { Reminder } from "../api";
 import type { FeedbackTone, HomeViewContext } from "../components/viewContexts";
+import {
+  defaultReminderWeeklyDays,
+  reminderWeekdayOptions,
+  type ReminderWeekdayOption,
+} from "../lib/reminderWeekdays";
 
-const DEFAULT_WEEKLY_DAYS = [1, 2, 3, 4, 5];
-
-export const weekdayOptions = [
-  { value: 0, zh: "日", en: "Sun" },
-  { value: 1, zh: "一", en: "Mon" },
-  { value: 2, zh: "二", en: "Tue" },
-  { value: 3, zh: "三", en: "Wed" },
-  { value: 4, zh: "四", en: "Thu" },
-  { value: 5, zh: "五", en: "Fri" },
-  { value: 6, zh: "六", en: "Sat" },
-];
-
-function defaultWeeklyDays() {
-  return [...DEFAULT_WEEKLY_DAYS];
-}
+export const weekdayOptions = reminderWeekdayOptions;
 
 export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
   const scheduleModalOpen = ref(false);
@@ -26,13 +17,13 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
   const reminderEnabled = ref(true);
   const reminderDraftAt = ref("");
   const reminderDraftDailyTime = ref("09:00");
-  const reminderDraftWeeklyDays = ref<number[]>(defaultWeeklyDays());
+  const reminderDraftWeeklyDays = ref<number[]>(defaultReminderWeeklyDays());
   const reminderFeedback = ref("");
   const reminderFeedbackType = ref<FeedbackTone>("info");
   const draggingReminderId = ref<number | null>(null);
   const dropTargetReminderId = ref<number | null>(null);
 
-  function weekdayLabel(day: { zh: string; en: string }): string {
+  function weekdayLabel(day: ReminderWeekdayOption): string {
     return getCtx().tx(day.zh, day.en);
   }
 
@@ -51,7 +42,7 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
     reminderEnabled.value = true;
     reminderDraftAt.value = "";
     reminderDraftDailyTime.value = "09:00";
-    reminderDraftWeeklyDays.value = defaultWeeklyDays();
+    reminderDraftWeeklyDays.value = defaultReminderWeeklyDays();
   }
 
   function openReminderComposer() {
@@ -76,8 +67,8 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
       reminderDraftDailyTime.value = ctx.timeMinutesLabel(item.daily_time_minutes ?? 9 * 60);
       reminderDraftAt.value = "";
       reminderDraftWeeklyDays.value = item.repeat_rule === "WEEKLY"
-        ? [...(item.weekly_days ?? defaultWeeklyDays())].sort((a: number, b: number) => a - b)
-        : defaultWeeklyDays();
+        ? [...(item.weekly_days ?? defaultReminderWeeklyDays())].sort((a: number, b: number) => a - b)
+        : defaultReminderWeeklyDays();
       return;
     }
 
@@ -85,7 +76,7 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
     reminderDraftAt.value = item.remind_at !== null
       ? ctx.toDateTimeLocalValue(item.remind_at)
       : "";
-    reminderDraftWeeklyDays.value = defaultWeeklyDays();
+    reminderDraftWeeklyDays.value = defaultReminderWeeklyDays();
   }
 
   async function saveReminderFromModal() {
