@@ -40,6 +40,7 @@ import {
 	renderPromptBubble,
 	type PromptBubbleState,
 } from "./lib/petPromptDom";
+import { formatPetReminderDueText } from "./lib/petReminderText";
 import { formatSeconds } from "./lib/time";
 import "./pet.css";
 
@@ -182,37 +183,6 @@ function setTransientMood(text: string, timeoutMs = 2200) {
 	}, timeoutMs);
 }
 
-function formatReminderDueText(item: ReminderLite): string {
-	if (item.repeat_rule === "DAILY") {
-		const minutes = Math.max(0, Math.min(1439, item.daily_time_minutes ?? 9 * 60));
-		const hour = Math.floor(minutes / 60)
-			.toString()
-			.padStart(2, "0");
-		const minute = (minutes % 60).toString().padStart(2, "0");
-		return `${tx("每日", "Daily")} ${hour}:${minute}`;
-	}
-
-	if (item.repeat_rule === "WEEKLY") {
-		const minutes = Math.max(0, Math.min(1439, item.daily_time_minutes ?? 9 * 60));
-		const hour = Math.floor(minutes / 60)
-			.toString()
-			.padStart(2, "0");
-		const minute = (minutes % 60).toString().padStart(2, "0");
-		const labels = (item.weekly_days ?? [])
-			.map((day) => [tx("日", "Sun"), tx("一", "Mon"), tx("二", "Tue"), tx("三", "Wed"), tx("四", "Thu"), tx("五", "Fri"), tx("六", "Sat")][day] ?? `${day}`)
-			.join(" ");
-		return `${tx("每周", "Weekly")} ${labels} ${hour}:${minute}`.trim();
-	}
-
-	const date = new Date(item.next_due_timestamp * 1000);
-	return date.toLocaleString(getLocale(), {
-		month: "2-digit",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
-}
-
 function reportActionError(shortText: string, detail: unknown) {
 	setTransientMood(shortText);
 	console.error(`[pet] ${shortText}`, detail);
@@ -285,7 +255,11 @@ async function refreshPromptBubble() {
 			descriptors.push({
 				key,
 				title: tx("日程提醒", "Reminder Due"),
-				detail: `${reminder.content} · ${formatReminderDueText(reminder)}`,
+				detail: `${reminder.content} · ${formatPetReminderDueText(
+					reminder,
+					tx,
+					getLocale(),
+				)}`,
 				actions: [
 					{
 						label: tx("完成", "Done"),

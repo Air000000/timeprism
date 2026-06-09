@@ -6743,3 +6743,85 @@ Follow-up:
 
 - Commit R-178.
 - Consider a pet-window smoke pass before extracting drag/window behavior; otherwise continue with pure summary/text helpers.
+
+## 2026-06-09: R-179 Pet Reminder Text Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet window
+- reminder text
+
+Intent:
+
+- Move pet reminder due-text formatting out of `src/pet.ts`.
+- Keep reminder prompt descriptor construction and reminder command actions in `src/pet.ts`.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petReminderText.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| daily reminder text formatting | `formatPetReminderDueText` | Same default 09:00, 0..1439 clamp, and `Daily`/`每日` prefix |
+| weekly reminder text formatting | `formatPetReminderDueText` | Same weekday label mapping, default time, and trim |
+| one-time reminder date formatting | `formatPetReminderDueText` | Same locale-aware month/day/hour/minute format |
+
+Behavior expected to stay the same:
+
+- Pet reminder prompt details still show reminder content followed by the same due-text string.
+- Daily and weekly reminders still default missing time to 09:00 and clamp invalid minutes to the same range.
+- One-time reminders still use the current pet locale for `toLocaleString`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; text formatting still runs only while building reminder prompt descriptors.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this reminder text helper extraction batch.
+
+Risks:
+
+- Reminder prompt text was validated by typecheck/build only, not by opening a live reminder prompt in the pet window.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-178.
+
+Follow-up:
+
+- Commit R-179.
+- Prefer a checkpoint or interactive pet smoke pass before extracting more prompt behavior.
