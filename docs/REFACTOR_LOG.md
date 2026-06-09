@@ -12765,3 +12765,76 @@ Follow-up:
 
 - Commit R-254.
 - Run a backend checkpoint after commit before continuing the next frontend helper/type batch.
+
+## 2026-06-09: R-255 Cross-Stack Checkpoint After Shared App Rule Type Aliases
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend type extraction
+- Tauri integration guard
+
+Intent:
+
+- Confirm that shared app-rule type alias extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-254 shared frontend app-rule mapped and privacy-level types.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Shared app-rule type alias changes from R-254 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace manual Guard rule save/update smoke testing.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-255.
+- Continue with small helper/type extractions while keeping behavior unchanged.
