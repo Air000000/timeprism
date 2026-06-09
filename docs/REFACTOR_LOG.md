@@ -4548,3 +4548,84 @@ Follow-up:
 
 - Commit R-150.
 - Consider Settings/privacy interactive smoke testing before changing settings persistence behavior.
+
+## 2026-06-09: R-151 Main Refresh Polling Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- main-window refresh lifecycle
+
+Intent:
+
+- Move the 5-second Home/Guard refresh polling timer out of `src/App.vue`.
+- Keep the initial Home refresh and the refresh function implementations unchanged.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useMainRefreshPolling.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `pollTimer` interval state | `useMainRefreshPolling` | Timer start/stop returned to `App.vue` |
+| 5-second refresh callback | `runMainRefreshPoll` | Still refreshes Home every tick and Guard only while active |
+
+Behavior expected to stay the same:
+
+- Main-window mount still performs an immediate Home refresh before starting the interval.
+- The polling interval still runs every 5000ms.
+- Guard data still refreshes during polling only when the current main view is Guard.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; interval timing and initial refresh timing are unchanged.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this timer extraction batch.
+
+Risks:
+
+- Home/Guard periodic refresh behavior was validated by typecheck/build only, not by S-300/S-500 interactive smoke testing.
+- The poller still starts only after the initial mount sequence reaches the previous start point.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-150.
+
+Follow-up:
+
+- Commit R-151.
+- Consider a main-window smoke pass before deeper lifecycle consolidation.

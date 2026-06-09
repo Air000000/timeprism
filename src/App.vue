@@ -33,6 +33,7 @@ import { useInsightsData } from "./composables/useInsightsData";
 import { useInsightsSectionNavigation } from "./composables/useInsightsSectionNavigation";
 import { useLazySettingsMount } from "./composables/useLazySettingsMount";
 import { useLocale } from "./composables/useLocale";
+import { useMainRefreshPolling } from "./composables/useMainRefreshPolling";
 import { useReminders } from "./composables/useReminders";
 import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
 import { useThemeMode } from "./composables/useThemeMode";
@@ -252,6 +253,14 @@ const { refreshHomeData } = useHomeData({
   getHeatmapGoalSeconds,
   setErrorMessage,
 });
+const {
+  startMainRefreshPolling,
+  stopMainRefreshPolling,
+} = useMainRefreshPolling({
+  currentMainView,
+  refreshHomeData,
+  refreshGuardData,
+});
 
 function switchHistorySubView(next: HistorySubViewKey) {
   selectHistoryView(next);
@@ -289,7 +298,6 @@ async function refreshData() {
   }
 }
 
-let pollTimer: number | null = null;
 let navigateSectionUnlisten: UnlistenFn | null = null;
 
 function onLocaleChange(event: Event) {
@@ -440,12 +448,7 @@ onMounted(async () => {
   resetPrivacyFeedback();
   void refreshHomeData();
   startSettingsWarmup();
-  pollTimer = window.setInterval(() => {
-    void refreshHomeData();
-    if (currentMainView.value === "guard") {
-      void refreshGuardData();
-    }
-  }, 5000);
+  startMainRefreshPolling();
 
   startAutoCaptureSampler();
 
@@ -462,10 +465,7 @@ watch(locale, (next, prev) => {
 });
 
 onUnmounted(() => {
-  if (pollTimer !== null) {
-    window.clearInterval(pollTimer);
-    pollTimer = null;
-  }
+  stopMainRefreshPolling();
   stopAutoCaptureSampler();
   cleanupSettingsWarmup();
   if (navigateSectionUnlisten) {
