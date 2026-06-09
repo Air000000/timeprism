@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted } from "vue";
 import AppTopNav from "./components/AppTopNav.vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
@@ -30,6 +30,7 @@ import { useInsightsSectionNavigation } from "./composables/useInsightsSectionNa
 import { useInsightsViewContext } from "./composables/useInsightsViewContext";
 import { useLazySettingsMount } from "./composables/useLazySettingsMount";
 import { useLocale } from "./composables/useLocale";
+import { useMainDataBuffers } from "./composables/useMainDataBuffers";
 import { useMainRefreshPolling } from "./composables/useMainRefreshPolling";
 import { useReminders } from "./composables/useReminders";
 import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
@@ -40,11 +41,6 @@ import {
   timeMinutesLabel,
   toDateTimeLocalValue,
 } from "./lib/time";
-import {
-  type LearnHeatmapCell,
-  type RecentLog,
-  type UsageStackDay,
-} from "./api";
 
 const { locale, tx, initLocale, watchLocaleChanges, onLocaleChange } = useLocale();
 watchLocaleChanges();
@@ -131,9 +127,11 @@ const {
   sortedReminders,
 });
 
-const recentLogs = ref<RecentLog[]>([]);
-const learnHeatmap = ref<LearnHeatmapCell[]>([]);
-const homeUsageStack = ref<UsageStackDay[]>([]);
+const {
+  recentLogs,
+  learnHeatmap,
+  homeUsageStack,
+} = useMainDataBuffers();
 const {
   learnGoalSliderMinutes,
   getHeatmapGoalSeconds,

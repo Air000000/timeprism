@@ -5625,3 +5625,81 @@ Follow-up:
 
 - Commit R-164.
 - Continue only with small shell wiring extractions or run smoke tests.
+
+## 2026-06-09: R-165 Main Data Buffers Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- shell state cleanup
+
+Intent:
+
+- Move shared main-window data buffers out of `src/App.vue`.
+- Keep feature data loading and derivation in the existing Home/Insights/heatmap composables.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useMainDataBuffers.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `recentLogs`, `learnHeatmap`, `homeUsageStack` refs | `useMainDataBuffers` | Same initial empty arrays and API types |
+
+Behavior expected to stay the same:
+
+- Home, Insights, heatmap, and rhythm composables still share the same mutable refs.
+- No API request, response, or derived-view behavior changed.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this shell-state extraction batch.
+
+Risks:
+
+- Data sharing behavior was validated by typecheck/build only, not by interactive Home/Insights smoke testing.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-164.
+
+Follow-up:
+
+- Commit R-165.
+- Continue only with small shell wiring extractions or run smoke tests.
