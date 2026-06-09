@@ -30,7 +30,10 @@ use services::analytics::{
 };
 use services::categories::{create_category_entry, list_category_entries};
 use services::foreground::{capture_foreground_window, current_idle_millis};
-use services::privacy::{normalize_process_key, parse_bool_config, parse_browser_title_mode};
+use services::privacy::{
+    get_privacy_settings_entry, list_whitelist_entries, normalize_process_key,
+    set_whitelist_item_entry, update_privacy_settings_entry,
+};
 use services::reminders::{
     delete_reminder_entry, list_due_reminder_entries, list_reminder_entries, save_reminder_entry,
     set_reminder_done_entry, set_reminder_order_entries, snooze_reminder_entry,
@@ -703,60 +706,13 @@ fn snooze_focus_guard(cooldown_seconds: Option<i64>) -> Result<(), String> {
 #[tauri::command]
 fn get_privacy_settings(app: AppHandle) -> Result<PrivacySettings, String> {
     let conn = open_connection(&app)?;
-    Ok(PrivacySettings {
-        curtain_enabled: parse_bool_config(&conn, "curtain_enabled", false),
-        browser_title_mode: parse_browser_title_mode(&conn),
-        whitelist_only_enabled: parse_bool_config(&conn, "whitelist_only_enabled", false),
-    })
+    get_privacy_settings_entry(&conn)
 }
 
 #[tauri::command]
 fn update_privacy_settings(app: AppHandle, input: UpdatePrivacySettingsInput) -> Result<(), String> {
     let conn = open_connection(&app)?;
-    let browser_title_mode = input.browser_title_mode.trim().to_uppercase();
-    if !matches!(browser_title_mode.as_str(), "FULL" | "BLUR" | "NONE") {
-        return Err("browser_title_mode must be FULL, BLUR, or NONE".to_string());
-    }
-
-    let tx = conn
-        .unchecked_transaction()
-        .map_err(|e| format!("failed to begin privacy settings transaction: {e}"))?;
-
-    tx.execute(
-        "INSERT INTO app_config (key, value) VALUES ('curtain_enabled', ?1)
-         ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-        [if input.curtain_enabled { "true" } else { "false" }],
-    )
-    .map_err(|e| format!("failed to save curtain setting: {e}"))?;
-
-    tx.execute(
-        "INSERT INTO app_config (key, value) VALUES ('browser_title_mode', ?1)
-         ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-        [browser_title_mode.as_str()],
-    )
-    .map_err(|e| format!("failed to save browser title mode: {e}"))?;
-
-    tx.execute(
-        "INSERT INTO app_config (key, value) VALUES ('browser_blur_enabled', ?1)
-         ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-        [if browser_title_mode == "FULL" { "false" } else { "true" }],
-    )
-    .map_err(|e| format!("failed to save browser blur setting: {e}"))?;
-
-    tx.execute(
-        "INSERT INTO app_config (key, value) VALUES ('whitelist_only_enabled', ?1)
-         ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-        [if input.whitelist_only_enabled {
-            "true"
-        } else {
-            "false"
-        }],
-    )
-    .map_err(|e| format!("failed to save whitelist-only setting: {e}"))?;
-
-    tx.commit()
-        .map_err(|e| format!("failed to commit privacy settings transaction: {e}"))?;
-    Ok(())
+    update_privacy_settings_entry(&conn, input)
 }
 
 #[tauri::command]
@@ -772,44 +728,13 @@ fn set_auto_start_enabled(enabled: bool) -> Result<bool, String> {
 #[tauri::command]
 fn list_whitelist(app: AppHandle) -> Result<Vec<String>, String> {
     let conn = open_connection(&app)?;
-    let mut stmt = conn
-        .prepare("SELECT process_name FROM app_whitelist ORDER BY process_name")
-        .map_err(|e| format!("failed to prepare whitelist query: {e}"))?;
-
-    let rows = stmt
-        .query_map([], |row| row.get::<_, String>(0))
-        .map_err(|e| format!("failed to query whitelist rows: {e}"))?;
-
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| format!("failed to parse whitelist row: {e}"))?);
-    }
-    Ok(result)
+    list_whitelist_entries(&conn)
 }
 
 #[tauri::command]
 fn set_whitelist_item(app: AppHandle, input: SetWhitelistItemInput) -> Result<(), String> {
     let conn = open_connection(&app)?;
-    let process_name = normalize_process_key(&input.process_name);
-    if process_name.is_empty() {
-        return Err("process_name cannot be empty".to_string());
-    }
-
-    if input.enabled {
-        conn.execute(
-            "INSERT OR IGNORE INTO app_whitelist (process_name) VALUES (?1)",
-            [process_name],
-        )
-        .map_err(|e| format!("failed to add whitelist item: {e}"))?;
-    } else {
-        conn.execute(
-            "DELETE FROM app_whitelist WHERE process_name = ?1",
-            [process_name],
-        )
-        .map_err(|e| format!("failed to remove whitelist item: {e}"))?;
-    }
-
-    Ok(())
+    set_whitelist_item_entry(&conn, input)
 }
 
 #[tauri::command]

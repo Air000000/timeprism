@@ -1573,3 +1573,86 @@ Follow-up:
 
 - Commit R-116.
 - Continue foreground sampling-state extraction or move whitelist/privacy commands fully behind service functions.
+
+## 2026-06-09: R-117 Privacy Settings And Whitelist Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- privacy
+- whitelist
+- backend services
+
+Intent:
+
+- Move privacy settings read/write and whitelist SQL out of `src-tauri/src/lib.rs`.
+- Keep privacy command contracts, config keys, validation, and error strings unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/privacy.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `get_privacy_settings` body | `services::privacy::get_privacy_settings_entry` | Command shell remains in `lib.rs` |
+| `update_privacy_settings` body | `services::privacy::update_privacy_settings_entry` | Same transaction and config key writes |
+| `list_whitelist` body | `services::privacy::list_whitelist_entries` | Same ordering and error strings |
+| `set_whitelist_item` body | `services::privacy::set_whitelist_item_entry` | Same normalization and add/remove behavior |
+
+Behavior expected to stay the same:
+
+- Browser title mode validation remains `FULL`, `BLUR`, or `NONE`.
+- `browser_blur_enabled` compatibility key is still written from browser title mode.
+- Whitelist entries are still normalized through `normalize_process_key`.
+- Whitelist listing is still ordered by process name.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `get_privacy_settings`, `update_privacy_settings`, `list_whitelist`, and `set_whitelist_item` now delegate to `services::privacy`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- No behavior change intended; this batch centralizes privacy persistence code.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 19 tests passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Settings write behavior is covered by compile/test validation but not by a dedicated settings round-trip test in this batch.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-116 commit.
+
+Follow-up:
+
+- Commit R-117.
+- Continue foreground sampling-state extraction or focus-deviation service extraction.

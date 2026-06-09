@@ -48,7 +48,7 @@ Important sibling folders in the larger workspace:
 - `src-tauri/src/services/analytics.rs`: recent logs, today summary, top-app, heatmap, and usage-stack analytics query bodies.
 - `src-tauri/src/services/categories.rs`: category listing and child-category creation SQL.
 - `src-tauri/src/services/foreground.rs`: foreground-window capture and current-idle-time platform wrappers.
-- `src-tauri/src/services/privacy.rs`: privacy config parsing, process-name normalization, browser title protection, whitelist filtering, and related characterization tests.
+- `src-tauri/src/services/privacy.rs`: privacy settings, whitelist CRUD, config parsing, process-name normalization, browser title protection, whitelist filtering, and related characterization tests.
 - `src-tauri/src/services/reminders.rs`: reminder recurrence, due-time calculation, CRUD, ordering, snooze behavior, and related characterization tests.
 - `src-tauri/src/services/rules.rs`: app rule lookup, save validation, rule listing, pending-rule process queries, and related characterization tests.
 - `src-tauri/src/services/sessions.rs`: legacy/manual task-session start, stop, and active-root lookup SQL.

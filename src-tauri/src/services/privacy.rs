@@ -2,6 +2,10 @@ use std::path::Path;
 
 use rusqlite::Connection;
 
+use crate::domain::privacy::{
+    PrivacySettings, SetWhitelistItemInput, UpdatePrivacySettingsInput,
+};
+
 pub(crate) fn parse_bool_config(conn: &Connection, key: &str, default_value: bool) -> bool {
     conn.query_row(
         "SELECT value FROM app_config WHERE key = ?1",
@@ -171,6 +175,106 @@ pub(crate) fn process_log_with_privacy(
     }
 
     Ok((Some((final_process, final_title)), None))
+}
+
+pub(crate) fn get_privacy_settings_entry(conn: &Connection) -> Result<PrivacySettings, String> {
+    Ok(PrivacySettings {
+        curtain_enabled: parse_bool_config(conn, "curtain_enabled", false),
+        browser_title_mode: parse_browser_title_mode(conn),
+        whitelist_only_enabled: parse_bool_config(conn, "whitelist_only_enabled", false),
+    })
+}
+
+pub(crate) fn update_privacy_settings_entry(
+    conn: &Connection,
+    input: UpdatePrivacySettingsInput,
+) -> Result<(), String> {
+    let browser_title_mode = input.browser_title_mode.trim().to_uppercase();
+    if !matches!(browser_title_mode.as_str(), "FULL" | "BLUR" | "NONE") {
+        return Err("browser_title_mode must be FULL, BLUR, or NONE".to_string());
+    }
+
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| format!("failed to begin privacy settings transaction: {e}"))?;
+
+    tx.execute(
+        "INSERT INTO app_config (key, value) VALUES ('curtain_enabled', ?1)
+         ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        [if input.curtain_enabled { "true" } else { "false" }],
+    )
+    .map_err(|e| format!("failed to save curtain setting: {e}"))?;
+
+    tx.execute(
+        "INSERT INTO app_config (key, value) VALUES ('browser_title_mode', ?1)
+         ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        [browser_title_mode.as_str()],
+    )
+    .map_err(|e| format!("failed to save browser title mode: {e}"))?;
+
+    tx.execute(
+        "INSERT INTO app_config (key, value) VALUES ('browser_blur_enabled', ?1)
+         ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        [if browser_title_mode == "FULL" { "false" } else { "true" }],
+    )
+    .map_err(|e| format!("failed to save browser blur setting: {e}"))?;
+
+    tx.execute(
+        "INSERT INTO app_config (key, value) VALUES ('whitelist_only_enabled', ?1)
+         ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        [if input.whitelist_only_enabled {
+            "true"
+        } else {
+            "false"
+        }],
+    )
+    .map_err(|e| format!("failed to save whitelist-only setting: {e}"))?;
+
+    tx.commit()
+        .map_err(|e| format!("failed to commit privacy settings transaction: {e}"))?;
+    Ok(())
+}
+
+pub(crate) fn list_whitelist_entries(conn: &Connection) -> Result<Vec<String>, String> {
+    let mut stmt = conn
+        .prepare("SELECT process_name FROM app_whitelist ORDER BY process_name")
+        .map_err(|e| format!("failed to prepare whitelist query: {e}"))?;
+
+    let rows = stmt
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| format!("failed to query whitelist rows: {e}"))?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        result.push(row.map_err(|e| format!("failed to parse whitelist row: {e}"))?);
+    }
+    Ok(result)
+}
+
+pub(crate) fn set_whitelist_item_entry(
+    conn: &Connection,
+    input: SetWhitelistItemInput,
+) -> Result<(), String> {
+    let process_name = normalize_process_key(&input.process_name);
+    if process_name.is_empty() {
+        return Err("process_name cannot be empty".to_string());
+    }
+
+    if input.enabled {
+        conn.execute(
+            "INSERT OR IGNORE INTO app_whitelist (process_name) VALUES (?1)",
+            [process_name],
+        )
+        .map_err(|e| format!("failed to add whitelist item: {e}"))?;
+    } else {
+        conn.execute(
+            "DELETE FROM app_whitelist WHERE process_name = ?1",
+            [process_name],
+        )
+        .map_err(|e| format!("failed to remove whitelist item: {e}"))?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
