@@ -4227,3 +4227,77 @@ Follow-up:
 
 - Commit R-146.
 - Consider a separate, explicit hardening batch for heatmap-goal save scheduling if runtime smoke testing shows repeated saves.
+
+## 2026-06-09: R-147 Heatmap Goal Save Scheduling Hardening
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- persistence hardening
+
+Intent:
+
+- Prevent the heatmap-goal debounced save timer from rescheduling itself while persisting.
+- Keep the public `getHeatmapGoalSeconds` function shape and stored goal value semantics unchanged.
+
+Files changed:
+
+- `src/composables/useHeatmapGoalSetting.ts`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to stay the same:
+
+- Heatmap goal minutes are still rounded to 15-minute steps and clamped to 0-1440 minutes.
+- Heatmap callers still receive goal seconds through `getHeatmapGoalSeconds`.
+- Saved goal loading still uses `get_heatmap_goal_seconds_setting`; saving still uses `set_heatmap_goal_seconds_setting`.
+
+Behavior intentionally changed:
+
+- The debounced save callback now normalizes the current slider value directly instead of calling `getHeatmapGoalSeconds`.
+- This prevents a save callback from scheduling another save callback solely because it read the value it is persisting.
+
+Tauri commands affected:
+
+- None. Command names and payload shapes are unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Startup behavior is unchanged.
+- Background persistence should avoid an unintended repeated-save loop after a heatmap-goal read queues a save.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this narrow scheduling hardening batch.
+
+Risks:
+
+- No frontend unit-test harness exists, so the timer behavior was reviewed by code inspection and validated by typecheck/build only.
+- Heatmap goal persistence still queues a save when `getHeatmapGoalSeconds` is called; only the self-rescheduling save callback path was changed.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-146.
+
+Follow-up:
+
+- Commit R-147.
+- Consider adding a small frontend test harness before deeper timer or lifecycle changes.

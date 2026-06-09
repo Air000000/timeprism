@@ -14,12 +14,21 @@ export function useHeatmapGoalSetting({
   const learnGoalSliderMinutes = ref(120);
   let heatmapGoalSaveTimer: number | null = null;
 
-  function syncGoalFromSlider() {
-    let total = Number.isFinite(learnGoalSliderMinutes.value)
-      ? Math.round(learnGoalSliderMinutes.value / 15) * 15
+  function normalizeGoalMinutes(minutes: number) {
+    const rounded = Number.isFinite(minutes)
+      ? Math.round(minutes / 15) * 15
       : 120;
-    total = Math.min(1440, Math.max(0, total));
+    return Math.min(1440, Math.max(0, rounded));
+  }
+
+  function normalizeGoalFromSlider() {
+    const total = normalizeGoalMinutes(learnGoalSliderMinutes.value);
     learnGoalSliderMinutes.value = total;
+    return total;
+  }
+
+  function syncGoalFromSlider() {
+    normalizeGoalFromSlider();
     schedulePersistHeatmapGoal();
   }
 
@@ -36,7 +45,7 @@ export function useHeatmapGoalSetting({
 
     heatmapGoalSaveTimer = window.setTimeout(async () => {
       try {
-        await setHeatmapGoalSecondsSetting(getHeatmapGoalSeconds());
+        await setHeatmapGoalSecondsSetting(normalizeGoalFromSlider() * 60);
       } catch (e) {
         setErrorMessage(e);
       } finally {
@@ -49,7 +58,7 @@ export function useHeatmapGoalSetting({
     try {
       const savedGoalSeconds = await getHeatmapGoalSecondsSetting();
       const minutes = Math.round(savedGoalSeconds / 60 / 15) * 15;
-      learnGoalSliderMinutes.value = Math.min(1440, Math.max(0, minutes));
+      learnGoalSliderMinutes.value = normalizeGoalMinutes(minutes);
     } catch (e) {
       setErrorMessage(e);
     }
