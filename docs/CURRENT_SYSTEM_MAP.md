@@ -57,7 +57,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHomeOverview.ts`: Home summary state, goal progress, recent activity summary, pending counts, and status-helper binding.
 - `src/composables/useHomeReminderPanel.ts`: Home reminder modal draft state, feedback, quick actions, weekly-day chips, and drag/drop reorder handling.
 - `src/composables/useHomeRhythm.ts`: Home seven-day rhythm bar derivation from usage-stack data.
-- `src/composables/useHomeRhythmTooltip.ts`: Home rhythm summary text, compact duration formatting, and hover-tooltip state/placement.
+- `src/composables/useHomeRhythmTooltip.ts`: Home rhythm summary computed state plus hover-tooltip event state/placement.
 - `src/composables/useHomeSchedule.ts`: Home reminder schedule computed binding and locale-aware due-text adapter.
 - `src/composables/useHomeViewContext.ts`: computed Home view context assembly from Home data, reminders, heatmap, rhythm, and status state.
 - `src/composables/useIdlePromptBannerContext.ts`: computed top-level idle prompt banner context assembly.
@@ -81,6 +81,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/guardIdle.ts`: Guard idle-decision feedback tone/text helpers.
 - `src/lib/guardRules.ts`: Guard app-rule search/sort helpers plus rule sort-key and mapped-type guards.
 - `src/lib/homeOverviewStatus.ts`: Home current-status label, status tone, and pending-summary text helpers.
+- `src/lib/homeRhythmTooltip.ts`: Home rhythm compact duration, segment labels, tooltip palettes, and tone text helpers.
 - `src/lib/petCharacter.ts`: pet character image paths, legacy path normalization, and localStorage persistence helpers.
 - `src/lib/petContextMenu.ts`: pet-window context menu item definitions and panel-mode toggle wiring.
 - `src/lib/petDock.ts`: pure pet-window dock state types, dock-edge mapping, and settle-state conversion helpers.

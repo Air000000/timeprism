@@ -1,7 +1,14 @@
 import { computed, ref } from "vue";
 import type { HomeRhythmBar, HomeViewContext } from "../components/viewContexts";
+import {
+  compactRhythmDuration,
+  rhythmSegmentLabel,
+  rhythmSegmentPalette,
+  rhythmToneText,
+  type RhythmSegment,
+} from "../lib/homeRhythmTooltip";
 
-type RhythmSegment = "learn" | "rest";
+export { compactRhythmDuration } from "../lib/homeRhythmTooltip";
 
 type RhythmTooltipState = {
   visible: boolean;
@@ -18,18 +25,6 @@ type RhythmTooltipState = {
   contextText: string;
 };
 
-export function compactRhythmDuration(seconds: number): string {
-  const safe = Math.max(0, Math.floor(seconds));
-  if (safe >= 3600) {
-    const hours = safe / 3600;
-    return `${hours >= 10 ? hours.toFixed(0) : hours.toFixed(1)}h`;
-  }
-  if (safe >= 60) {
-    return `${Math.round(safe / 60)}m`;
-  }
-  return `${safe}s`;
-}
-
 function placeRhythmTooltip(event: MouseEvent) {
   const width = 248;
   const height = 126;
@@ -40,26 +35,6 @@ function placeRhythmTooltip(event: MouseEvent) {
     x: Math.min(maxX, event.clientX + gap),
     y: Math.min(maxY, event.clientY - 12),
   };
-}
-
-function rhythmToneText(ctx: HomeViewContext, share: number, segment: RhythmSegment): string {
-  if (segment === "learn") {
-    if (share >= 60) {
-      return ctx.tx("这一天明显进入了学习主线。", "Learning clearly led this day.");
-    }
-    if (share >= 35) {
-      return ctx.tx("这一天有一段扎实的学习投入。", "There was a solid learning block here.");
-    }
-    return ctx.tx("这一天学习有推进，但还留着余量。", "Learning moved forward, but there was still room.");
-  }
-
-  if (share >= 60) {
-    return ctx.tx("这一天更偏向恢复和放松。", "This day leaned more toward recovery and rest.");
-  }
-  if (share >= 35) {
-    return ctx.tx("这一天有一段比较明确的休息时间。", "There was a clearly defined rest window here.");
-  }
-  return ctx.tx("这段休息比较轻，像一次短缓冲。", "This rest block was light, more like a short reset.");
 }
 
 export function useHomeRhythmTooltip(getCtx: () => HomeViewContext) {
@@ -98,27 +73,17 @@ export function useHomeRhythmTooltip(getCtx: () => HomeViewContext) {
       ? Math.round((segmentSeconds / bar.computerTotalSeconds) * 100)
       : 0;
     const pos = placeRhythmTooltip(event);
-    const palette = segment === "learn"
-      ? {
-        bgColor: "rgba(233, 246, 236, 0.96)",
-        borderColor: "rgba(123, 181, 137, 0.42)",
-        accentColor: "#2f7a52",
-      }
-      : {
-        bgColor: "rgba(236, 242, 252, 0.96)",
-        borderColor: "rgba(150, 176, 223, 0.42)",
-        accentColor: "#476d9f",
-      };
+    const palette = rhythmSegmentPalette(segment);
     rhythmTooltip.value = {
       visible: true,
       x: pos.x,
       y: pos.y,
       ...palette,
       dayLabel: bar.label,
-      segmentLabel: segment === "learn" ? ctx.tx("学习", "Learn") : ctx.tx("休息", "Rest"),
+      segmentLabel: rhythmSegmentLabel(segment, ctx.tx),
       durationText: compactRhythmDuration(segmentSeconds),
       shareText: `${share}%`,
-      toneText: rhythmToneText(ctx, share, segment),
+      toneText: rhythmToneText(ctx.tx, share, segment),
       contextText: ctx.tx(
         `第 ${bar.label} 天电脑总使用 ${compactRhythmDuration(bar.computerTotalSeconds ?? 0)}`,
         `Day ${bar.label} total computer use ${compactRhythmDuration(bar.computerTotalSeconds ?? 0)}`,

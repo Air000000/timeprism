@@ -10070,3 +10070,88 @@ Follow-up:
 
 - Commit R-220.
 - Continue with low-risk frontend-helper batches unless detailed shared UI formatter smoke results are recorded.
+
+## 2026-06-09: R-221 Home Rhythm Tooltip Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Home view
+- rhythm tooltip
+
+Intent:
+
+- Move Home rhythm compact-duration formatting, segment labels, tooltip palettes, and tone text out of `useHomeRhythmTooltip.ts`.
+- Keep mouse event handling, viewport-based placement, tooltip ref state, and Home rhythm summary computed state in the composable.
+- Preserve the `compactRhythmDuration` export from `useHomeRhythmTooltip.ts` for compatibility.
+
+Files changed:
+
+- `src/composables/useHomeRhythmTooltip.ts`
+- `src/lib/homeRhythmTooltip.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| compact rhythm duration formatting | `src/lib/homeRhythmTooltip.ts::compactRhythmDuration` | Same seconds/minutes/hours thresholds and rounding |
+| segment labels | `src/lib/homeRhythmTooltip.ts::rhythmSegmentLabel` | Same Learn/Rest labels |
+| tooltip palette branch | `src/lib/homeRhythmTooltip.ts::rhythmSegmentPalette` | Same background, border, and accent colors |
+| tone text branch | `src/lib/homeRhythmTooltip.ts::rhythmToneText` | Same learn/rest share thresholds and localized text |
+
+Behavior expected to stay the same:
+
+- Home rhythm bar values still use the same compact duration text.
+- Rhythm tooltip still uses the same segment labels, colors, share text, tone text, and context text.
+- Mouse enter/move/leave handling and viewport placement remain in `useHomeRhythmTooltip`.
+- `useHomeRhythmTooltip` still returns `compactRhythmDuration`, `homeRhythmSummary`, `rhythmTooltip`, and the same event handlers.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same small text/color calculations now run through a helper module.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home rhythm tooltip helper extraction batch.
+
+Risks:
+
+- Home rhythm hover behavior was validated by typecheck/build only, not by manually hovering rhythm bars.
+
+Rollback:
+
+- Revert this batch to move compact duration, labels, palette, and tone text back into `useHomeRhythmTooltip.ts`.
+
+Follow-up:
+
+- Commit R-221.
+- Continue with a backend checkpoint after commit.
