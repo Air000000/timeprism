@@ -16,7 +16,6 @@ import type {
 import {
   useAppNavigation,
   type HistorySubViewKey,
-  type InsightsPrimaryViewKey,
   type MainViewKey,
 } from "./composables/useAppNavigation";
 import { useGuardData } from "./composables/useGuardData";
@@ -61,10 +60,8 @@ const { themeMode, applyTheme, toggleThemeMode, initThemeMode } = useThemeMode()
 const {
   currentMainView,
   mainViews,
-  insightsPrimaryView,
   historySubView,
   historySubViews,
-  selectInsightsView,
   selectHistoryView,
   selectMainView,
   selectGuardView,
@@ -102,14 +99,7 @@ const allTimeFilter = ref<"ALL" | "LEARN" | "REST">("ALL");
 const allTimeIncludeIgnore = ref(true);
 const recentLogs = ref<RecentLog[]>([]);
 const learnHeatmap = ref<LearnHeatmapCell[]>([]);
-const usageStack = ref<UsageStackDay[]>([]);
-const usageStackLearn = ref<UsageStackDay[]>([]);
-const usageStackRest = ref<UsageStackDay[]>([]);
 const homeUsageStack = ref<UsageStackDay[]>([]);
-const usageRootFilter = ref<"ALL" | "LEARN" | "REST">("ALL");
-const usageShowIgnore = ref(true);
-const selectedUsageDay = ref("");
-const selectedUsageProcess = ref("");
 const learnGoalSliderMinutes = ref(120);
 const viewMonthDate = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 const loadingHome = ref(false);
@@ -233,11 +223,6 @@ const currentStatusTone = computed<"ok" | "warn" | "alert" | "idle">(() => {
   }
   return "idle";
 });
-
-function switchInsightsSubView(next: InsightsPrimaryViewKey) {
-  selectInsightsView(next);
-  void refreshInsightsData();
-}
 
 function switchHistorySubView(next: HistorySubViewKey) {
   selectHistoryView(next);
@@ -461,23 +446,6 @@ function getHeatmapGoalSeconds(): number {
   return learnGoalSliderMinutes.value * 60;
 }
 
-function usageSegmentWidth(totalSeconds: number, segSeconds: number): string {
-  if (totalSeconds <= 0 || segSeconds <= 0) {
-    return "0%";
-  }
-  const pct = (segSeconds / totalSeconds) * 100;
-  return `${Math.max(1, Math.min(100, pct)).toFixed(2)}%`;
-}
-
-function usageSegmentColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i += 1) {
-    hash = (hash * 31 + name.charCodeAt(i)) | 0;
-  }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue} 65% 46%)`;
-}
-
 function cleanProcessName(name: string): string {
   const normalized = name
     .replace(/^__idle_learn__\.exe$/i, tx("离开时段（已归类为学习）", "Away Segment (Learn)"))
@@ -495,16 +463,6 @@ function cleanProcessName(name: string): string {
   return normalized || tx("未知进程", "Unknown App");
 }
 
-const MIN_VISIBLE_SEGMENT_SECONDS = 180;
-
-function visibleSegments(day: UsageStackDay) {
-  return day.segments.filter((seg) => seg.seconds >= MIN_VISIBLE_SEGMENT_SECONDS);
-}
-
-function visibleTotalSeconds(day: UsageStackDay): number {
-  return visibleSegments(day).reduce((sum, seg) => sum + seg.seconds, 0);
-}
-
 function logDayKey(unixSeconds: number): string {
   const date = new Date((unixSeconds - 4 * 3600) * 1000);
   const y = date.getFullYear();
@@ -512,19 +470,6 @@ function logDayKey(unixSeconds: number): string {
   const d = date.getDate().toString().padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
-
-function shouldShowSegmentLabel(totalSeconds: number, segSeconds: number): boolean {
-  if (totalSeconds <= 0 || segSeconds <= 0) {
-    return false;
-  }
-  return segSeconds / totalSeconds >= 0.12;
-}
-
-type RenderSegment = {
-  name: string;
-  seconds: number;
-  color: string;
-};
 
 type HomeRhythmBar = {
   day: string;
@@ -541,150 +486,6 @@ type HomeRhythmBar = {
   restHeight: string;
   isToday: boolean;
 };
-
-type TooltipState = {
-  visible: boolean;
-  x: number;
-  y: number;
-  color: string;
-  lines: TooltipLine[];
-};
-
-type TooltipLine = {
-  text: string;
-  header?: boolean;
-  strong?: boolean;
-};
-
-const stackTooltip = ref<TooltipState>({
-  visible: false,
-  x: 0,
-  y: 0,
-  color: "#0f172a",
-  lines: [],
-});
-const stackTooltipSize = ref({
-  width: 260,
-  height: 120,
-});
-
-function estimateTooltipHeight(lineCount: number): number {
-  const rowHeight = 18;
-  const padding = 20;
-  return Math.max(78, Math.min(260, padding + Math.max(1, lineCount) * rowHeight));
-}
-
-function measureStackTooltipSize() {
-  const node = document.querySelector<HTMLElement>(".stack-tooltip");
-  if (!node) {
-    return;
-  }
-  stackTooltipSize.value = {
-    width: Math.max(180, Math.ceil(node.offsetWidth)),
-    height: Math.max(78, Math.ceil(node.offsetHeight)),
-  };
-}
-
-function ratioLabel(part: number, total: number): string {
-  if (part <= 0 || total <= 0) {
-    return "";
-  }
-  const raw = (part / total) * 100;
-  if (raw < 1) {
-    return "<1%";
-  }
-  return `${Math.round(raw)}%`;
-}
-
-function lightenColor(color: string): string {
-  const hex = color.match(/^#([0-9a-f]{6})$/i);
-  if (hex) {
-    const raw = hex[1];
-    const r = Number.parseInt(raw.slice(0, 2), 16);
-    const g = Number.parseInt(raw.slice(2, 4), 16);
-    const b = Number.parseInt(raw.slice(4, 6), 16);
-    const boost = (v: number) => Math.min(255, Math.round(v + (255 - v) * 0.18));
-    return `rgb(${boost(r)} ${boost(g)} ${boost(b)})`;
-  }
-
-  const hsl = color.match(/^hsl\((\d+)\s+(\d+)%\s+(\d+)%\)$/i);
-  if (hsl) {
-    const h = Number.parseInt(hsl[1], 10);
-    const s = Number.parseInt(hsl[2], 10);
-    const l = Number.parseInt(hsl[3], 10);
-    return `hsl(${h} ${s}% ${Math.min(78, l + 12)}%)`;
-  }
-
-  return color;
-}
-
-function findUsageDay(stack: UsageStackDay[], day: string): UsageStackDay | null {
-  return stack.find((item) => item.day === day) ?? null;
-}
-
-function buildOverviewBreakdownLines(day: UsageStackDay, root: "LEARN" | "REST"): TooltipLine[] {
-  const detail = root === "LEARN" ? findUsageDay(usageStackLearn.value, day.day) : findUsageDay(usageStackRest.value, day.day);
-  const rootSeconds = root === "LEARN" ? day.learn_seconds : day.rest_seconds;
-  const rootPercent = ratioLabel(rootSeconds, day.total_seconds) || "<1%";
-  const rootName = mappedTypeText(root);
-
-  const lines: TooltipLine[] = [
-    { text: tx(`今日电脑使用时长中，${rootPercent} 的时间在 ${rootName}`, `${rootPercent} of today's computer time was spent on ${rootName}`), header: true },
-    { text: tx("在这段时间中：", "Within this period:"), header: true },
-  ];
-
-  if (!detail || detail.segments.length === 0 || rootSeconds <= 0) {
-    lines.push({ text: tx("暂无更细的应用统计", "No finer-grained app stats yet") });
-    return lines;
-  }
-
-  const top2 = detail.segments.slice(0, 2);
-  const topSeconds = top2.reduce((sum, seg) => sum + seg.seconds, 0);
-  const otherSeconds = Math.max(0, rootSeconds - topSeconds);
-
-  for (const seg of top2) {
-    const pct = ratioLabel(seg.seconds, rootSeconds);
-    if (!pct) {
-      continue;
-    }
-    lines.push({ text: tx(`${pct} 的时间在使用 ${cleanProcessName(seg.name)}`, `${pct} spent in ${cleanProcessName(seg.name)}`), strong: true });
-  }
-  if (otherSeconds > 0) {
-    const otherPct = ratioLabel(otherSeconds, rootSeconds);
-    if (otherPct) {
-      lines.push({ text: tx(`${otherPct} 的时间在使用其他软件`, `${otherPct} spent in other apps`), strong: true });
-    }
-  }
-
-  return lines;
-}
-
-function dayRenderSegments(day: UsageStackDay): RenderSegment[] {
-  if (usageRootFilter.value === "ALL") {
-    const result: RenderSegment[] = [];
-    if (day.learn_seconds > 0) {
-      result.push({ name: "LEARN", seconds: day.learn_seconds, color: "#16a34a" });
-    }
-    if (day.rest_seconds > 0) {
-      result.push({ name: "REST", seconds: day.rest_seconds, color: "#8ec5ff" });
-    }
-    const ignoreSeconds = Math.max(0, day.total_seconds - day.learn_seconds - day.rest_seconds);
-    if (usageShowIgnore.value && ignoreSeconds > 0) {
-      result.push({ name: "IGNORE", seconds: ignoreSeconds, color: "#64748b" });
-    }
-    return result;
-  }
-
-  return visibleSegments(day).map((seg) => ({
-    name: seg.name,
-    seconds: seg.seconds,
-    color: usageSegmentColor(seg.name),
-  }));
-}
-
-function dayRenderTotal(day: UsageStackDay): number {
-  return dayRenderSegments(day).reduce((sum, seg) => sum + seg.seconds, 0);
-}
 
 const heatmapByDay = computed(() => new Map(learnHeatmap.value.map((cell) => [cell.day, cell])));
 const currentMonthGreenMaxSeconds = computed(() =>
@@ -808,162 +609,6 @@ const homePendingSummary = computed(() => {
   return parts.join(" · ");
 });
 
-function tooltipLinesForSegment(day: UsageStackDay, seg: RenderSegment): TooltipLine[] {
-  if (usageRootFilter.value === "ALL") {
-    if (seg.name === "LEARN" || seg.name === "REST") {
-      return buildOverviewBreakdownLines(day, seg.name);
-    }
-    return [{ text: tx(`未分类 | ${formatSeconds(seg.seconds)}`, `Unclassified | ${formatSeconds(seg.seconds)}`) }];
-  }
-
-  const percent = ratioLabel(seg.seconds, dayRenderTotal(day)) || "<1%";
-  return [
-    { text: `${cleanProcessName(seg.name)}`, strong: true },
-    { text: tx(`占当日可见时长：${percent}`, `Visible share today: ${percent}`) },
-    { text: tx(`时长：${formatSeconds(seg.seconds)}`, `Duration: ${formatSeconds(seg.seconds)}`) },
-  ];
-}
-
-function clampTooltipPosition(
-  clientX: number,
-  clientY: number,
-  size: { width: number; height: number } = stackTooltipSize.value,
-): { x: number; y: number } {
-  const pad = 8;
-  const gap = 8;
-  const width = Math.max(160, size.width);
-  const height = Math.max(78, size.height);
-  let x = clientX + gap;
-  let y = clientY - height - gap;
-  if (x + width > window.innerWidth - pad) {
-    x = clientX - width - gap;
-  }
-  if (y < pad) {
-    y = clientY + gap;
-  }
-  const maxX = Math.max(pad, window.innerWidth - width - pad);
-  const maxY = Math.max(pad, window.innerHeight - height - pad);
-  return {
-    x: Math.max(pad, Math.min(x, maxX)),
-    y: Math.max(pad, Math.min(y, maxY)),
-  };
-}
-
-async function handleSegmentMouseEnter(event: MouseEvent, day: UsageStackDay, seg: RenderSegment) {
-  const lines = tooltipLinesForSegment(day, seg);
-  stackTooltipSize.value = {
-    width: stackTooltipSize.value.width,
-    height: estimateTooltipHeight(lines.length),
-  };
-  const pos = clampTooltipPosition(event.clientX, event.clientY, stackTooltipSize.value);
-  stackTooltip.value = {
-    visible: true,
-    x: pos.x,
-    y: pos.y,
-    color: lightenColor(seg.color),
-    lines,
-  };
-  await nextTick();
-  measureStackTooltipSize();
-  const recalculatedPos = clampTooltipPosition(event.clientX, event.clientY);
-  stackTooltip.value.x = recalculatedPos.x;
-  stackTooltip.value.y = recalculatedPos.y;
-}
-
-function handleSegmentMouseMove(event: MouseEvent) {
-  if (!stackTooltip.value.visible) {
-    return;
-  }
-  const pos = clampTooltipPosition(event.clientX, event.clientY);
-  stackTooltip.value.x = pos.x;
-  stackTooltip.value.y = pos.y;
-}
-
-function handleSegmentMouseLeave() {
-  stackTooltip.value.visible = false;
-}
-
-async function handleSegmentClick(day: UsageStackDay, seg: RenderSegment) {
-  if (usageRootFilter.value !== "ALL") {
-    return;
-  }
-
-  if (seg.name !== "LEARN" && seg.name !== "REST") {
-    return;
-  }
-
-  selectedUsageDay.value = day.day;
-  await switchUsageFilter(seg.name === "LEARN" ? "LEARN" : "REST");
-}
-
-function topSegmentSummary(day: UsageStackDay): string {
-  if (usageRootFilter.value === "ALL") {
-    const base = `${mappedTypeText("LEARN")} ${formatSeconds(day.learn_seconds)} | ${mappedTypeText("REST")} ${formatSeconds(day.rest_seconds)}`;
-    const ignoreSeconds = Math.max(0, day.total_seconds - day.learn_seconds - day.rest_seconds);
-    if (usageShowIgnore.value && ignoreSeconds > 0) {
-      return `${base} | ${mappedTypeText("IGNORE")} ${formatSeconds(ignoreSeconds)}`;
-    }
-    return base;
-  }
-
-  const top3 = visibleSegments(day).slice(0, 3);
-  if (top3.length === 0) {
-    return tx("<5分钟段已隐藏", "<5 min segments hidden>");
-  }
-  return top3
-    .map((seg) => {
-      const shownTotal = visibleTotalSeconds(day);
-      const ratio = shownTotal > 0 ? Math.round((seg.seconds / shownTotal) * 100) : 0;
-      return `${cleanProcessName(seg.name)} ${ratio}%`;
-    })
-    .join(" | ");
-}
-
-const selectedUsageDayData = computed(() => {
-  if (!selectedUsageDay.value) {
-    return usageStack.value[0] ?? null;
-  }
-  return usageStack.value.find((day) => day.day === selectedUsageDay.value) ?? usageStack.value[0] ?? null;
-});
-
-const usageFilterLabel = computed(() => {
-  if (usageRootFilter.value === "LEARN") {
-    return tx("仅看学习", "Learn only");
-  }
-  if (usageRootFilter.value === "REST") {
-    return tx("仅看休息", "Break only");
-  }
-  return tx("总览", "Overview");
-});
-
-function selectUsageDay(day: string) {
-  selectedUsageDay.value = day;
-  selectedUsageProcess.value = "";
-}
-
-const processDrillCandidates = computed(() => {
-  if (usageRootFilter.value === "ALL") {
-    return [];
-  }
-  return selectedUsageDayData.value?.segments ?? [];
-});
-
-const linkedRecentLogs = computed(() => {
-  const day = selectedUsageDayData.value?.day;
-  if (!day) {
-    return [];
-  }
-
-  let logs = recentLogs.value.filter((item) => logDayKey(item.start_timestamp) === day);
-
-  if (selectedUsageProcess.value) {
-    const target = selectedUsageProcess.value.toLowerCase();
-    logs = logs.filter((item) => item.process_name.toLowerCase() === target);
-  }
-
-  return logs;
-});
-
 function reminderIsVisibleToday(item: Reminder): boolean {
   const todayKey = currentLocalDayKey();
   const completedToday = item.completed_day_key === todayKey;
@@ -997,10 +642,6 @@ function formatIdlePromptSpan(item: IdlePrompt): string {
   return `${start.toLocaleTimeString(locale.value, { hour: "2-digit", minute: "2-digit" })} - ${end.toLocaleTimeString(locale.value, { hour: "2-digit", minute: "2-digit" })} (${formatSeconds(durationSeconds)})`;
 }
 
-function selectUsageProcess(processName: string) {
-  selectedUsageProcess.value = processName;
-}
-
 function openGuardWorkflow() {
   selectGuardView();
   void refreshGuardData();
@@ -1018,16 +659,6 @@ function setMainView(next: MainViewKey) {
       void refreshSettingsData();
     }, 0);
   }
-}
-
-async function switchUsageFilter(filter: "ALL" | "LEARN" | "REST") {
-  selectedUsageProcess.value = "";
-  usageRootFilter.value = filter;
-  await refreshInsightsData();
-}
-
-async function backToUsageOverview() {
-  await switchUsageFilter("ALL");
 }
 
 function setErrorMessage(e: unknown) {
@@ -1071,26 +702,16 @@ async function refreshInsightsData() {
 
   loadingInsights.value = true;
   try {
-    const [apps, allTimeApps, logs, heatmap, stack, stackLearn, stackRest] = await Promise.all([
+    const [apps, allTimeApps, logs, heatmap] = await Promise.all([
       listTopAppsToday(6),
       listTopAppsAllTime(10, allTimeFilter.value, allTimeIncludeIgnore.value),
       listRecentLogs(12),
       getLearnHeatmap(getHeatmapFetchDays(), getHeatmapGoalSeconds()),
-      getUsageStack(14, usageRootFilter.value),
-      getUsageStack(14, "LEARN"),
-      getUsageStack(14, "REST"),
     ]);
     topApps.value = apps;
     allTimeTopApps.value = allTimeApps;
     recentLogs.value = logs;
     learnHeatmap.value = heatmap;
-    usageStack.value = stack;
-    usageStackLearn.value = stackLearn;
-    usageStackRest.value = stackRest;
-    if (!selectedUsageDay.value || !stack.find((item) => item.day === selectedUsageDay.value)) {
-      selectedUsageDay.value = stack[0]?.day ?? "";
-      selectedUsageProcess.value = "";
-    }
   } catch (e) {
     setErrorMessage(e);
   } finally {
@@ -1131,17 +752,6 @@ function schedulePersistHeatmapGoal() {
       heatmapGoalSaveTimer = null;
     }
   }, 260);
-}
-
-function onGoalSliderInput(event: Event) {
-  const input = event.target as HTMLInputElement;
-  learnGoalSliderMinutes.value = Number.parseInt(input.value, 10) || 0;
-  syncGoalFromSlider();
-}
-
-function onUsageIgnoreToggle(event: Event) {
-  const input = event.target as HTMLInputElement;
-  usageShowIgnore.value = input.checked;
 }
 
 function setAllTimeFilter(next: "ALL" | "LEARN" | "REST") {
@@ -1202,7 +812,7 @@ function flashInsightsSection(target: HTMLElement | null) {
 async function scrollToInsightsSection(section: string) {
   currentMainView.value = "insights";
   void section;
-  switchInsightsSubView("history");
+  selectHistoryView("topApps");
   await nextTick();
   const target = document.getElementById("insights-stack-anchor");
   flashInsightsSection(target);
@@ -1264,44 +874,9 @@ const homeCtx = computed(() => ({
 
 const insightsCtx = computed(() => ({
   tx,
-  insightsPrimaryView: insightsPrimaryView.value,
-  switchInsightsSubView,
-  learnGoalSliderMinutes: learnGoalSliderMinutes.value,
-  onGoalSliderInput,
-  refreshData,
-  shiftHeatmapMonth,
-  monthTitleText: monthTitleText.value,
-  weekHeaders: weekHeaders.value,
-  calendarHeatmapCells: calendarHeatmapCells.value,
-  heatmapCellClass,
-  heatmapDayText,
   formatSeconds,
-  usageRootFilter: usageRootFilter.value,
-  backToUsageOverview,
-  usageFilterLabel: usageFilterLabel.value,
-  selectedUsageDayData: selectedUsageDayData.value,
-  switchUsageFilter,
-  usageShowIgnore: usageShowIgnore.value,
-  onUsageIgnoreToggle,
-  usageStack: usageStack.value,
-  selectUsageDay,
-  dayRenderSegments,
-  dayRenderTotal,
-  usageSegmentWidth,
-  handleSegmentClick,
-  handleSegmentMouseEnter,
-  handleSegmentMouseMove,
-  handleSegmentMouseLeave,
-  shouldShowSegmentLabel,
-  topSegmentSummary,
   cleanProcessName,
-  usageSegmentColor,
-  processDrillCandidates: processDrillCandidates.value,
-  selectedUsageProcess: selectedUsageProcess.value,
-  selectUsageProcess,
-  linkedRecentLogs: linkedRecentLogs.value,
   formatClock,
-  stackTooltip: stackTooltip.value,
   historySubViews: historySubViews.value,
   historySubView: historySubView.value,
   switchHistorySubView,

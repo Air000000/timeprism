@@ -39,7 +39,7 @@ Important sibling folders in the larger workspace:
 - `src/components/viewContexts.ts`: typed component context contracts shared by `App.vue` and feature views.
 - `src/components/HomeView.vue`: home surface.
 - `src/components/IdlePromptBanner.vue`: top-level idle prompt confirmation banner.
-- `src/components/InsightsView.vue`: history and usage views.
+- `src/components/InsightsView.vue`: history subviews for today's top apps, all-time app usage, and recent logs.
 - `src/components/GuardView.vue`: pending apps, idle queue, rules, diagnostics.
 - `src/components/SettingsView.vue`: interface, startup, privacy sampling policy, and whitelist settings UI.
 - `src/composables/useAppNavigation.ts`: main-window navigation state, tab labels, and insights history subview state.
@@ -117,7 +117,7 @@ Pet panel:
 
 - `src/App.vue` is too broad and owns too many feature concerns.
 - `src-tauri/src/lib.rs` is too broad and mixes unrelated layers.
-- Feature components consume `ctx: any`.
+- Feature views now consume typed context contracts, but `src/App.vue` still assembles broad feature contexts and owns too much orchestration.
 - Backend SQL, migrations, services, and commands are not separated.
 - Tauri command registration still lives in `src-tauri/src/lib.rs`; command wrappers can move to feature command modules later.
 - Idle prompts are currently in process memory, so restart behavior needs a product decision.

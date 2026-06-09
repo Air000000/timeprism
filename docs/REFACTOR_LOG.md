@@ -3152,3 +3152,85 @@ Follow-up:
 
 - Commit R-133.
 - Continue Phase 4 with Insights/Home feature-state cleanup or close a scoped Phase 4 checkpoint for settings/reminders/guard.
+
+## 2026-06-09: R-134 Insights Hidden Usage Stack Context Cleanup
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend cleanup
+- insights
+
+Intent:
+
+- Remove hidden Insights usage-stack state and handlers that were no longer rendered by `InsightsView.vue`.
+- Keep the current visible Insights history tabs behavior unchanged.
+- Reduce `src/App.vue` surface before the next feature-state extraction batch.
+
+Files changed:
+
+- `src/App.vue`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Removed:
+
+| From | Notes |
+| --- | --- |
+| Hidden Insights usage-stack refs and filter state in `App.vue` | Current `InsightsViewContext` no longer consumes them |
+| Segment rendering, tooltip, day/process drilldown helpers | No current template caller after `InsightsView.vue` extraction |
+| Extra usage-stack fields passed through `insightsCtx` | `insightsCtx` now matches the visible typed `InsightsViewContext` |
+| Three hidden `getUsageStack(14, ...)` calls in `refreshInsightsData` | Home's `getUsageStack(7, "ALL")` rhythm data remains intact |
+
+Behavior expected to stay the same:
+
+- Insights history tabs still show today's top apps, all-time app usage, and recent logs.
+- All-time filters and include-unclassified toggle still refresh via the same API wrappers.
+- Home rhythm bars still load from `getUsageStack(7, "ALL")`.
+
+Behavior intentionally changed:
+
+- None for currently visible UI.
+
+Tauri commands affected:
+
+- None. Existing frontend command wrappers are unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Insights refresh now avoids three unused usage-stack queries, reducing hidden work when opening or refreshing Insights.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `rg -n "usageStack|usageRootFilter|usageShowIgnore|selectedUsage|tooltipLinesForSegment|handleSegment|processDrill|linkedRecentLogs|onGoalSliderInput|onUsageIgnoreToggle|stackTooltip|RenderSegment|TooltipLine|dayRender|usageSegment|topSegmentSummary|switchUsageFilter|backToUsageOverview|insightsPrimaryView|selectInsightsView" src/App.vue` returned no matches.
+
+Manual smoke tests:
+
+- Not run for this hidden context cleanup batch.
+
+Risks:
+
+- This removes code for an already-hidden older Insights stack/drilldown experience. Reintroducing that UI later should use a fresh typed component/composable rather than restoring hidden App-level state.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-133.
+
+Follow-up:
+
+- Commit R-134.
+- Continue Phase 4 with remaining `src/App.vue` Home/Insights state extraction.
