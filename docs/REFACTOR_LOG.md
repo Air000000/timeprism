@@ -9208,3 +9208,78 @@ Follow-up:
 
 - Commit R-209.
 - Continue with small reminder helper extractions or record detailed reminder UI smoke results.
+
+## 2026-06-09: R-210 Cross-Stack Checkpoint After App Settings And Reminder Sort
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the App Settings section and reminder sort helper extraction batches do not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-208 and R-209.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- App Settings section and reminder sort helper changes remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace detailed Settings and reminder UI smoke tests.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-210.
+- Continue with low-risk frontend-helper batches.
