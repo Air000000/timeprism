@@ -11006,3 +11006,89 @@ Follow-up:
 
 - Commit R-232.
 - Continue with low-risk frontend-helper batches unless detailed heatmap UI smoke results are recorded.
+
+## 2026-06-09: R-233 Heatmap Progress Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home heatmap
+- helper extraction
+
+Intent:
+
+- Reduce `useHeatmapCalendar.ts` by moving pure progress and fetch-window calculations into a focused helper module.
+- Keep the composable responsible for Vue wiring, month navigation, and Home-facing computed adapters.
+- Preserve current heatmap display and data-refresh behavior before attempting larger Home or calendar refactors.
+
+Files changed:
+
+- `src/composables/useHeatmapCalendar.ts`
+- `src/lib/heatmapCalendarProgress.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHeatmapCalendar.ts` | `heatmapCalendarProgress.ts` | `heatmapGreenMaxSeconds` helper for current-month green intensity scaling |
+| `useHeatmapCalendar.ts` | `heatmapCalendarProgress.ts` | `buildHomeMonthGoalProgress` helper for elapsed-day green-count summary |
+| `useHeatmapCalendar.ts` | `heatmapCalendarProgress.ts` | `homeMonthActiveStreakDays` helper for current-month active streak |
+| `useHeatmapCalendar.ts` | `heatmapCalendarProgress.ts` | `heatmapFetchDays` helper for heatmap query window sizing |
+
+Behavior expected to stay the same:
+
+- Green intensity maximum still uses the maximum `GREEN` cell `learn_seconds` and falls back to at least `1`.
+- Monthly goal progress still scans elapsed days from day `1` through today and counts days whose heatmap level is `GREEN`.
+- Active streak still walks backward from today within the current month and stops at the first day with `learn_seconds <= 0`.
+- Heatmap fetch days still starts from the viewed month, adds `62` days, and clamps the range to `120..1800`.
+- `useHeatmapCalendar` still exposes the same Home-facing fields and handlers.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same calculations are now called through imported pure helpers.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed before this documentation update.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this heatmap progress helper extraction batch.
+
+Risks:
+
+- Date-boundary behavior was validated by compile/build checks only, not by an injected-clock unit test or manual calendar smoke test.
+
+Rollback:
+
+- Revert this batch to move heatmap progress and fetch-window calculations back into `useHeatmapCalendar.ts`.
+
+Follow-up:
+
+- Commit R-233.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.

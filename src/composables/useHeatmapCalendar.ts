@@ -6,13 +6,18 @@ import {
   buildFullMonthHeatmap,
 } from "../lib/heatmapCalendarGrid";
 import {
+  buildHomeMonthGoalProgress,
+  heatmapFetchDays,
+  heatmapGreenMaxSeconds,
+  homeMonthActiveStreakDays as calculateHomeMonthActiveStreakDays,
+} from "../lib/heatmapCalendarProgress";
+import {
   heatmapDayLabel,
   heatmapMonthKey,
   heatmapMonthTitle,
   heatmapWeekHeaders,
 } from "../lib/heatmapCalendarText";
 import type { LocaleCode } from "../lib/locale";
-import { localDayKeyFromDate } from "../lib/time";
 
 type UseHeatmapCalendarOptions = {
   locale: Ref<LocaleCode>;
@@ -43,48 +48,13 @@ export function useHeatmapCalendar({
     buildCalendarHeatmapCells(currentMonthKey.value, fullCurrentMonthHeatmap.value),
   );
 
-  const currentMonthGreenMaxSeconds = computed(() =>
-    Math.max(
-      1,
-      ...fullCurrentMonthHeatmap.value
-        .filter((cell) => cell.level === "GREEN")
-        .map((cell) => cell.learn_seconds),
-    )
-  );
+  const currentMonthGreenMaxSeconds = computed(() => heatmapGreenMaxSeconds(fullCurrentMonthHeatmap.value));
 
   const heatmapByDay = computed(() => new Map(learnHeatmap.value.map((cell) => [cell.day, cell])));
 
-  const homeMonthGoalProgress = computed(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const elapsedDays = today.getDate();
-    let goalDays = 0;
-    for (let day = 1; day <= elapsedDays; day += 1) {
-      const dayKey = localDayKeyFromDate(new Date(year, month, day));
-      if ((heatmapByDay.value.get(dayKey)?.level ?? "GRAY") === "GREEN") {
-        goalDays += 1;
-      }
-    }
-    return {
-      goalDays,
-      elapsedDays,
-    };
-  });
+  const homeMonthGoalProgress = computed(() => buildHomeMonthGoalProgress(heatmapByDay.value));
 
-  const homeMonthActiveStreakDays = computed(() => {
-    const today = new Date();
-    let streak = 0;
-    for (let day = today.getDate(); day >= 1; day -= 1) {
-      const dayKey = localDayKeyFromDate(new Date(today.getFullYear(), today.getMonth(), day));
-      const cell = heatmapByDay.value.get(dayKey);
-      if ((cell?.learn_seconds ?? 0) <= 0) {
-        break;
-      }
-      streak += 1;
-    }
-    return streak;
-  });
+  const homeMonthActiveStreakDays = computed(() => calculateHomeMonthActiveStreakDays(heatmapByDay.value));
 
   function heatmapCellClass(cell: LearnHeatmapCell): string[] {
     return heatmapCellClassNames(cell, currentMonthGreenMaxSeconds.value);
@@ -101,14 +71,7 @@ export function useHeatmapCalendar({
   }
 
   function getHeatmapFetchDays(): number {
-    const now = new Date();
-    const viewYear = viewMonthDate.value.getFullYear();
-    const viewMonth = viewMonthDate.value.getMonth();
-    const viewStart = new Date(viewYear, viewMonth, 1, 0, 0, 0, 0);
-    const diffMs = now.getTime() - viewStart.getTime();
-    const diffDays = Math.max(0, Math.ceil(diffMs / 86_400_000));
-    const days = diffDays + 62;
-    return Math.min(1800, Math.max(120, days));
+    return heatmapFetchDays(viewMonthDate.value);
   }
 
   return {
