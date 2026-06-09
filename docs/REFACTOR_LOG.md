@@ -8235,3 +8235,87 @@ Follow-up:
 
 - Commit R-197.
 - Continue with low-risk frontend-helper batches unless a detailed pet-window smoke pass is recorded.
+
+## 2026-06-09: R-198 Home Rhythm Tooltip Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Home view
+- UI state
+
+Intent:
+
+- Move Home recent-rhythm summary and hover-tooltip state logic out of `src/components/HomeView.vue`.
+- Keep Home template markup, reminder composer state, reminder drag/drop behavior, and Home view context ownership unchanged.
+
+Files changed:
+
+- `src/components/HomeView.vue`
+- `src/composables/useHomeRhythmTooltip.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| compact rhythm duration formatting | `compactRhythmDuration` | Same hour/minute/second thresholds and labels |
+| recent-rhythm summary computed value | `useHomeRhythmTooltip` | Same total, average, active-day, and best-day text |
+| rhythm tooltip placement and hover state | `useHomeRhythmTooltip` | Same tooltip dimensions, gap, colors, labels, and movement behavior |
+| rhythm tone copy selection | `useHomeRhythmTooltip` | Same share thresholds and localized text |
+
+Behavior expected to stay the same:
+
+- Recent rhythm bars still display the same compact duration labels.
+- Rhythm summary chips still compute the same total, daily average, active days, and best-day text from `ctx.homeMonthRhythmBars`.
+- Hovering learn/rest segments still shows the same tooltip content, colors, placement, and mouse-move updates.
+- `src/components/HomeView.vue` still owns reminder modal state, reminder actions, and template structure.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same computed/ref logic runs from a composable instead of inline setup code.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home rhythm tooltip composable extraction batch.
+
+Risks:
+
+- Home rhythm tooltip visuals were validated by typecheck/build only, not by manually hovering the rhythm bars.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-197.
+
+Follow-up:
+
+- Commit R-198.
+- Continue with small Home view extractions, preferably reminder modal state/actions next.
