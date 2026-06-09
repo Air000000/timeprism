@@ -10695,3 +10695,86 @@ Follow-up:
 
 - Commit R-228.
 - Continue with low-risk frontend-helper batches unless detailed heatmap UI smoke results are recorded.
+
+## 2026-06-09: R-229 Heatmap Calendar Grid Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Home view
+- heatmap calendar
+
+Intent:
+
+- Move full-month heatmap backfill and fixed calendar-grid construction out of `useHeatmapCalendar.ts`.
+- Keep month navigation, cell class calculation, progress/streak summaries, and fetch-window logic in the composable for now.
+
+Files changed:
+
+- `src/composables/useHeatmapCalendar.ts`
+- `src/lib/heatmapCalendarGrid.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| month-key parsing for grid helpers | `src/lib/heatmapCalendarGrid.ts` | Same invalid-key empty-array fallback |
+| full-month heatmap backfill | `src/lib/heatmapCalendarGrid.ts::buildFullMonthHeatmap` | Same existing-cell reuse and gray zero-cell creation |
+| calendar grid padding/trailing cells | `src/lib/heatmapCalendarGrid.ts::buildCalendarHeatmapCells` | Same first-weekday padding and 42-slot trailing fill |
+
+Behavior expected to stay the same:
+
+- The current month heatmap still reuses existing cells and fills missing dates with gray zero cells.
+- Calendar cells still include the same leading null padding based on the first weekday.
+- Calendar cells still pad trailing null slots up to the same 42-cell layout.
+- Cell class calculation, goal progress, active streak, month navigation, and fetch-window behavior remain in `useHeatmapCalendar`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same small array construction now runs through helper functions.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this heatmap calendar grid helper extraction batch.
+
+Risks:
+
+- Heatmap calendar layout was validated by typecheck/build only, not by manually checking month boundaries and first-weekday padding.
+
+Rollback:
+
+- Revert this batch to move full-month and 42-slot grid construction back into `useHeatmapCalendar.ts`.
+
+Follow-up:
+
+- Commit R-229.
+- Continue with a backend checkpoint after commit.

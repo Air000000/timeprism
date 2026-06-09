@@ -1,6 +1,10 @@
 import { computed, ref, type Ref } from "vue";
 import type { LearnHeatmapCell } from "../api";
 import {
+  buildCalendarHeatmapCells,
+  buildFullMonthHeatmap,
+} from "../lib/heatmapCalendarGrid";
+import {
   heatmapDayLabel,
   heatmapMonthKey,
   heatmapMonthTitle,
@@ -30,49 +34,13 @@ export function useHeatmapCalendar({
     learnHeatmap.value.filter((cell) => cell.day.startsWith(currentMonthKey.value)),
   );
 
-  const fullCurrentMonthHeatmap = computed<LearnHeatmapCell[]>(() => {
-    const [yearText, monthText] = currentMonthKey.value.split("-");
-    const year = Number.parseInt(yearText, 10);
-    const month = Number.parseInt(monthText, 10);
-    if (!Number.isFinite(year) || !Number.isFinite(month)) {
-      return [];
-    }
+  const fullCurrentMonthHeatmap = computed<LearnHeatmapCell[]>(() =>
+    buildFullMonthHeatmap(currentMonthKey.value, currentMonthHeatmap.value),
+  );
 
-    const monthDays = new Date(year, month, 0).getDate();
-    const byDay = new Map(currentMonthHeatmap.value.map((cell) => [cell.day, cell]));
-
-    const cells: LearnHeatmapCell[] = [];
-    for (let day = 1; day <= monthDays; day += 1) {
-      const dayKey = `${yearText}-${monthText}-${day.toString().padStart(2, "0")}`;
-      const existing = byDay.get(dayKey);
-      if (existing) {
-        cells.push(existing);
-      } else {
-        cells.push({
-          day: dayKey,
-          learn_seconds: 0,
-          level: "GRAY",
-        });
-      }
-    }
-
-    return cells;
-  });
-
-  const calendarHeatmapCells = computed<Array<LearnHeatmapCell | null>>(() => {
-    const [yearText, monthText] = currentMonthKey.value.split("-");
-    const year = Number.parseInt(yearText, 10);
-    const month = Number.parseInt(monthText, 10);
-    if (!Number.isFinite(year) || !Number.isFinite(month)) {
-      return [];
-    }
-
-    const firstWeekday = new Date(year, month - 1, 1).getDay();
-    const padding = Array.from({ length: firstWeekday }, () => null);
-    const cells = [...padding, ...fullCurrentMonthHeatmap.value];
-    const trailing = Math.max(0, 42 - cells.length);
-    return [...cells, ...Array.from({ length: trailing }, () => null)];
-  });
+  const calendarHeatmapCells = computed<Array<LearnHeatmapCell | null>>(() =>
+    buildCalendarHeatmapCells(currentMonthKey.value, fullCurrentMonthHeatmap.value),
+  );
 
   const currentMonthGreenMaxSeconds = computed(() =>
     Math.max(
