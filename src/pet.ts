@@ -43,6 +43,10 @@ import {
 import { cleanPetProcessName } from "./lib/petProcessName";
 import { formatPetReminderDueText } from "./lib/petReminderText";
 import { formatSeconds } from "./lib/time";
+import {
+	buildPetContextMenuItems,
+	type PetPanelWindowMode,
+} from "./lib/petContextMenu";
 import "./pet.css";
 
 const petWindow = getCurrentWindow();
@@ -63,7 +67,7 @@ let hideTimer: number | null = null;
 let moodResetTimer: number | null = null;
 let dragPointerId: number | null = null;
 let snapRetryTimer: number | null = null;
-let currentPanelMode: "summary" | "heatmap" | "stack" = "summary";
+let currentPanelMode: PetPanelWindowMode = "summary";
 
 const app = document.querySelector<HTMLDivElement>("#pet-app");
 if (!app) {
@@ -139,7 +143,7 @@ function setPetCharacterSrc(src: string) {
 const promptSnoozeUntilByKey = new Map<string, number>();
 const promptBubbleState: PromptBubbleState = { currentPromptKey: "" };
 
-async function setPanelMode(next: "summary" | "heatmap" | "stack") {
+async function setPanelMode(next: PetPanelWindowMode) {
 	currentPanelMode = next;
 
 	try {
@@ -187,43 +191,20 @@ function closeContextMenu() {
 async function openContextMenu(clientX: number, clientY: number) {
 	try {
 		const menu = await Menu.new({
-			items: [
-				{
-					id: "show-calendar",
-					text: tx("学习日历", "Learning Calendar"),
-					action: () => {
-						void setPanelMode(currentPanelMode === "heatmap" ? "summary" : "heatmap");
-					},
+			items: buildPetContextMenuItems(tx, currentPanelMode, {
+				setPanelMode: (next) => {
+					void setPanelMode(next);
 				},
-				{
-					id: "show-breakdown",
-					text: tx("周活跃", "Weekly Activity"),
-					action: () => {
-						void setPanelMode(currentPanelMode === "stack" ? "summary" : "stack");
-					},
+				showMainWindow: () => {
+					void invoke("show_main_window").catch((e) => reportActionError(tx("打开主面板失败", "Open main window failed"), e));
 				},
-				{
-					id: "show-main",
-					text: tx("打开主界面", "Open Main"),
-					action: () => {
-						void invoke("show_main_window").catch((e) => reportActionError(tx("打开主面板失败", "Open main window failed"), e));
-					},
+				hidePetWindow: () => {
+					void invoke("hide_pet_window").catch((e) => reportActionError(tx("隐藏失败", "Hide failed"), e));
 				},
-				{
-					id: "hide-pet",
-					text: tx("隐藏桌宠", "Hide Pet"),
-					action: () => {
-						void invoke("hide_pet_window").catch((e) => reportActionError(tx("隐藏失败", "Hide failed"), e));
-					},
+				closePetWindow: () => {
+					void invoke("close_pet_window").catch((e) => reportActionError(tx("关闭失败", "Close failed"), e));
 				},
-				{
-					id: "close-pet",
-					text: tx("关闭桌宠", "Close Pet"),
-					action: () => {
-						void invoke("close_pet_window").catch((e) => reportActionError(tx("关闭失败", "Close failed"), e));
-					},
-				},
-			],
+			}),
 		});
 
 		await menu.popup(new LogicalPosition(clientX, clientY), petWindow);

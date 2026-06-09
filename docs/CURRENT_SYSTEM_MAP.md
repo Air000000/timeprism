@@ -74,6 +74,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useThemeMode.ts`: main-window theme state, safe initialization, body theme attribute sync, system preference fallback, and localStorage persistence.
 - `src/lib/locale.ts`: shared locale code, storage key, browser fallback detection, and locale-specific text selection helpers.
 - `src/lib/petCharacter.ts`: pet character image paths, legacy path normalization, and localStorage persistence helpers.
+- `src/lib/petContextMenu.ts`: pet-window context menu item definitions and panel-mode toggle wiring.
 - `src/lib/petDock.ts`: pure pet-window dock state types, dock-edge mapping, and settle-state conversion helpers.
 - `src/lib/petDom.ts`: pet-window initial shell template rendering and required DOM element lookup helpers.
 - `src/lib/petPanelDom.ts`: pet-panel initial shell template rendering, required DOM element lookup, mode display updates, week-header rendering, heatmap-grid DOM helpers, and usage-stack DOM helpers.
@@ -86,7 +87,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/petReminderText.ts`: pet reminder due-text formatting for daily, weekly, and one-time reminders.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
 - `src/styles/app.css`: global main-window CSS previously embedded in `src/App.vue`.
-- `src/pet.ts`: pet UI, prompt bubble, quick actions, context menu.
+- `src/pet.ts`: pet UI, prompt bubble, quick actions, context menu orchestration, and drag/dock behavior.
 - `src/pet-panel.ts`: mini heatmap and weekly activity panel.
 - `src-tauri/src/lib.rs`: Tauri command shells, app setup, command registration, and global shortcut wiring.
 - `src-tauri/src/db/connection.rs`: database path resolution, legacy DB migration, SQLite connection opening.

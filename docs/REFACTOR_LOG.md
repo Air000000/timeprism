@@ -7996,3 +7996,85 @@ Follow-up:
 
 - Commit R-194.
 - Continue with small pet-panel refresh/event helpers, or record detailed pet-panel smoke results before touching riskier window behavior.
+
+## 2026-06-09: R-195 Pet Context Menu Item Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet window
+- context menu
+
+Intent:
+
+- Move pet-window context menu item definitions out of `src/pet.ts`.
+- Keep native Tauri menu creation, popup positioning, command invocation, and action error handling in `src/pet.ts`.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petContextMenu.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| context menu item text/id/action list | `buildPetContextMenuItems` | Same five menu items and labels |
+| panel-mode menu toggle decision | `buildPetContextMenuItems` | Same heatmap/stack toggle back to summary |
+| pet panel window mode type | `PetPanelWindowMode` | Shared by menu helper and pet entry |
+
+Behavior expected to stay the same:
+
+- Right-click menu still exposes learning calendar, weekly activity, open main, hide pet, and close pet actions.
+- Calendar and weekly activity entries still toggle their panel mode off when the same panel mode is already active.
+- `src/pet.ts` still owns `Menu.new`, `menu.popup`, Tauri command calls, and localized action error reporting.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None changed; existing command calls remain in `src/pet.ts`.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same menu item array is built when the native context menu opens.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this context-menu helper extraction batch.
+
+Risks:
+
+- Native context menu behavior was validated by typecheck/build only, not by manually right-clicking the pet window.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-194.
+
+Follow-up:
+
+- Commit R-195.
+- Continue with low-risk pet helper extraction, or record detailed pet/context-menu smoke results before changing menu behavior.
