@@ -5313,3 +5313,81 @@ Follow-up:
 
 - Commit R-160.
 - Consider an interactive cross-window navigation smoke test before changing pet-to-main navigation further.
+
+## 2026-06-09: R-161 Locale Change Watcher Consolidation
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- locale lifecycle
+
+Intent:
+
+- Move locale change watching back into `useLocale`.
+- Keep `App.vue` responsible for starting locale sync, but not for implementing persistence/document-language sync.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useLocale.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `watch(locale, ...)` body in `App.vue` | `watchLocaleChanges` in `useLocale` | Same previous-value guard and `applyLocale` call |
+
+Behavior expected to stay the same:
+
+- Changing `locale.value` still updates `document.documentElement.lang` and persists the value to localStorage.
+- Initial locale loading still uses `initLocale`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this locale lifecycle extraction batch.
+
+Risks:
+
+- Locale switching behavior was validated by typecheck/build only, not by Settings UI smoke testing.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-160.
+
+Follow-up:
+
+- Commit R-161.
+- Consider Settings UI smoke testing before changing locale or theme behavior further.

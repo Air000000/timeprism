@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import AppTopNav from "./components/AppTopNav.vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
@@ -45,7 +45,8 @@ import {
   type UsageStackDay,
 } from "./api";
 
-const { locale, tx, applyLocale, initLocale } = useLocale();
+const { locale, tx, initLocale, watchLocaleChanges } = useLocale();
+watchLocaleChanges();
 const { themeMode, applyTheme, toggleThemeMode, initThemeMode } = useThemeMode();
 const {
   formatClock,
@@ -422,13 +423,6 @@ onMounted(async () => {
   startAutoCaptureSampler();
 
   await startInsightsSectionNavigationListener();
-});
-
-watch(locale, (next, prev) => {
-  if (next === prev) {
-    return;
-  }
-  applyLocale(next);
 });
 
 onUnmounted(() => {

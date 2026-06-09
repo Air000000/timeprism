@@ -61,7 +61,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useInsightsSectionNavigation.ts`: Insights section Tauri event listening, target switching, DOM flash highlighting, and listener/timer cleanup.
 - `src/composables/useInsightsViewContext.ts`: computed Insights view context assembly from Insights data, navigation, and formatters.
 - `src/composables/useLazySettingsMount.ts`: settings view lazy mount state, immediate refresh-on-open, warmup refresh timer, and cleanup.
-- `src/composables/useLocale.ts`: main-window locale state, translation helper, document language sync, and localStorage persistence.
+- `src/composables/useLocale.ts`: main-window locale state, translation helper, document language sync, change watcher, and localStorage persistence.
 - `src/composables/useMainRefreshPolling.ts`: main-window 5-second Home refresh polling and Guard refresh while Guard is active.
 - `src/composables/useReminders.ts`: reminder list state, reminder sorting, upsert/delete/done/reorder/snooze actions, and reminder action loading.
 - `src/composables/useSettingsPrivacy.ts`: settings/privacy state, auto-start loading/saving, whitelist actions, and settings refresh cache.

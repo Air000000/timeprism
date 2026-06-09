@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 export type LocaleCode = "zh-CN" | "en-US";
 
@@ -36,11 +36,21 @@ function initLocale() {
   applyLocale(browserLang.startsWith("zh") ? "zh-CN" : "en-US");
 }
 
+function watchLocaleChanges() {
+  return watch(locale, (next, prev) => {
+    if (next === prev) {
+      return;
+    }
+    applyLocale(next);
+  });
+}
+
 export function useLocale() {
   return {
     locale,
     tx,
     applyLocale,
     initLocale,
+    watchLocaleChanges,
   };
 }
