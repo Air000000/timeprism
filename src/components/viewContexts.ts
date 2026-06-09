@@ -2,8 +2,10 @@ import type {
   AppRule,
   ForegroundCaptureDiagnostic,
   IdlePrompt,
+  LearnHeatmapCell,
   PendingRuleProcess,
   RecentLog,
+  Reminder,
   TopApp,
 } from "../api";
 import type { HistorySubViewKey } from "../composables/useAppNavigation";
@@ -22,6 +24,65 @@ export type HistorySubViewOption = {
 export type RecentTimelineGroup = {
   day: string;
   items: RecentLog[];
+};
+
+export type HomeRhythmBar = {
+  day: string;
+  label: string;
+  totalSeconds: number;
+  computerTotalSeconds: number;
+  learnSeconds: number;
+  restSeconds: number;
+  totalHeightPx: number;
+  learnHeightPx: number;
+  restHeightPx: number;
+  totalHeight: string;
+  learnHeight: string;
+  restHeight: string;
+  isToday: boolean;
+};
+
+export type ReminderUpsertInput = {
+  id?: number;
+  content: string;
+  repeat_rule: Reminder["repeat_rule"];
+  remind_at_text?: string;
+  daily_time_text?: string;
+  weekly_days?: number[];
+  reminder_enabled: boolean;
+};
+
+export type HomeViewContext = {
+  tx: TranslateFn;
+  formatSeconds: (totalSeconds: number) => string;
+  todayLearnSeconds: number;
+  currentStatusLabel: string;
+  currentStatusTone: "ok" | "warn" | "alert" | "idle";
+  goalProgressPct: string;
+  goalProgressFillNum: number;
+  goalOverflowTier: "none" | "active";
+  recentSummary: string;
+  homeScheduleItems: Reminder[];
+  reminderListForPanel: Reminder[];
+  reminderDueText: (item: Reminder) => string;
+  toDateTimeLocalValue: (unixSeconds: number) => string;
+  timeMinutesLabel: (minutes: number) => string;
+  handleUpsertReminder: (input: ReminderUpsertInput) => Promise<void> | void;
+  handleDeleteReminder: (id: number) => Promise<void> | void;
+  handleReminderDone: (id: number, done: boolean) => Promise<void> | void;
+  handleReminderReorder: (orderedIds: number[]) => Promise<void> | void;
+  handleReminderSnooze: (id: number, seconds?: number) => Promise<void> | void;
+  reminderActionLoading: boolean;
+  shiftHeatmapMonth: (delta: number) => void;
+  monthTitleText: string;
+  weekHeaders: string[];
+  calendarHeatmapCells: Array<LearnHeatmapCell | null>;
+  heatmapCellClass: (cell: LearnHeatmapCell) => string[];
+  heatmapDayText: (dayKey: string) => string;
+  pendingRuleCount: number;
+  idlePromptCount: number;
+  dueReminderCount: number;
+  homeMonthRhythmBars: HomeRhythmBar[];
 };
 
 export type InsightsViewContext = {

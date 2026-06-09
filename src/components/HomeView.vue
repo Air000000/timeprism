@@ -1,7 +1,9 @@
 ﻿<script setup lang="ts">
 import { computed, ref } from "vue";
+import type { Reminder } from "../api";
+import type { HomeRhythmBar, HomeViewContext } from "./viewContexts";
 
-const props = defineProps<{ ctx: any }>();
+const props = defineProps<{ ctx: HomeViewContext }>();
 
 type ReminderRepeatRule = "NONE" | "DAILY" | "WEEKLY";
 
@@ -55,10 +57,10 @@ function compactRhythmDuration(seconds: number): string {
 
 const homeRhythmSummary = computed(() => {
   const bars = props.ctx.homeMonthRhythmBars ?? [];
-  const totalSeconds = bars.reduce((sum: number, bar: any) => sum + (bar.totalSeconds ?? 0), 0);
-  const activeDays = bars.filter((bar: any) => (bar.totalSeconds ?? 0) > 0).length;
+  const totalSeconds = bars.reduce((sum, bar) => sum + (bar.totalSeconds ?? 0), 0);
+  const activeDays = bars.filter((bar) => (bar.totalSeconds ?? 0) > 0).length;
   const averageSeconds = bars.length > 0 ? Math.round(totalSeconds / bars.length) : 0;
-  const bestBar = bars.reduce((best: any, bar: any) => (
+  const bestBar = bars.reduce<HomeRhythmBar | null>((best, bar) => (
     (bar.totalSeconds ?? 0) > (best?.totalSeconds ?? -1) ? bar : best
   ), null);
   return {
@@ -108,7 +110,7 @@ function rhythmToneText(share: number, segment: "learn" | "rest"): string {
 
 function handleRhythmEnter(
   event: MouseEvent,
-  bar: any,
+  bar: HomeRhythmBar,
   segment: "learn" | "rest"
 ) {
   const segmentSeconds = segment === "learn" ? (bar.learnSeconds ?? 0) : (bar.restSeconds ?? 0);
@@ -190,7 +192,7 @@ function closeScheduleSettings() {
   scheduleModalOpen.value = false;
 }
 
-function startEditReminder(item: any) {
+function startEditReminder(item: Reminder) {
   scheduleModalOpen.value = true;
   reminderEditId.value = item.id;
   reminderDraftContent.value = item.content;
@@ -279,7 +281,7 @@ async function quickSnoozeReminder(id: number) {
   }
 }
 
-function handleReminderDragStart(item: any, event?: DragEvent) {
+function handleReminderDragStart(item: Reminder, event?: DragEvent) {
   draggingReminderId.value = item.id;
   dropTargetReminderId.value = item.id;
   if (event?.dataTransfer) {
@@ -289,7 +291,7 @@ function handleReminderDragStart(item: any, event?: DragEvent) {
   }
 }
 
-function handleReminderDragEnter(item: any) {
+function handleReminderDragEnter(item: Reminder) {
   if (draggingReminderId.value === null || draggingReminderId.value === item.id) {
     return;
   }
@@ -301,7 +303,7 @@ function handleReminderDragEnd() {
   dropTargetReminderId.value = null;
 }
 
-async function handleReminderDrop(targetItem: any, event?: DragEvent) {
+async function handleReminderDrop(targetItem: Reminder, event?: DragEvent) {
   const draggedId = draggingReminderId.value
     ?? Number.parseInt(event?.dataTransfer?.getData("text/plain") ?? "", 10);
   draggingReminderId.value = null;
@@ -326,11 +328,11 @@ async function handleReminderDrop(targetItem: any, event?: DragEvent) {
   const [moved] = ordered.splice(fromIndex, 1);
   ordered.splice(toIndex, 0, moved);
 
-  const doneGroup = allItems.filter((item: any) => item.done);
-  const undoneGroup = allItems.filter((item: any) => !item.done);
+  const doneGroup = allItems.filter((item) => item.done);
+  const undoneGroup = allItems.filter((item) => !item.done);
   const orderedIds = dragged.done
-    ? [...undoneGroup.map((item: any) => item.id), ...ordered.map((item: any) => item.id)]
-    : [...ordered.map((item: any) => item.id), ...doneGroup.map((item: any) => item.id)];
+    ? [...undoneGroup.map((item) => item.id), ...ordered.map((item) => item.id)]
+    : [...ordered.map((item) => item.id), ...doneGroup.map((item) => item.id)];
 
   try {
     await props.ctx.handleReminderReorder(orderedIds);

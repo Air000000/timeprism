@@ -4,7 +4,12 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
 import InsightsView from "./components/InsightsView.vue";
-import type { GuardViewContext, InsightsViewContext } from "./components/viewContexts";
+import type {
+  GuardViewContext,
+  HomeViewContext,
+  InsightsViewContext,
+  ReminderUpsertInput,
+} from "./components/viewContexts";
 import {
   useAppNavigation,
   type HistorySubViewKey,
@@ -1459,15 +1464,7 @@ async function handleRemoveWhitelist(processName: string) {
   }
 }
 
-async function handleUpsertReminder(input: {
-  id?: number;
-  content: string;
-  repeat_rule: "NONE" | "DAILY" | "WEEKLY";
-  remind_at_text?: string;
-  daily_time_text?: string;
-  weekly_days?: number[];
-  reminder_enabled: boolean;
-}) {
+async function handleUpsertReminder(input: ReminderUpsertInput) {
   const content = input.content.trim();
   if (!content) {
     throw new Error(tx("提醒内容不能为空", "Reminder content cannot be empty"));
@@ -1763,7 +1760,7 @@ const homeCtx = computed(() => ({
   homeMonthGoalProgress: homeMonthGoalProgress.value,
   homeMonthActiveStreakDays: homeMonthActiveStreakDays.value,
   homePendingSummary: homePendingSummary.value,
-}));
+}) satisfies HomeViewContext & Record<string, unknown>);
 
 const insightsCtx = computed(() => ({
   tx,

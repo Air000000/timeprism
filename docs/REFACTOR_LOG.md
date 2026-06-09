@@ -2483,3 +2483,88 @@ Follow-up:
 
 - Commit R-126.
 - Type `HomeView.vue` context in a separate batch or remove unused Insights context fields.
+
+## 2026-06-09: R-127 Home View Context Typing
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shell
+- typed component contracts
+- home
+
+Intent:
+
+- Replace the existing `ctx: any` contract in `src/components/HomeView.vue` with a typed Home view context.
+- Remove local `any` usage in Home reminder drag/reorder and rhythm summary helpers.
+- Share reminder upsert input typing between `HomeView.vue` and `src/App.vue`.
+
+Files changed:
+
+- `src/App.vue`
+- `src/components/HomeView.vue`
+- `src/components/viewContexts.ts`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| implicit Home `ctx` shape | `src/components/viewContexts.ts` | New `HomeViewContext` type |
+| inline reminder upsert input type in `App.vue` | `ReminderUpsertInput` in `src/components/viewContexts.ts` | Same fields and optionality |
+| local Home rhythm bar assumptions | `HomeRhythmBar` in `src/components/viewContexts.ts` | Used by Home tooltip/summary typing |
+| broad `ctx: any` in `HomeView.vue` | `ctx: HomeViewContext` | Template behavior unchanged |
+
+Behavior expected to stay the same:
+
+- Home status, goal progress, schedule/reminder actions, calendar heatmap, and rhythm tooltip use the same fields and handlers.
+- Reminder create/edit/delete/done/snooze/reorder paths call the same App handlers.
+- No template text, command call, or view flow was intentionally changed.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected. Type-only runtime impact.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `rg -n "any" src/components/HomeView.vue src/components/GuardView.vue src/components/InsightsView.vue src/components/viewContexts.ts` returned no matches.
+
+Manual smoke tests:
+
+- Not run for this type-contract batch.
+
+Risks:
+
+- Home reminder/rhythm interactions were validated by typecheck/build only, not by interactive smoke testing.
+- `homeCtx` still contains a few extra legacy fields not consumed by the current component; removing them should be a separate cleanup batch.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-126 commit.
+
+Follow-up:
+
+- Commit R-127.
+- Consider a dedicated cleanup batch for unused context fields and dead Insights usage-stack helpers.
