@@ -58,7 +58,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHomeViewContext.ts`: computed Home view context assembly from Home data, reminders, heatmap, rhythm, and status state.
 - `src/composables/useIdlePromptBannerContext.ts`: computed top-level idle prompt banner context assembly.
 - `src/composables/useInsightsData.ts`: Insights top-app/all-time/recent-log loading, all-time filters, and visible Insights derived view data.
-- `src/composables/useInsightsSectionNavigation.ts`: Insights section event target switching, DOM flash highlighting, and flash timer cleanup.
+- `src/composables/useInsightsSectionNavigation.ts`: Insights section Tauri event listening, target switching, DOM flash highlighting, and listener/timer cleanup.
 - `src/composables/useInsightsViewContext.ts`: computed Insights view context assembly from Insights data, navigation, and formatters.
 - `src/composables/useLazySettingsMount.ts`: settings view lazy mount state, immediate refresh-on-open, warmup refresh timer, and cleanup.
 - `src/composables/useLocale.ts`: main-window locale state, translation helper, document language sync, and localStorage persistence.

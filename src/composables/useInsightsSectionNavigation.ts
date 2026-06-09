@@ -1,3 +1,4 @@
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { nextTick, type Ref } from "vue";
 import type { HistorySubViewKey, MainViewKey } from "./useAppNavigation";
 
@@ -11,6 +12,7 @@ export function useInsightsSectionNavigation({
   selectHistoryView,
 }: InsightsSectionNavigationOptions) {
   let sectionFlashTimer: number | null = null;
+  let navigateSectionUnlisten: UnlistenFn | null = null;
 
   function flashInsightsSection(target: HTMLElement | null) {
     if (!target) {
@@ -39,7 +41,19 @@ export function useInsightsSectionNavigation({
     flashInsightsSection(target);
   }
 
+  async function startInsightsSectionNavigationListener() {
+    cleanupInsightsSectionNavigation();
+    navigateSectionUnlisten = await listen<string>("navigate-insights-section", (event) => {
+      void scrollToInsightsSection(event.payload || "heatmap");
+    });
+  }
+
   function cleanupInsightsSectionNavigation() {
+    if (navigateSectionUnlisten) {
+      navigateSectionUnlisten();
+      navigateSectionUnlisten = null;
+    }
+
     if (sectionFlashTimer !== null) {
       window.clearTimeout(sectionFlashTimer);
       sectionFlashTimer = null;
@@ -47,7 +61,7 @@ export function useInsightsSectionNavigation({
   }
 
   return {
-    scrollToInsightsSection,
+    startInsightsSectionNavigationListener,
     cleanupInsightsSectionNavigation,
   };
 }

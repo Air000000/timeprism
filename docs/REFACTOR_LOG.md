@@ -5234,3 +5234,82 @@ Follow-up:
 
 - Commit R-159.
 - Consider interactive S-100/S-200/S-300/S-500/S-600/S-700 smoke testing or continue with smaller lifecycle extraction.
+
+## 2026-06-09: R-160 Insights Section Event Listener Consolidation
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Tauri event wiring
+
+Intent:
+
+- Move the `navigate-insights-section` Tauri event listener and unlisten cleanup into `useInsightsSectionNavigation`.
+- Keep `App.vue` responsible only for starting the listener during mount and invoking composable cleanup during unmount.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useInsightsSectionNavigation.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `listen<string>("navigate-insights-section", ...)` | `startInsightsSectionNavigationListener` | Same event name and payload fallback |
+| `navigateSectionUnlisten` cleanup | `cleanupInsightsSectionNavigation` | Cleanup now owns both event unlisten and flash timer cleanup |
+
+Behavior expected to stay the same:
+
+- The pet/other surfaces can still emit `navigate-insights-section` and switch the main view to Insights/top-apps.
+- The target section still flashes using the same CSS class and timer.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None. This batch only moves a frontend event listener.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; listener registration timing remains in main-window mount.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this event wiring extraction batch.
+
+Risks:
+
+- Cross-window navigation was validated by typecheck/build only, not by S-700/S-900 interactive smoke testing.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-159.
+
+Follow-up:
+
+- Commit R-160.
+- Consider an interactive cross-window navigation smoke test before changing pet-to-main navigation further.

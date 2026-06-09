@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import AppTopNav from "./components/AppTopNav.vue";
 import GuardView from "./components/GuardView.vue";
@@ -63,7 +62,7 @@ const {
   selectMainView,
 } = useAppNavigation(tx);
 const {
-  scrollToInsightsSection,
+  startInsightsSectionNavigationListener,
   cleanupInsightsSectionNavigation,
 } = useInsightsSectionNavigation({
   currentMainView,
@@ -397,8 +396,6 @@ async function refreshData() {
   }
 }
 
-let navigateSectionUnlisten: UnlistenFn | null = null;
-
 function onLocaleChange(event: Event) {
   const input = event.target as HTMLSelectElement;
   if (input.value === "zh-CN" || input.value === "en-US") {
@@ -424,9 +421,7 @@ onMounted(async () => {
 
   startAutoCaptureSampler();
 
-  navigateSectionUnlisten = await listen<string>("navigate-insights-section", (event) => {
-    void scrollToInsightsSection(event.payload || "heatmap");
-  });
+  await startInsightsSectionNavigationListener();
 });
 
 watch(locale, (next, prev) => {
@@ -440,10 +435,6 @@ onUnmounted(() => {
   stopMainRefreshPolling();
   stopAutoCaptureSampler();
   cleanupSettingsWarmup();
-  if (navigateSectionUnlisten) {
-    navigateSectionUnlisten();
-    navigateSectionUnlisten = null;
-  }
   cleanupInsightsSectionNavigation();
   cleanupHeatmapGoalSetting();
 });
