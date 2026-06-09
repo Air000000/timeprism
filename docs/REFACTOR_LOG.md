@@ -8160,3 +8160,78 @@ Follow-up:
 
 - Commit R-196.
 - Continue with low-risk pet helper extraction, or record detailed pet-window smoke results before touching drag/dock behavior.
+
+## 2026-06-09: R-197 Cross-Stack Checkpoint After Pet Menu/Summary Helpers
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the pet-window context-menu and summary DOM helper extraction batches do not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-195 and R-196 reduced `src/pet.ts` without changing Tauri command behavior.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Pet-window helper changes from R-195 and R-196 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace a detailed UI smoke pass for opening the pet window, right-clicking the menu, and observing summary refresh.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-197.
+- Continue with low-risk frontend-helper batches unless a detailed pet-window smoke pass is recorded.
