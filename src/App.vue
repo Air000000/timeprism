@@ -18,6 +18,7 @@ import {
   type HistorySubViewKey,
   type MainViewKey,
 } from "./composables/useAppNavigation";
+import { useDisplayFormatters } from "./composables/useDisplayFormatters";
 import { useGuardData } from "./composables/useGuardData";
 import { useGuardWorkflow } from "./composables/useGuardWorkflow";
 import { useHeatmapCalendar } from "./composables/useHeatmapCalendar";
@@ -46,13 +47,18 @@ import {
   listRecentLogs,
   setHeatmapGoalSecondsSetting,
   type LearnHeatmapCell,
-  type IdlePrompt,
   type RecentLog,
   type UsageStackDay,
 } from "./api";
 
 const { locale, tx, applyLocale, initLocale } = useLocale();
 const { themeMode, applyTheme, toggleThemeMode, initThemeMode } = useThemeMode();
+const {
+  formatClock,
+  mappedTypeText,
+  cleanProcessName,
+  formatIdlePromptSpan,
+} = useDisplayFormatters({ locale, tx });
 const {
   currentMainView,
   mainViews,
@@ -220,25 +226,6 @@ function switchHistorySubView(next: HistorySubViewKey) {
   void refreshInsightsData();
 }
 
-function formatClock(unixSeconds: number): string {
-  const date = new Date(unixSeconds * 1000);
-  return date.toLocaleTimeString(locale.value, {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-function mappedTypeText(mappedType: "LEARN" | "REST" | "IGNORE") {
-  if (mappedType === "LEARN") {
-    return tx("学习", "Learn");
-  }
-  if (mappedType === "REST") {
-    return tx("休息", "Break");
-  }
-  return tx("未分类", "Unclassified");
-}
-
 function syncGoalFromSlider() {
   let total = Number.isFinite(learnGoalSliderMinutes.value)
     ? Math.round(learnGoalSliderMinutes.value / 15) * 15
@@ -251,30 +238,6 @@ function syncGoalFromSlider() {
 function getHeatmapGoalSeconds(): number {
   syncGoalFromSlider();
   return learnGoalSliderMinutes.value * 60;
-}
-
-function cleanProcessName(name: string): string {
-  const normalized = name
-    .replace(/^__idle_learn__\.exe$/i, tx("离开时段（已归类为学习）", "Away Segment (Learn)"))
-    .replace(/^__idle_rest__\.exe$/i, tx("离开时段（已归类为休息）", "Away Segment (Break)"))
-    .replace(/^__idle__\.exe$/i, tx("离开时段", "Away Segment"))
-    .replace(/^idle_learn$/i, tx("离开时段（已归类为学习）", "Away Segment (Learn)"))
-    .replace(/^idle_rest$/i, tx("离开时段（已归类为休息）", "Away Segment (Break)"))
-    .replace(/^system\.idle$/i, tx("离开时段", "Away Segment"))
-    .replace(/^idle\.segment$/i, tx("离开时段", "Away Segment"))
-    .replace(/\.exe(?=\s*(\(|$))/gi, "")
-    .replace(/\s*\([^)]*\)\s*$/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-  return normalized || tx("未知进程", "Unknown App");
-}
-
-function formatIdlePromptSpan(item: IdlePrompt): string {
-  const start = new Date(item.start_timestamp * 1000);
-  const end = new Date(item.end_timestamp * 1000);
-  const durationSeconds = Math.max(0, Math.floor(item.duration_ms / 1000));
-  return `${start.toLocaleTimeString(locale.value, { hour: "2-digit", minute: "2-digit" })} - ${end.toLocaleTimeString(locale.value, { hour: "2-digit", minute: "2-digit" })} (${formatSeconds(durationSeconds)})`;
 }
 
 function openGuardWorkflow() {

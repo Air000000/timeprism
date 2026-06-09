@@ -43,6 +43,7 @@ Important sibling folders in the larger workspace:
 - `src/components/GuardView.vue`: pending apps, idle queue, rules, diagnostics.
 - `src/components/SettingsView.vue`: interface, startup, privacy sampling policy, and whitelist settings UI.
 - `src/composables/useAppNavigation.ts`: main-window navigation state, tab labels, and insights history subview state.
+- `src/composables/useDisplayFormatters.ts`: shared UI display formatters for clock text, mapped type labels, process names, and idle prompt spans.
 - `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, diagnostics, rule mutations, idle resolution, and Guard input handlers.
 - `src/composables/useGuardWorkflow.ts`: guard workflow step completion/unlock state, labels, review completion, and reset watcher.
 - `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar cells, cell classes, fetch-window calculation, and month progress summaries.

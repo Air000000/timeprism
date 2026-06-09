@@ -3650,3 +3650,85 @@ Follow-up:
 
 - Commit R-139.
 - Consider a frontend phase-gate audit before further App-level orchestration changes.
+
+## 2026-06-09: R-140 Shared Display Formatters Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend cleanup
+- shared display helpers
+
+Intent:
+
+- Move cross-view display formatters out of `src/App.vue`.
+- Keep all existing formatting rules and translated labels unchanged.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useDisplayFormatters.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `formatClock` | `useDisplayFormatters` | Same locale and time options |
+| `mappedTypeText` | `useDisplayFormatters` | Same Learn/Rest/Unclassified labels |
+| `cleanProcessName` | `useDisplayFormatters` | Same idle/system/process-name normalization |
+| `formatIdlePromptSpan` | `useDisplayFormatters` | Same span and duration formatting |
+
+Behavior expected to stay the same:
+
+- Home, Insights, Guard, and idle prompt banner display the same process names, clocks, mapped labels, and idle prompt spans.
+- `useGuardData` still receives the same `mappedTypeText` callback.
+- `useHomeOverview` still receives the same `cleanProcessName` and `formatClock` callbacks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this helper extraction batch.
+
+Risks:
+
+- Display helper output was validated by typecheck/build only, not by interactive S-500 smoke testing.
+- The formatter composable is shared by multiple feature contexts, so future label changes should still be reviewed across Home/Insights/Guard.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-139.
+
+Follow-up:
+
+- Commit R-140.
+- Run a frontend phase-gate audit before larger App lifecycle or refresh orchestration changes.
