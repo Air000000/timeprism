@@ -2236,3 +2236,86 @@ Follow-up:
 
 - Commit R-123.
 - Continue Phase 3 with navigation shell extraction or typed feature context preparation.
+
+## 2026-06-09: R-124 App Navigation Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shell
+- navigation
+
+Intent:
+
+- Move main-window navigation refs, tab label metadata, and insights history subview state out of `src/App.vue`.
+- Keep data refresh and settings warm-up side effects in `src/App.vue` so the new composable remains state-only.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useAppNavigation.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `MainViewKey`, `InsightsPrimaryViewKey`, `HistorySubViewKey` | `src/composables/useAppNavigation.ts` | Exported for `App.vue` handlers |
+| `currentMainView`, `mainViews` | `src/composables/useAppNavigation.ts` | Same default main view: `home` |
+| `insightsPrimaryView`, `historySubView`, `historySubViews` | `src/composables/useAppNavigation.ts` | Same default history subview: `topApps` |
+| navigation state mutations | `src/composables/useAppNavigation.ts` | Refresh side effects remain in `App.vue` |
+
+Behavior expected to stay the same:
+
+- Main navigation still starts on Home.
+- Entering Insights from the top nav still resets the history subview to Today's Duration when already in the history section.
+- Insights subnav and history subnav still trigger the same data refreshes.
+- Guard shortcut still opens the Guard view and refreshes guard data.
+- Settings view still mounts and refreshes from `App.vue`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this shell extraction batch.
+
+Risks:
+
+- Navigation behavior was not interactively smoke-tested in a running app during this batch.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-123 commit.
+
+Follow-up:
+
+- Commit R-124.
+- Continue Phase 3 by preparing typed view context contracts or extracting another state-only shell composable.

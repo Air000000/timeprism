@@ -4,6 +4,12 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
 import InsightsView from "./components/InsightsView.vue";
+import {
+  useAppNavigation,
+  type HistorySubViewKey,
+  type InsightsPrimaryViewKey,
+  type MainViewKey,
+} from "./composables/useAppNavigation";
 import { useLocale } from "./composables/useLocale";
 import { useThemeMode } from "./composables/useThemeMode";
 import {
@@ -62,6 +68,17 @@ import {
 
 const { locale, tx, applyLocale, initLocale } = useLocale();
 const { themeMode, applyTheme, toggleThemeMode, initThemeMode } = useThemeMode();
+const {
+  currentMainView,
+  mainViews,
+  insightsPrimaryView,
+  historySubView,
+  historySubViews,
+  selectInsightsView,
+  selectHistoryView,
+  selectMainView,
+  selectGuardView,
+} = useAppNavigation(tx);
 
 const topApps = ref<TopApp[]>([]);
 const allTimeTopApps = ref<TopApp[]>([]);
@@ -111,23 +128,6 @@ const privacyFeedback = ref("未保存隐私设置");
 const privacyFeedbackType = ref<"info" | "ok" | "warn" | "error">("info");
 const reminderActionLoading = ref(false);
 const privacyViewMounted = ref(false);
-type MainViewKey = "home" | "insights" | "guard" | "privacy";
-const currentMainView = ref<MainViewKey>("home");
-const mainViews = computed<Array<{ key: MainViewKey; label: string }>>(() => [
-  { key: "home", label: tx("首页", "Home") },
-  { key: "insights", label: tx("数据看板", "Insights") },
-  { key: "guard", label: tx("专注守护", "Focus Guard") },
-  { key: "privacy", label: tx("设置", "Settings") },
-]);
-type InsightsPrimaryViewKey = "history";
-type HistorySubViewKey = "topApps" | "allTime" | "recent";
-const insightsPrimaryView = ref<InsightsPrimaryViewKey>("history");
-const historySubView = ref<HistorySubViewKey>("topApps");
-const historySubViews = computed<Array<{ key: HistorySubViewKey; label: string }>>(() => [
-  { key: "recent", label: tx("最近记录", "Recent Logs") },
-  { key: "topApps", label: tx("今日时长", "Top Apps") },
-  { key: "allTime", label: tx("历史总时长", "All-time Usage") },
-]);
 
 const guardStep3Done = ref(false);
 
@@ -235,15 +235,12 @@ const guardStepLabels = computed(() => [
   tx("采样诊断", "Diagnostics"),
 ]);
 function switchInsightsSubView(next: InsightsPrimaryViewKey) {
-  currentMainView.value = "insights";
-  insightsPrimaryView.value = next;
+  selectInsightsView(next);
   void refreshInsightsData();
 }
 
 function switchHistorySubView(next: HistorySubViewKey) {
-  currentMainView.value = "insights";
-  insightsPrimaryView.value = "history";
-  historySubView.value = next;
+  selectHistoryView(next);
   void refreshInsightsData();
 }
 
@@ -1066,15 +1063,12 @@ function selectUsageProcess(processName: string) {
 }
 
 function openGuardWorkflow() {
-  currentMainView.value = "guard";
+  selectGuardView();
   void refreshGuardData();
 }
 
 function setMainView(next: MainViewKey) {
-  currentMainView.value = next;
-  if (next === "insights" && insightsPrimaryView.value === "history") {
-    historySubView.value = "topApps";
-  }
+  selectMainView(next);
   if (next === "insights") {
     void refreshInsightsData();
   } else if (next === "guard") {

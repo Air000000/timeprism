@@ -39,6 +39,7 @@ Important sibling folders in the larger workspace:
 - `src/components/HomeView.vue`: home surface.
 - `src/components/InsightsView.vue`: history and usage views.
 - `src/components/GuardView.vue`: pending apps, idle queue, rules, diagnostics.
+- `src/composables/useAppNavigation.ts`: main-window navigation state, tab labels, and insights history subview state.
 - `src/composables/useLocale.ts`: main-window locale state, translation helper, document language sync, and localStorage persistence.
 - `src/composables/useThemeMode.ts`: main-window theme state, body theme attribute sync, system preference fallback, and localStorage persistence.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
