@@ -12513,3 +12513,90 @@ Follow-up:
 
 - Commit R-251.
 - Continue with small helper extractions while preserving existing runtime behavior.
+
+## 2026-06-09: R-252 Usage Root Filter Type Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- API types
+- Insights
+- type extraction
+
+Intent:
+
+- Replace duplicated `"ALL" | "LEARN" | "REST"` usage filter unions with a shared `UsageRootFilter` type.
+- Keep API command names, payload names, default values, and Insights filter behavior unchanged.
+- Preserve the compatibility `src/api.ts` export surface for composables importing from `../api`.
+
+Files changed:
+
+- `src/api.ts`
+- `src/api/types.ts`
+- `src/api/commands/analytics.ts`
+- `src/composables/useInsightsData.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| inline union types | `api/types.ts` | `UsageRootFilter = "ALL" | "LEARN" | "REST"` |
+
+Behavior expected to stay the same:
+
+- `listTopAppsAllTime` still defaults `rootFilter` to `ALL`.
+- `getUsageStack` still defaults `rootFilter` to `ALL`.
+- Insights all-time filter state still starts as `ALL`.
+- Runtime payload keys `rootFilter` and `includeIgnore` are unchanged.
+- `src/api.ts` still re-exports the type surface needed by existing composable imports.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None; TypeScript type-only extraction with unchanged invoke payloads.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None; type-only change.
+
+Automated validation:
+
+- Initial `pnpm.cmd run typecheck` and `pnpm.cmd run build:check` caught a missing `UsageRootFilter` re-export from `src/api.ts`; the export was added before final validation.
+- Final `pnpm.cmd run typecheck` passed.
+- Final `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this usage root filter type extraction batch.
+
+Risks:
+
+- Runtime risk is low because this batch changes TypeScript types and imports only; manual Insights filter smoke testing was not run.
+
+Rollback:
+
+- Revert this batch to restore inline root-filter union types in API commands and `useInsightsData.ts`.
+
+Follow-up:
+
+- Commit R-252.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.

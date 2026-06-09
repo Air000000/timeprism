@@ -36,6 +36,8 @@ export type UsageStackDay = {
   segments: UsageStackSegment[];
 };
 
+export type UsageRootFilter = "ALL" | "LEARN" | "REST";
+
 export type RecentLog = {
   id: number;
   process_name: string;

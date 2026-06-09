@@ -7,13 +7,12 @@ import {
   type LearnHeatmapCell,
   type RecentLog,
   type TopApp,
+  type UsageRootFilter,
 } from "../api";
 import {
   buildRecentTimelineGroups,
   insightsBarWidth,
 } from "../lib/insightsMetrics";
-
-type AllTimeFilter = "ALL" | "LEARN" | "REST";
 
 type UseInsightsDataOptions = {
   recentLogs: Ref<RecentLog[]>;
@@ -35,7 +34,7 @@ export function useInsightsData({
   const loadingInsights = ref(false);
   const topApps = ref<TopApp[]>([]);
   const allTimeTopApps = ref<TopApp[]>([]);
-  const allTimeFilter = ref<AllTimeFilter>("ALL");
+  const allTimeFilter = ref<UsageRootFilter>("ALL");
   const allTimeIncludeIgnore = ref(true);
 
   const recentTimelineGroups = computed(() => buildRecentTimelineGroups(recentLogs.value));
@@ -72,7 +71,7 @@ export function useInsightsData({
     return insightsBarWidth(seconds, topApps.value[0]?.seconds ?? 0);
   }
 
-  function setAllTimeFilter(next: AllTimeFilter) {
+  function setAllTimeFilter(next: UsageRootFilter) {
     allTimeFilter.value = next;
     void refreshData();
   }

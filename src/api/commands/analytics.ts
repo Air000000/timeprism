@@ -4,6 +4,7 @@ import type {
   RecentLog,
   TodaySummary,
   TopApp,
+  UsageRootFilter,
   UsageStackDay,
 } from "../types";
 
@@ -17,7 +18,7 @@ export async function listTopAppsToday(limit = 5): Promise<TopApp[]> {
 
 export async function listTopAppsAllTime(
   limit = 10,
-  rootFilter: "ALL" | "LEARN" | "REST" = "ALL",
+  rootFilter: UsageRootFilter = "ALL",
   includeIgnore = true,
 ): Promise<TopApp[]> {
   return invokeCommand("list_top_apps_all_time", { limit, rootFilter, includeIgnore });
@@ -40,7 +41,7 @@ export async function setHeatmapGoalSecondsSetting(goalSeconds: number): Promise
 
 export async function getUsageStack(
   days = 14,
-  rootFilter: "ALL" | "LEARN" | "REST" = "ALL",
+  rootFilter: UsageRootFilter = "ALL",
 ): Promise<UsageStackDay[]> {
   return invokeCommand("get_usage_stack", { days, rootFilter });
 }

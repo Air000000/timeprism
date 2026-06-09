@@ -12,6 +12,7 @@ export type {
   Reminder,
   TodaySummary,
   TopApp,
+  UsageRootFilter,
   UsageStackDay,
   UsageStackSegment,
 } from "./api/types";

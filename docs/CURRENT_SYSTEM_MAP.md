@@ -34,7 +34,7 @@ Important sibling folders in the larger workspace:
 - `src/App.vue`: main app shell, global lifecycle/refresh routing, view context assembly, and top-level view mounting.
 - `src/api.ts`: compatibility API surface that keeps existing frontend imports stable.
 - `src/api/client.ts`: thin typed wrapper around Tauri `invoke`.
-- `src/api/types.ts`: shared frontend API response/input-adjacent types.
+- `src/api/types.ts`: shared frontend API response/input-adjacent types and shared usage root-filter unions.
 - `src/api/commands/`: frontend Tauri command wrappers grouped by feature domain.
 - `src/components/AppTopNav.vue`: main-window brand block and primary navigation tabs.
 - `src/components/viewContexts.ts`: typed component context contracts shared by `App.vue` and feature views.
