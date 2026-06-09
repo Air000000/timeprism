@@ -4856,3 +4856,82 @@ Follow-up:
 
 - Commit R-154.
 - Consider either Insights context extraction or a main-window smoke pass before Home/Guard context extraction.
+
+## 2026-06-09: R-155 Insights View Context Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Insights context assembly
+
+Intent:
+
+- Move Insights view context assembly out of `src/App.vue`.
+- Keep Insights data loading/filtering in `useInsightsData` and navigation state in `useAppNavigation`.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useInsightsViewContext.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `insightsCtx` computed block | `useInsightsViewContext` | Same `InsightsViewContext` shape |
+
+Behavior expected to stay the same:
+
+- Insights view still receives the same top-apps, all-time, recent-log, history subview, formatter, and filter handler values.
+- `switchHistorySubView` still lives in `App.vue` because it coordinates navigation state and data refresh.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this context extraction batch.
+
+Risks:
+
+- Insights navigation/filter behavior was validated by typecheck/build only, not by S-700 interactive smoke testing.
+- `switchHistorySubView` is passed before its function declaration in `App.vue`; this is safe for a function declaration but should be revisited if converted to a const callback.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-154.
+
+Follow-up:
+
+- Commit R-155.
+- Consider a main-window smoke pass before extracting Home or Guard context assembly.

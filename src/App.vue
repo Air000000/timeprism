@@ -10,7 +10,6 @@ import SettingsView from "./components/SettingsView.vue";
 import type {
   GuardViewContext,
   HomeViewContext,
-  InsightsViewContext,
 } from "./components/viewContexts";
 import { useAutoCaptureSampler } from "./composables/useAutoCaptureSampler";
 import {
@@ -30,6 +29,7 @@ import { useHomeSchedule } from "./composables/useHomeSchedule";
 import { useIdlePromptBannerContext } from "./composables/useIdlePromptBannerContext";
 import { useInsightsData } from "./composables/useInsightsData";
 import { useInsightsSectionNavigation } from "./composables/useInsightsSectionNavigation";
+import { useInsightsViewContext } from "./composables/useInsightsViewContext";
 import { useLazySettingsMount } from "./composables/useLazySettingsMount";
 import { useLocale } from "./composables/useLocale";
 import { useMainRefreshPolling } from "./composables/useMainRefreshPolling";
@@ -175,6 +175,24 @@ const {
   getHeatmapGoalSeconds,
   refreshData,
   setErrorMessage,
+});
+const insightsCtx = useInsightsViewContext({
+  tx,
+  formatSeconds,
+  cleanProcessName,
+  formatClock,
+  historySubViews,
+  historySubView,
+  switchHistorySubView,
+  topApps,
+  topAppsBarWidth,
+  allTimeTopApps,
+  setAllTimeFilter,
+  allTimeIncludeIgnore,
+  onAllTimeIgnoreToggle,
+  allTimeBarWidth,
+  recentTimelineGroups,
+  recentDurationWidth,
 });
 const {
   autoCaptureEnabled,
@@ -371,25 +389,6 @@ const homeCtx = computed(() => ({
   homeMonthActiveStreakDays: homeMonthActiveStreakDays.value,
   homePendingSummary: homePendingSummary.value,
 }) satisfies HomeViewContext & Record<string, unknown>);
-
-const insightsCtx = computed(() => ({
-  tx,
-  formatSeconds,
-  cleanProcessName,
-  formatClock,
-  historySubViews: historySubViews.value,
-  historySubView: historySubView.value,
-  switchHistorySubView,
-  topApps: topApps.value,
-  topAppsBarWidth,
-  allTimeTopApps: allTimeTopApps.value,
-  setAllTimeFilter,
-  allTimeIncludeIgnore: allTimeIncludeIgnore.value,
-  onAllTimeIgnoreToggle,
-  allTimeBarWidth,
-  recentTimelineGroups: recentTimelineGroups.value,
-  recentDurationWidth,
-}) satisfies InsightsViewContext & Record<string, unknown>);
 
 const guardCtx = computed<GuardViewContext>(() => ({
   tx,
