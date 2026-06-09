@@ -6256,3 +6256,85 @@ Follow-up:
 
 - Commit R-172.
 - Continue separating pet/panel pure helpers before touching drag, snap, resize, or prompt side effects.
+
+## 2026-06-09: R-173 Pet Dock State Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shared helpers
+- pet window
+
+Intent:
+
+- Move pure pet dock state types and mapping helpers out of `src/pet.ts`.
+- Keep drag, snap, window settle calls, hover behavior, and DOM class toggling in `src/pet.ts`.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petDock.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `DockEdge`, `PetDockState`, `PetWindowSettleResult` | `src/lib/petDock.ts` | Type-only move |
+| docked-state check | `isDockedState` | Same `docked_left` / `docked_right` predicate |
+| dock edge mapping | `dockEdgeForState` | Same left/right/null mapping |
+| settle result state mapping | `petDockStateFromSettleState` | Same `dock_left` / `dock_right` / free mapping |
+
+Behavior expected to stay the same:
+
+- Pet docked/free visual classes still update from the same state values.
+- Pet settle command results still map to the same internal dock states.
+- Hover expand/collapse still checks the same docked states.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; pure mappings moved to an imported helper.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this pet dock helper extraction batch.
+
+Risks:
+
+- Pet docking behavior was validated by typecheck/build only, not by dragging the pet to screen edges.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-172.
+
+Follow-up:
+
+- Commit R-173.
+- Continue with small pet helper extractions before changing drag/window event flow.

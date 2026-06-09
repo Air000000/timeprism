@@ -9,6 +9,14 @@ import {
 	translateForLocale,
 	type LocaleCode,
 } from "./lib/locale";
+import {
+	dockEdgeForState,
+	isDockedState,
+	petDockStateFromSettleState,
+	type DockEdge,
+	type PetDockState,
+	type PetWindowSettleResult,
+} from "./lib/petDock";
 import { formatSeconds } from "./lib/time";
 import "./pet.css";
 
@@ -37,17 +45,6 @@ function cleanPetProcessName(name: string): string {
 		.replace(/\.exe$/i, "")
 		.trim();
 }
-
-type DockEdge = "left" | "right";
-type PetDockState = "free" | "dragging" | "docked_left" | "docked_right";
-
-type PetWindowSettleResult = {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-	state: "free" | "dock_left" | "dock_right";
-};
 
 let petState: PetDockState = "free";
 let isDragging = false;
@@ -159,23 +156,9 @@ function applyPetCharacter() {
 	};
 }
 
-function isDockedState(state = petState): boolean {
-	return state === "docked_left" || state === "docked_right";
-}
-
-function currentDockEdge(): DockEdge | null {
-	if (petState === "docked_left") {
-		return "left";
-	}
-	if (petState === "docked_right") {
-		return "right";
-	}
-	return null;
-}
-
 function applyDockedAppearance() {
-	const docked = isDockedState();
-	const dockEdge = currentDockEdge();
+	const docked = isDockedState(petState);
+	const dockEdge = dockEdgeForState(petState);
 	shell.classList.toggle("edge-hidden", docked);
 	shell.classList.toggle("dock-left", petState === "docked_left");
 	shell.classList.toggle("dock-right", petState === "docked_right");
@@ -648,13 +631,7 @@ async function settlePetWindow(mode: "free" | "dock_left" | "dock_right") {
 	const result = await invoke<PetWindowSettleResult>("settle_pet_window", {
 		input: { mode },
 	});
-	if (result.state === "dock_left") {
-		setPetState("docked_left");
-	} else if (result.state === "dock_right") {
-		setPetState("docked_right");
-	} else {
-		setPetState("free");
-	}
+	setPetState(petDockStateFromSettleState(result.state));
 	return result;
 }
 
@@ -811,7 +788,7 @@ const handleHoverEnter = () => {
 	if (isDragging) {
 		return;
 	}
-	if (!isDockedState()) {
+	if (!isDockedState(petState)) {
 		return;
 	}
 	clearHideTimer();
@@ -823,7 +800,7 @@ const handleHoverLeave = () => {
 		return;
 	}
 	clearHideTimer();
-	if (!isDockedState()) {
+	if (!isDockedState(petState)) {
 		return;
 	}
 	if (currentPanelMode !== "summary") {
