@@ -4777,3 +4777,82 @@ Follow-up:
 
 - Commit R-153.
 - Consider extracting another small context before attempting Home or Guard context assembly.
+
+## 2026-06-09: R-154 Settings View Context Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Settings context assembly
+
+Intent:
+
+- Move Settings view context assembly out of `src/App.vue`.
+- Continue validating the context-extraction pattern on a moderate, single-feature context before touching Home or Guard.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useSettingsViewContext.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `settingsCtx` computed block | `useSettingsViewContext` | Same `SettingsViewContext` shape |
+
+Behavior expected to stay the same:
+
+- Settings view still receives locale/theme/startup/privacy/whitelist state and handlers through the same context contract.
+- Settings view lazy mounting remains owned by `useLazySettingsMount`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended; privacy settings behavior remains in `useSettingsPrivacy`.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this context extraction batch.
+
+Risks:
+
+- Settings/privacy behavior was validated by typecheck/build only, not by S-600 interactive smoke testing.
+- Context extraction increases parameter passing; keep future large contexts under review before extracting.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-153.
+
+Follow-up:
+
+- Commit R-154.
+- Consider either Insights context extraction or a main-window smoke pass before Home/Guard context extraction.

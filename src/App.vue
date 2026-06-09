@@ -11,7 +11,6 @@ import type {
   GuardViewContext,
   HomeViewContext,
   InsightsViewContext,
-  SettingsViewContext,
 } from "./components/viewContexts";
 import { useAutoCaptureSampler } from "./composables/useAutoCaptureSampler";
 import {
@@ -36,6 +35,7 @@ import { useLocale } from "./composables/useLocale";
 import { useMainRefreshPolling } from "./composables/useMainRefreshPolling";
 import { useReminders } from "./composables/useReminders";
 import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
+import { useSettingsViewContext } from "./composables/useSettingsViewContext";
 import { useThemeMode } from "./composables/useThemeMode";
 import {
   formatSeconds,
@@ -93,6 +93,24 @@ const {
   startSettingsWarmup,
   cleanupSettingsWarmup,
 } = useLazySettingsMount({ refreshSettingsData });
+const settingsCtx = useSettingsViewContext({
+  tx,
+  locale,
+  onLocaleChange,
+  themeMode,
+  toggleThemeMode,
+  autoStartEnabled,
+  onAutoStartChange,
+  privacy,
+  handleSavePrivacySettings,
+  privacyFeedbackType,
+  privacyFeedback,
+  whitelistInput,
+  onWhitelistInput,
+  handleAddWhitelist,
+  whitelist,
+  handleRemoveWhitelist,
+});
 const {
   reminders,
   reminderActionLoading,
@@ -406,25 +424,6 @@ const guardCtx = computed<GuardViewContext>(() => ({
   captureRuleText,
   canSaveRuleFromDiagnostic,
   handleSaveRuleFromDiagnostic,
-}));
-
-const settingsCtx = computed<SettingsViewContext>(() => ({
-  tx,
-  locale: locale.value,
-  onLocaleChange,
-  themeMode: themeMode.value,
-  toggleThemeMode,
-  autoStartEnabled: autoStartEnabled.value,
-  onAutoStartChange,
-  privacy: privacy.value,
-  handleSavePrivacySettings,
-  privacyFeedbackType: privacyFeedbackType.value,
-  privacyFeedback: privacyFeedback.value,
-  whitelistInput: whitelistInput.value,
-  onWhitelistInput,
-  handleAddWhitelist,
-  whitelist: whitelist.value,
-  handleRemoveWhitelist,
 }));
 
 onMounted(async () => {

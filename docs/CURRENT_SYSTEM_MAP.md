@@ -62,6 +62,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useMainRefreshPolling.ts`: main-window 5-second Home refresh polling and Guard refresh while Guard is active.
 - `src/composables/useReminders.ts`: reminder list state, reminder sorting, upsert/delete/done/reorder/snooze actions, and reminder action loading.
 - `src/composables/useSettingsPrivacy.ts`: settings/privacy state, auto-start loading/saving, whitelist actions, and settings refresh cache.
+- `src/composables/useSettingsViewContext.ts`: computed Settings view context assembly from settings/privacy state and handlers.
 - `src/composables/useThemeMode.ts`: main-window theme state, body theme attribute sync, system preference fallback, and localStorage persistence.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
 - `src/styles/app.css`: global main-window CSS previously embedded in `src/App.vue`.
