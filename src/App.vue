@@ -45,7 +45,7 @@ import {
   type UsageStackDay,
 } from "./api";
 
-const { locale, tx, initLocale, watchLocaleChanges } = useLocale();
+const { locale, tx, initLocale, watchLocaleChanges, onLocaleChange } = useLocale();
 watchLocaleChanges();
 const { themeMode, toggleThemeMode, initThemeModeSafely } = useThemeMode();
 const {
@@ -394,13 +394,6 @@ async function refreshData() {
     await refreshGuardData();
   } else if (currentMainView.value === "privacy") {
     await refreshSettingsData();
-  }
-}
-
-function onLocaleChange(event: Event) {
-  const input = event.target as HTMLSelectElement;
-  if (input.value === "zh-CN" || input.value === "en-US") {
-    locale.value = input.value;
   }
 }
 

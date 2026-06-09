@@ -5469,3 +5469,81 @@ Follow-up:
 
 - Commit R-162.
 - Consider Settings UI smoke testing before changing theme behavior further.
+
+## 2026-06-09: R-163 Locale Select Handler Consolidation
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- locale UI handling
+
+Intent:
+
+- Move the Settings language select event handler from `App.vue` into `useLocale`.
+- Keep Settings context receiving the same `onLocaleChange` callback shape.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useLocale.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `onLocaleChange` in `App.vue` | `useLocale` | Same `zh-CN` / `en-US` guard |
+
+Behavior expected to stay the same:
+
+- Changing the language select still updates `locale.value`.
+- The locale watcher still persists the change and syncs the document language.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this locale event-handler extraction batch.
+
+Risks:
+
+- Settings language switching was validated by typecheck/build only, not by Settings UI smoke testing.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-162.
+
+Follow-up:
+
+- Commit R-163.
+- Consider Settings UI smoke testing before changing locale behavior further.

@@ -45,6 +45,13 @@ function watchLocaleChanges() {
   });
 }
 
+function onLocaleChange(event: Event) {
+  const input = event.target as HTMLSelectElement;
+  if (input.value === "zh-CN" || input.value === "en-US") {
+    locale.value = input.value;
+  }
+}
+
 export function useLocale() {
   return {
     locale,
@@ -52,5 +59,6 @@ export function useLocale() {
     applyLocale,
     initLocale,
     watchLocaleChanges,
+    onLocaleChange,
   };
 }
