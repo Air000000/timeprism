@@ -7,6 +7,8 @@ type HeatCellClassFn = (level: LearnHeatmapCell["level"]) => string;
 type FormatSecondsFn = (seconds: number) => string;
 type StackPercentFn = (seconds: number, totalSeconds: number) => number;
 
+export type PetPanelMode = "heatmap" | "stack";
+
 export type PetPanelElements = {
   panelTitle: HTMLElement;
   panelHeatmap: HTMLElement;
@@ -69,6 +71,21 @@ export function queryPetPanelElements(root: ParentNode = document): PetPanelElem
     heatPrevMonthBtn,
     heatNextMonthBtn,
   };
+}
+
+export function applyPetPanelMode(
+  elements: Pick<
+    PetPanelElements,
+    "panelTitle" | "panelHeatmap" | "panelStack" | "heatPrevMonthBtn" | "heatNextMonthBtn"
+  >,
+  mode: PetPanelMode,
+  title: string,
+) {
+  elements.panelTitle.textContent = title;
+  elements.panelHeatmap.style.display = mode === "heatmap" ? "grid" : "none";
+  elements.panelStack.style.display = mode === "stack" ? "grid" : "none";
+  elements.heatPrevMonthBtn.style.display = mode === "heatmap" ? "inline-grid" : "none";
+  elements.heatNextMonthBtn.style.display = mode === "heatmap" ? "inline-grid" : "none";
 }
 
 export function renderPetPanelWeekHeaders(container: HTMLElement, labels: string[]) {

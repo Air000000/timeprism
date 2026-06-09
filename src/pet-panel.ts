@@ -3,12 +3,14 @@ import { listen } from "@tauri-apps/api/event";
 import { getLearnHeatmap, getUsageStack, type LearnHeatmapCell, type UsageStackDay } from "./api";
 import { getStoredOrBrowserLocale, translateForLocale, type LocaleCode } from "./lib/locale";
 import {
+  applyPetPanelMode,
   queryPetPanelElements,
   renderPetPanelEmptyStack,
   renderPetPanelHeatmapGrid,
   renderPetPanelShell,
   renderPetPanelStack,
   renderPetPanelWeekHeaders,
+  type PetPanelMode,
 } from "./lib/petPanelDom";
 import {
   buildPetPanelHeatmapDayCells,
@@ -48,28 +50,27 @@ if (!root) {
 }
 
 renderPetPanelShell(root, tx);
+const panelElements = queryPetPanelElements();
 const {
-  panelTitle,
-  panelHeatmap,
   panelStack,
   heatMonthLabel,
   miniWeekHeader,
   miniHeatmapGrid,
   heatPrevMonthBtn,
   heatNextMonthBtn,
-} = queryPetPanelElements();
+} = panelElements;
 
 function renderWeekHeaders() {
   renderPetPanelWeekHeaders(miniWeekHeader, petPanelWeekHeaders(getLocale()));
 }
 
-let mode: "heatmap" | "stack" = "heatmap";
+let mode: PetPanelMode = "heatmap";
 let timer: number | null = null;
 let lastStackSig = "";
 let active = true;
 const viewMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-async function resizePanelForMode(nextMode: "heatmap" | "stack") {
+async function resizePanelForMode(nextMode: PetPanelMode) {
   try {
     if (nextMode === "stack") {
       await invoke("resize_pet_panel", { width: 172, height: 118 });
@@ -120,13 +121,9 @@ function renderStack(days: UsageStackDay[]) {
   );
 }
 
-function updateMode(next: "heatmap" | "stack") {
+function updateMode(next: PetPanelMode) {
   mode = next;
-  panelTitle.textContent = petPanelModeTitle(next, tx);
-  panelHeatmap.style.display = next === "heatmap" ? "grid" : "none";
-  panelStack.style.display = next === "stack" ? "grid" : "none";
-  heatPrevMonthBtn.style.display = next === "heatmap" ? "inline-grid" : "none";
-  heatNextMonthBtn.style.display = next === "heatmap" ? "inline-grid" : "none";
+  applyPetPanelMode(panelElements, next, petPanelModeTitle(next, tx));
   void resizePanelForMode(next);
 }
 

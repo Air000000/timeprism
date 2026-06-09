@@ -7914,3 +7914,85 @@ Follow-up:
 
 - Commit R-193.
 - Continue only with small, reversible pet-panel/frontend-helper batches unless a detailed UI smoke pass is recorded.
+
+## 2026-06-09: R-194 Pet Panel Mode DOM Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet panel
+- DOM rendering
+
+Intent:
+
+- Move pet-panel mode title and visibility updates out of `src/pet-panel.ts`.
+- Keep current mode state, event handling, data refresh, and Tauri panel resize logic in `src/pet-panel.ts`.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelDom.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| mode title assignment | `applyPetPanelMode` | Same localized title text supplied by caller |
+| heatmap/stack visibility styles | `applyPetPanelMode` | Same `grid`, `none`, and `inline-grid` values |
+| shared panel mode type | `PetPanelMode` | Used by entry and DOM helper |
+
+Behavior expected to stay the same:
+
+- Switching to heatmap still shows the heatmap, month buttons, and heatmap title.
+- Switching to stack still shows the stack panel and hides month navigation.
+- `src/pet-panel.ts` still owns mode state, resize side effects, refresh timing, and Tauri event listeners.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same inline styles are written from the same update path.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this mode DOM helper extraction batch.
+
+Risks:
+
+- Pet-panel mode switching was validated by typecheck/build only, not by manually opening the panel and toggling modes.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-193.
+
+Follow-up:
+
+- Commit R-194.
+- Continue with small pet-panel refresh/event helpers, or record detailed pet-panel smoke results before touching riskier window behavior.
