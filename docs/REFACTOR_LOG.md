@@ -2813,3 +2813,88 @@ Follow-up:
 
 - Commit R-129.
 - Continue Phase 4 with reminders feature extraction.
+
+## 2026-06-09: R-130 Reminder Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- reminders
+
+Intent:
+
+- Move reminder list state, action loading state, sorting, and reminder mutations out of `src/App.vue`.
+- Keep Home UI and App refresh orchestration behavior stable while moving reminder feature logic into a focused composable.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useReminders.ts`
+- `src/components/viewContexts.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `reminders` ref and `reminderActionLoading` | `useReminders` | Same defaults |
+| reminder sort helpers | `useReminders` | Preserved original order: done group, sort order, repeat rank, due time, updated time desc, id |
+| `reminderListForPanel` | `useReminders` | Same sorted list output |
+| `handleUpsertReminder`, `handleDeleteReminder`, `handleReminderDone`, `handleReminderReorder`, `handleReminderSnooze` | `useReminders` | Same API wrappers, optimistic reorder, error propagation |
+| `ReminderUpsertInput` | `useReminders` | Shared back into view context typing |
+
+Behavior expected to stay the same:
+
+- Reminder create/edit validation and API payloads remain the same.
+- Daily/weekly/no-repeat reminder handling remains the same.
+- Reminder reorder keeps the same optimistic update and rollback behavior.
+- Home still receives the same reminder fields and handlers through `HomeViewContext`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None. Existing frontend command wrappers are unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `rg -n "saveReminder|setReminderOrder|deleteReminder|setReminderDone|snoozeReminder|parseClockToMinutes|parseDateTimeLocalToUnix|reminderGroupRank|reminderRepeatRank|compareReminders|async function handleUpsertReminder" src/App.vue src/composables/useReminders.ts src/components/viewContexts.ts` confirmed reminder mutation logic now lives in `useReminders.ts`.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Reminder interactions were validated by typecheck/build only, not by interactive S-400 smoke testing.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-129.
+
+Follow-up:
+
+- Commit R-130.
+- Continue Phase 4 with Guard or Insights feature extraction.
