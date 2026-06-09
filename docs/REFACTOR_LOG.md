@@ -2152,3 +2152,87 @@ Follow-up:
 
 - Commit R-122.
 - Continue extracting App shell state into focused composables.
+
+## 2026-06-09: R-123 Frontend Time Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shell
+- shared frontend helpers
+
+Intent:
+
+- Move pure frontend time/date formatting and parsing helpers out of `src/App.vue`.
+- Start the `src/lib` shared helper area described in Phase 3 without changing UI behavior.
+
+Files changed:
+
+- `src/App.vue`
+- `src/lib/time.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `formatSeconds` | `src/lib/time.ts` | Same `HH:mm:ss` output and non-negative floor behavior |
+| `timeMinutesLabel` | `src/lib/time.ts` | Same `HH:mm` output |
+| `parseDateTimeLocalToUnix` | `src/lib/time.ts` | Same invalid/empty `null` behavior |
+| `toDateTimeLocalValue` | `src/lib/time.ts` | Same local datetime input value format |
+| `parseClockToMinutes` | `src/lib/time.ts` | Same `HH:mm` validation and minute conversion |
+| `localDayKeyFromDate`, `currentLocalDayKey`, `currentLocalWeekday`, `dayKeyFromUnixSeconds` | `src/lib/time.ts` | Same local date semantics |
+
+Behavior expected to stay the same:
+
+- Reminder date/time inputs still parse and render the same way.
+- Home calendar and today visibility checks still use local dates.
+- Duration labels still render as `HH:mm:ss`.
+- No locale-dependent formatter was moved in this batch.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this helper extraction batch.
+
+Risks:
+
+- Calendar/reminder behavior was validated by typecheck/build only, not by interactive smoke testing.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-122 commit.
+
+Follow-up:
+
+- Commit R-123.
+- Continue Phase 3 with navigation shell extraction or typed feature context preparation.

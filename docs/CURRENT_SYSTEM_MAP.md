@@ -41,6 +41,7 @@ Important sibling folders in the larger workspace:
 - `src/components/GuardView.vue`: pending apps, idle queue, rules, diagnostics.
 - `src/composables/useLocale.ts`: main-window locale state, translation helper, document language sync, and localStorage persistence.
 - `src/composables/useThemeMode.ts`: main-window theme state, body theme attribute sync, system preference fallback, and localStorage persistence.
+- `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
 - `src/pet.ts`: pet UI, prompt bubble, quick actions, context menu.
 - `src/pet-panel.ts`: mini heatmap and weekly activity panel.
 - `src-tauri/src/lib.rs`: Tauri command shells, app setup, command registration, and global shortcut wiring.

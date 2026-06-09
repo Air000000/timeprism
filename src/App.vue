@@ -7,6 +7,17 @@ import InsightsView from "./components/InsightsView.vue";
 import { useLocale } from "./composables/useLocale";
 import { useThemeMode } from "./composables/useThemeMode";
 import {
+  currentLocalDayKey,
+  currentLocalWeekday,
+  dayKeyFromUnixSeconds,
+  formatSeconds,
+  localDayKeyFromDate,
+  parseClockToMinutes,
+  parseDateTimeLocalToUnix,
+  timeMinutesLabel,
+  toDateTimeLocalValue,
+} from "./lib/time";
+import {
   captureForegroundOnce,
   getAutoStartEnabled,
   getHeatmapGoalSecondsSetting,
@@ -349,20 +360,6 @@ function getHeatmapFetchDays(): number {
   return Math.min(1800, Math.max(120, days));
 }
 
-function formatSeconds(totalSeconds: number): string {
-  const safe = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.floor(safe / 3600)
-    .toString()
-    .padStart(2, "0");
-  const m = Math.floor((safe % 3600) / 60)
-    .toString()
-    .padStart(2, "0");
-  const s = Math.floor(safe % 60)
-    .toString()
-    .padStart(2, "0");
-  return `${h}:${m}:${s}`;
-}
-
 function formatClock(unixSeconds: number): string {
   const date = new Date(unixSeconds * 1000);
   return date.toLocaleTimeString(locale.value, {
@@ -380,16 +377,6 @@ function formatReminderDateTime(unixSeconds: number): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function timeMinutesLabel(minutes: number): string {
-  const h = Math.floor(minutes / 60)
-    .toString()
-    .padStart(2, "0");
-  const m = Math.floor(minutes % 60)
-    .toString()
-    .padStart(2, "0");
-  return `${h}:${m}`;
 }
 
 function reminderWeekdayShortLabel(day: number): string {
@@ -435,40 +422,6 @@ function reminderDueText(item: Reminder): string {
   }
 
   return formatReminderDateTime(item.next_due_timestamp);
-}
-
-function parseDateTimeLocalToUnix(value: string): number | null {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return Math.floor(date.getTime() / 1000);
-}
-
-function toDateTimeLocalValue(unixSeconds: number): string {
-  const date = new Date(unixSeconds * 1000);
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  const hour = `${date.getHours()}`.padStart(2, "0");
-  const minute = `${date.getMinutes()}`.padStart(2, "0");
-  return `${year}-${month}-${day}T${hour}:${minute}`;
-}
-
-function parseClockToMinutes(value: string): number | null {
-  const match = value.trim().match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) {
-    return null;
-  }
-  const hour = Number.parseInt(match[1], 10);
-  const minute = Number.parseInt(match[2], 10);
-  if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-    return null;
-  }
-  return hour * 60 + minute;
 }
 
 function allTimeBarWidth(seconds: number): string {
@@ -1074,25 +1027,6 @@ const filteredSortedRules = computed(() => {
 const currentIdlePrompt = computed(() => idlePrompts.value[0] ?? null);
 
 const reminderListForPanel = computed(() => sortedReminders(reminders.value));
-
-function localDayKeyFromDate(date: Date): string {
-  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
-}
-
-function currentLocalDayKey(): string {
-  return localDayKeyFromDate(new Date());
-}
-
-function currentLocalWeekday(): number {
-  return new Date().getDay();
-}
-
-function dayKeyFromUnixSeconds(unixSeconds: number | null): string | null {
-  if (unixSeconds === null || !Number.isFinite(unixSeconds)) {
-    return null;
-  }
-  return localDayKeyFromDate(new Date(unixSeconds * 1000));
-}
 
 function reminderIsVisibleToday(item: Reminder): boolean {
   const todayKey = currentLocalDayKey();
