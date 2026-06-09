@@ -5547,3 +5547,81 @@ Follow-up:
 
 - Commit R-163.
 - Consider Settings UI smoke testing before changing locale behavior further.
+
+## 2026-06-09: R-164 Error Message State Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- shell state cleanup
+
+Intent:
+
+- Move top-level error message state and setter out of `src/App.vue`.
+- Keep `App.vue` responsible for rendering the error message in the shell template.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useErrorMessage.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `error` ref and `setErrorMessage` function | `useErrorMessage` | Same string conversion behavior |
+
+Behavior expected to stay the same:
+
+- Existing composables still receive the same `setErrorMessage` callback shape.
+- The shell still renders the error text through the same `<p class="error">` element.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this shell-state extraction batch.
+
+Risks:
+
+- Error rendering was validated by typecheck/build only, not by forced-error UI smoke testing.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-163.
+
+Follow-up:
+
+- Commit R-164.
+- Continue only with small shell wiring extractions or run smoke tests.

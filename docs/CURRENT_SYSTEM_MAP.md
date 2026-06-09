@@ -46,6 +46,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useAutoCaptureSampler.ts`: auto-capture foreground sampling timer, capture feedback text, and timer cleanup.
 - `src/composables/useAppNavigation.ts`: main-window navigation state, tab labels, and insights history subview state.
 - `src/composables/useDisplayFormatters.ts`: shared UI display formatters for clock text, mapped type labels, process names, and idle prompt spans.
+- `src/composables/useErrorMessage.ts`: top-level main-window error message state and setter.
 - `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, diagnostics, rule mutations, idle resolution, and Guard input handlers.
 - `src/composables/useGuardViewContext.ts`: computed Guard view context assembly from Guard data, workflow state, formatters, and handlers.
 - `src/composables/useGuardWorkflow.ts`: guard workflow step completion/unlock state, labels, review completion, and reset watcher.

@@ -13,6 +13,7 @@ import {
   type MainViewKey,
 } from "./composables/useAppNavigation";
 import { useDisplayFormatters } from "./composables/useDisplayFormatters";
+import { useErrorMessage } from "./composables/useErrorMessage";
 import { useGuardData } from "./composables/useGuardData";
 import { useGuardViewContext } from "./composables/useGuardViewContext";
 import { useGuardWorkflow } from "./composables/useGuardWorkflow";
@@ -48,6 +49,7 @@ import {
 const { locale, tx, initLocale, watchLocaleChanges, onLocaleChange } = useLocale();
 watchLocaleChanges();
 const { themeMode, toggleThemeMode, initThemeModeSafely } = useThemeMode();
+const { error, setErrorMessage } = useErrorMessage();
 const {
   formatClock,
   mappedTypeText,
@@ -132,7 +134,6 @@ const {
 const recentLogs = ref<RecentLog[]>([]);
 const learnHeatmap = ref<LearnHeatmapCell[]>([]);
 const homeUsageStack = ref<UsageStackDay[]>([]);
-const error = ref("");
 const {
   learnGoalSliderMinutes,
   getHeatmapGoalSeconds,
@@ -380,10 +381,6 @@ function setMainView(next: MainViewKey) {
   } else if (next === "privacy") {
     showSettingsViewAndRefresh();
   }
-}
-
-function setErrorMessage(e: unknown) {
-  error.value = `${e}`;
 }
 
 async function refreshData() {
