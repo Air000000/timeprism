@@ -8806,3 +8806,78 @@ Follow-up:
 
 - Commit R-204.
 - Continue with small Guard/helper extractions or record detailed Guard view smoke results.
+
+## 2026-06-09: R-205 Cross-Stack Checkpoint After Guard Idle Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the latest Guard idle feedback helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-204 reduced `src/composables/useGuardData.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Guard idle feedback helper changes from R-204 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace a detailed Guard UI smoke pass for resolving idle prompts.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-205.
+- Continue with low-risk frontend-helper batches unless a detailed Guard smoke pass is recorded.
