@@ -9997,3 +9997,76 @@ Follow-up:
 
 - Commit R-219.
 - Continue with a backend checkpoint after commit.
+
+## 2026-06-09: R-220 Cross-Stack Checkpoint After Display Formatter Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the display formatter helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-219 reduced `useDisplayFormatters.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Display formatter helper changes from R-219 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace detailed UI smoke tests for Guard, Home, Insights, and Idle Prompt Banner formatter output.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-220.
+- Continue with low-risk frontend-helper batches unless detailed shared UI formatter smoke results are recorded.
