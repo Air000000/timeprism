@@ -9912,3 +9912,88 @@ Follow-up:
 
 - Commit R-218.
 - Continue with low-risk frontend-helper batches unless detailed Home overview smoke results are recorded.
+
+## 2026-06-09: R-219 Display Formatter Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- display formatting
+- Guard/Home/Insights shared UI
+
+Intent:
+
+- Move UI clock formatting, mapped-type labels, process-name cleanup, and idle-prompt span formatting out of `useDisplayFormatters.ts`.
+- Keep `useDisplayFormatters` as the locale/translation adapter that exposes the same functions to App, Guard, Home, Insights, and Idle Prompt Banner contexts.
+- Keep pet process-name cleanup separate because pet prompt copy intentionally differs from the main UI copy.
+
+Files changed:
+
+- `src/composables/useDisplayFormatters.ts`
+- `src/lib/displayFormatters.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| clock formatting | `src/lib/displayFormatters.ts::formatUiClock` | Same locale and hour/minute/second options |
+| mapped-type label text | `src/lib/displayFormatters.ts::mappedRuleTypeText` | Same Learn/Break/Unclassified labels |
+| process-name cleanup | `src/lib/displayFormatters.ts::cleanUiProcessName` | Same idle pseudo-process handling, `.exe` stripping, parenthetical trimming, whitespace collapsing, and fallback |
+| idle-prompt span formatting | `src/lib/displayFormatters.ts::formatIdlePromptTimeSpan` | Same start/end time formatting and duration text |
+
+Behavior expected to stay the same:
+
+- App, Guard, Home, Insights, and Idle Prompt Banner contexts still receive `formatClock`, `mappedTypeText`, `cleanProcessName`, and `formatIdlePromptSpan` from `useDisplayFormatters`.
+- Main UI process names still use the same idle pseudo-process and unknown-process labels.
+- Rule mapped-type labels still use the same localized text.
+- Idle prompt spans still show the same local start/end times and formatted duration.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same string formatting work now runs through a helper module.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this display formatter helper extraction batch.
+
+Risks:
+
+- Shared UI text display was validated by typecheck/build only, not by manually inspecting Guard, Home, Insights, and Idle Prompt Banner surfaces.
+
+Rollback:
+
+- Revert this batch to move display formatter bodies back into `useDisplayFormatters.ts`.
+
+Follow-up:
+
+- Commit R-219.
+- Continue with a backend checkpoint after commit.

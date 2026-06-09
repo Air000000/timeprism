@@ -46,7 +46,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useAutoCaptureSampler.ts`: auto-capture foreground sampling timer, capture feedback text, and timer cleanup.
 - `src/composables/useAppNavigation.ts`: main-window navigation state, tab labels, and insights history subview state.
 - `src/composables/useAppSettingsSection.ts`: App-level Settings privacy state, lazy mount coordination, and Settings view context assembly.
-- `src/composables/useDisplayFormatters.ts`: shared UI display formatters for clock text, mapped type labels, process names, and idle prompt spans.
+- `src/composables/useDisplayFormatters.ts`: locale/translation adapters for shared UI display formatter helpers.
 - `src/composables/useErrorMessage.ts`: top-level main-window error message state and setter.
 - `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, rule mutations, idle resolution, and Guard input handlers.
 - `src/composables/useGuardViewContext.ts`: computed Guard view context assembly from Guard data, workflow state, formatters, and handlers.
@@ -75,6 +75,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useSettingsPrivacy.ts`: settings/privacy state, auto-start loading/saving, whitelist actions, and settings refresh cache.
 - `src/composables/useSettingsViewContext.ts`: computed Settings view context assembly from settings/privacy state and handlers.
 - `src/composables/useThemeMode.ts`: main-window theme state, safe initialization, body theme attribute sync, system preference fallback, and localStorage persistence.
+- `src/lib/displayFormatters.ts`: shared UI display formatting helpers for clock text, mapped type labels, process names, and idle prompt spans.
 - `src/lib/locale.ts`: shared locale code, storage key, browser fallback detection, and locale-specific text selection helpers.
 - `src/lib/guardDiagnostics.ts`: Guard foreground-capture diagnostic reason text, diagnostic rule text, and save eligibility helpers.
 - `src/lib/guardIdle.ts`: Guard idle-decision feedback tone/text helpers.
