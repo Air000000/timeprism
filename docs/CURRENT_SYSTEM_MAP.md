@@ -55,7 +55,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHeatmapGoalSetting.ts`: heatmap goal slider state, saved goal loading, 15-minute normalization, debounced persistence, and timer cleanup.
 - `src/composables/useHomeData.ts`: Home data refresh orchestration for summary, logs, heatmap, pending work, reminders, and rhythm stack.
 - `src/composables/useHomeOverview.ts`: Home summary state, goal progress, recent activity summary, pending counts, and status-helper binding.
-- `src/composables/useHomeReminderPanel.ts`: Home reminder modal draft state, feedback, quick actions, weekly-day chips, and drag/drop reorder handling.
+- `src/composables/useHomeReminderPanel.ts`: Home reminder modal draft state, feedback, quick actions, weekly-day chips, and drag/drop event handling.
 - `src/composables/useHomeRhythm.ts`: Home seven-day rhythm bar computed adapter from usage-stack data.
 - `src/composables/useHomeRhythmTooltip.ts`: Home rhythm summary adapter plus hover-tooltip event state/placement.
 - `src/composables/useHomeSchedule.ts`: Home reminder schedule computed binding and locale-aware due-text adapter.
@@ -85,6 +85,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/heatmapCalendarProgress.ts`: heatmap green maximum, current-month goal progress, active streak, and fetch-window helpers.
 - `src/lib/heatmapCalendarText.ts`: heatmap month keys, localized month/week labels, and day-number label helpers.
 - `src/lib/homeOverviewStatus.ts`: Home current-status label, status tone, and pending-summary text helpers.
+- `src/lib/homeReminderReorder.ts`: Home reminder drag/drop ordering helper that preserves undone/done grouping.
 - `src/lib/homeRhythmBars.ts`: Home seven-day rhythm bar construction, scale, and segment-height helpers.
 - `src/lib/homeRhythmTooltip.ts`: Home rhythm summary, compact duration, segment labels, tooltip palettes, and tone text helpers.
 - `src/lib/petCharacter.ts`: pet character image paths, legacy path normalization, and localStorage persistence helpers.

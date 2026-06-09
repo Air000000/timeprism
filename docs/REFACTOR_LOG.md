@@ -11165,3 +11165,87 @@ Follow-up:
 
 - Commit R-234.
 - Continue with low-risk helper extraction only where behavior can be preserved and checked quickly.
+
+## 2026-06-09: R-235 Home Reminder Reorder Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home reminders
+- helper extraction
+
+Intent:
+
+- Reduce `useHomeReminderPanel.ts` by moving reminder drag/drop order calculation into a focused pure helper.
+- Keep DOM drag state, event handling, feedback, and persistence calls inside the composable.
+- Preserve current reminder grouping and ordering semantics before any larger Home reminder UI refactor.
+
+Files changed:
+
+- `src/composables/useHomeReminderPanel.ts`
+- `src/lib/homeReminderReorder.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHomeReminderPanel.ts` | `homeReminderReorder.ts` | `buildHomeReminderDropOrder` helper for drag/drop ordered-id calculation |
+
+Behavior expected to stay the same:
+
+- Dragging onto itself, an invalid id, a missing dragged reminder, or the same position still produces no reorder.
+- Reminders can still only be reordered within the same `done` group.
+- The final ordered id list still keeps unfinished reminders before completed reminders.
+- Reordering an unfinished reminder still reorders only the unfinished group and appends the original completed group.
+- Reordering a completed reminder still keeps the original unfinished group and reorders only the completed group.
+- `useHomeReminderPanel` still calls `handleReminderReorder` only when a valid ordered id list is produced.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same array operations now run through a helper function.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this reminder drag/drop helper extraction batch.
+
+Risks:
+
+- Drag/drop pointer behavior was not manually smoke-tested; validation covered compile/build and code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move reminder drop order calculation back into `useHomeReminderPanel.ts`.
+
+Follow-up:
+
+- Commit R-235.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.

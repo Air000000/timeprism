@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import type { Reminder } from "../api";
 import type { FeedbackTone, HomeViewContext } from "../components/viewContexts";
+import { buildHomeReminderDropOrder } from "../lib/homeReminderReorder";
 import {
   defaultReminderWeeklyDays,
   reminderWeekdayOptions,
@@ -182,27 +183,10 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
       return;
     }
 
-    const allItems = [...ctx.reminderListForPanel];
-    const dragged = allItems.find((item) => item.id === draggedId);
-    if (!dragged || dragged.done !== targetItem.done) {
+    const orderedIds = buildHomeReminderDropOrder(ctx.reminderListForPanel, draggedId, targetItem);
+    if (!orderedIds) {
       return;
     }
-
-    const ordered = allItems.filter((item) => item.done === dragged.done);
-    const fromIndex = ordered.findIndex((item) => item.id === draggedId);
-    const toIndex = ordered.findIndex((item) => item.id === targetItem.id);
-    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
-      return;
-    }
-
-    const [moved] = ordered.splice(fromIndex, 1);
-    ordered.splice(toIndex, 0, moved);
-
-    const doneGroup = allItems.filter((item) => item.done);
-    const undoneGroup = allItems.filter((item) => !item.done);
-    const orderedIds = dragged.done
-      ? [...undoneGroup.map((item) => item.id), ...ordered.map((item) => item.id)]
-      : [...ordered.map((item) => item.id), ...doneGroup.map((item) => item.id)];
 
     try {
       await ctx.handleReminderReorder(orderedIds);
