@@ -9439,3 +9439,87 @@ Follow-up:
 
 - Commit R-212.
 - Continue with low-risk frontend-helper batches unless detailed reminder UI smoke results are recorded.
+
+## 2026-06-09: R-213 Home Reminder Schedule Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Home view
+- reminders
+
+Intent:
+
+- Move Home reminder visibility rules and due-text formatting out of `useHomeSchedule.ts`.
+- Keep Vue computed state, current locale binding, and the public `reminderDueText` function exposed by `useHomeSchedule`.
+
+Files changed:
+
+- `src/composables/useHomeSchedule.ts`
+- `src/lib/reminderSchedule.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| reminder date/time formatting and weekday labels | `src/lib/reminderSchedule.ts` | Same locale-specific labels and `toLocaleString` options |
+| weekly-day text formatting | `src/lib/reminderSchedule.ts::formatReminderWeeklyDaysText` | Same validation, de-duplication, sort, and empty-state text |
+| Home reminder due text | `src/lib/reminderSchedule.ts::formatHomeReminderDueText` | Same snooze, daily, weekly, done-state, and one-time branches |
+| Home reminder visibility predicate | `src/lib/reminderSchedule.ts::isHomeReminderVisibleToday` | Same daily, weekly, one-time, completed-today, and no-reminder visibility rules |
+
+Behavior expected to stay the same:
+
+- Home schedule still lists the same reminders for today.
+- Reminder due text still uses the same locale, time formatting, snooze text, repeat-rule text, and done-state suffixes.
+- `useHomeSchedule` still returns `homeScheduleItems` and `reminderDueText` to the Home view context.
+- Reminder CRUD, reorder, snooze, and done actions remain outside this helper.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same formatting and filtering logic now runs through a helper module.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home reminder schedule helper extraction batch.
+
+Risks:
+
+- Home reminder display was validated by typecheck/build only, not by manually inspecting one-time, daily, weekly, snoozed, and completed reminder states.
+
+Rollback:
+
+- Revert this batch to move Home reminder schedule formatting and visibility logic back into `useHomeSchedule.ts`.
+
+Follow-up:
+
+- Commit R-213.
+- Continue with a backend checkpoint after commit.

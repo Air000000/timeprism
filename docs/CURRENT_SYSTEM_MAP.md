@@ -58,7 +58,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHomeReminderPanel.ts`: Home reminder modal draft state, feedback, quick actions, weekly-day chips, and drag/drop reorder handling.
 - `src/composables/useHomeRhythm.ts`: Home seven-day rhythm bar derivation from usage-stack data.
 - `src/composables/useHomeRhythmTooltip.ts`: Home rhythm summary text, compact duration formatting, and hover-tooltip state/placement.
-- `src/composables/useHomeSchedule.ts`: Home reminder visibility filtering and due-text presentation.
+- `src/composables/useHomeSchedule.ts`: Home reminder schedule computed binding and locale-aware due-text adapter.
 - `src/composables/useHomeViewContext.ts`: computed Home view context assembly from Home data, reminders, heatmap, rhythm, and status state.
 - `src/composables/useIdlePromptBannerContext.ts`: computed top-level idle prompt banner context assembly.
 - `src/composables/useInsightsData.ts`: Insights top-app/all-time/recent-log loading, all-time filters, and visible Insights derived view data.
@@ -92,6 +92,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/petPromptDescriptors.ts`: pet prompt descriptor construction for reminders, idle prompts, and pending app-rule prompts.
 - `src/lib/petPrompts.ts`: pet prompt DTO types plus pure snooze pruning, availability filtering, and active prompt selection helpers.
 - `src/lib/petReminderText.ts`: pet reminder due-text formatting for daily, weekly, and one-time reminders.
+- `src/lib/reminderSchedule.ts`: Home reminder visibility rules plus due-text and weekly-day formatting helpers.
 - `src/lib/reminderSort.ts`: shared reminder ordering comparator and sorted reminder list helper.
 - `src/lib/reminderUpsert.ts`: reminder form input normalization and save-payload construction for one-time, daily, and weekly reminders.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
