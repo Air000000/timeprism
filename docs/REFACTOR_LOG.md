@@ -11572,3 +11572,86 @@ Follow-up:
 
 - Commit R-239.
 - Because this batch is already backend-side and covered by `cargo check`/`cargo test`, the next checkpoint can focus on frontend/build integration before another backend extraction.
+
+## 2026-06-09: R-240 Home Reminder Edit Draft Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home reminders
+- helper extraction
+
+Intent:
+
+- Reduce `useHomeReminderPanel.ts` by moving Reminder DTO to edit-draft field mapping into a focused pure helper.
+- Keep modal state refs, schedule modal visibility, feedback, save actions, and drag/drop events inside the composable.
+- Preserve current one-time, daily, and weekly edit behavior before larger Home reminder decomposition.
+
+Files changed:
+
+- `src/composables/useHomeReminderPanel.ts`
+- `src/lib/homeReminderDraft.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHomeReminderPanel.ts` | `homeReminderDraft.ts` | `buildHomeReminderEditDraft` helper for edit-modal field mapping |
+
+Behavior expected to stay the same:
+
+- Editing a daily reminder still enables the reminder when `daily_time_minutes` is present and displays the saved time or `09:00` fallback.
+- Editing a weekly reminder still uses saved `weekly_days` or the default weekday set, sorted ascending.
+- Editing a one-time reminder still enables the reminder when `remind_at` is present and formats it through `toDateTimeLocalValue`.
+- Editing a one-time reminder still does not reset `reminderDraftDailyTime`; the composable only assigns `dailyTime` when the helper returns it for daily/weekly reminders.
+- Opening the composer, resetting drafts, saving, quick actions, feedback, and drag/drop behavior are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same draft mapping now runs through a helper function.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home reminder edit-draft helper extraction batch.
+
+Risks:
+
+- Reminder edit modal behavior was not manually smoke-tested; validation covered compile/build and code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move edit-draft field mapping back into `useHomeReminderPanel.ts`.
+
+Follow-up:
+
+- Commit R-240.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.

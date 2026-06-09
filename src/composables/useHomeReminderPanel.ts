@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import type { Reminder } from "../api";
 import type { FeedbackTone, HomeViewContext } from "../components/viewContexts";
+import { buildHomeReminderEditDraft } from "../lib/homeReminderDraft";
 import { buildHomeReminderDropOrder } from "../lib/homeReminderReorder";
 import {
   defaultReminderWeeklyDays,
@@ -59,25 +60,17 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
 
   function startEditReminder(item: Reminder) {
     const ctx = getCtx();
+    const draft = buildHomeReminderEditDraft(item, ctx);
     scheduleModalOpen.value = true;
     reminderEditId.value = item.id;
-    reminderDraftContent.value = item.content;
-    reminderDraftRepeat.value = item.repeat_rule;
-    if (item.repeat_rule === "DAILY" || item.repeat_rule === "WEEKLY") {
-      reminderEnabled.value = item.daily_time_minutes !== null;
-      reminderDraftDailyTime.value = ctx.timeMinutesLabel(item.daily_time_minutes ?? 9 * 60);
-      reminderDraftAt.value = "";
-      reminderDraftWeeklyDays.value = item.repeat_rule === "WEEKLY"
-        ? [...(item.weekly_days ?? defaultReminderWeeklyDays())].sort((a: number, b: number) => a - b)
-        : defaultReminderWeeklyDays();
-      return;
+    reminderDraftContent.value = draft.content;
+    reminderDraftRepeat.value = draft.repeatRule;
+    reminderEnabled.value = draft.enabled;
+    reminderDraftAt.value = draft.remindAt;
+    reminderDraftWeeklyDays.value = draft.weeklyDays;
+    if (draft.dailyTime !== undefined) {
+      reminderDraftDailyTime.value = draft.dailyTime;
     }
-
-    reminderEnabled.value = item.remind_at !== null;
-    reminderDraftAt.value = item.remind_at !== null
-      ? ctx.toDateTimeLocalValue(item.remind_at)
-      : "";
-    reminderDraftWeeklyDays.value = defaultReminderWeeklyDays();
   }
 
   async function saveReminderFromModal() {
