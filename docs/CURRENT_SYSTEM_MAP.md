@@ -45,6 +45,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useAppNavigation.ts`: main-window navigation state, tab labels, and insights history subview state.
 - `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, diagnostics, rule mutations, idle resolution, and Guard input handlers.
 - `src/composables/useGuardWorkflow.ts`: guard workflow step completion/unlock state, labels, review completion, and reset watcher.
+- `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar cells, cell classes, fetch-window calculation, and month progress summaries.
 - `src/composables/useInsightsData.ts`: Insights top-app/all-time/recent-log loading, all-time filters, and visible Insights derived view data.
 - `src/composables/useLocale.ts`: main-window locale state, translation helper, document language sync, and localStorage persistence.
 - `src/composables/useReminders.ts`: reminder list state, reminder sorting, upsert/delete/done/reorder/snooze actions, and reminder action loading.

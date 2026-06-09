@@ -3319,3 +3319,89 @@ Follow-up:
 
 - Commit R-135.
 - Continue Phase 4 by extracting Home overview/rhythm/heatmap state or by separating shared recent-log/heatmap ownership.
+
+## 2026-06-09: R-136 Heatmap Calendar Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- home
+- heatmap
+
+Intent:
+
+- Move heatmap calendar/month derived state out of `src/App.vue`.
+- Keep heatmap data loading, saved goal loading, and goal persistence timers unchanged for this batch.
+- Preserve Home heatmap rendering and month summary behavior while reducing App-level computed state.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useHeatmapCalendar.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `viewMonthDate`, month title, weekday headers | `useHeatmapCalendar` | Same defaults and locale-dependent labels |
+| current/full month heatmap and padded calendar cells | `useHeatmapCalendar` | Same 42-cell layout |
+| future/today/cell-class/day-label helpers | `useHeatmapCalendar` | Same class thresholds and labels |
+| `shiftHeatmapMonth`, `getHeatmapFetchDays` | `useHeatmapCalendar` | Same month navigation and fetch-window calculation |
+| month goal progress and active streak summaries | `useHeatmapCalendar` | Same source heatmap and date rules |
+
+Behavior expected to stay the same:
+
+- Home heatmap calendar still shows the same month, weekday labels, day labels, today/future styling, and intensity classes.
+- Month navigation still changes the view month in the same way.
+- Home and Insights refresh still use the same `getHeatmapFetchDays()` result.
+- Goal persistence/loading remains in `App.vue` unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Home heatmap interactions were validated by typecheck/build only, not by interactive S-500 smoke testing.
+- `learnHeatmap` remains shared App-level data; only derived view state moved.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-135.
+
+Follow-up:
+
+- Commit R-136.
+- Continue Phase 4 by extracting Home rhythm/overview data or by creating a focused Home data composable.
