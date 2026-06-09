@@ -4935,3 +4935,82 @@ Follow-up:
 
 - Commit R-155.
 - Consider a main-window smoke pass before extracting Home or Guard context assembly.
+
+## 2026-06-09: R-156 Guard View Context Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Guard context assembly
+
+Intent:
+
+- Move Guard view context assembly out of `src/App.vue`.
+- Keep Guard data loading/mutations in `useGuardData` and workflow unlock state in `useGuardWorkflow`.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useGuardViewContext.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `guardCtx` computed block | `useGuardViewContext` | Same `GuardViewContext` shape |
+
+Behavior expected to stay the same:
+
+- Guard view still receives the same workflow, auto-capture, pending-rule, idle-prompt, rule-list, diagnostic, formatter, and mutation handler values.
+- Guard data refresh and workflow state remain owned by their existing composables.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended; capture/privacy behavior remains in existing Guard data and backend services.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this context extraction batch.
+
+Risks:
+
+- Guard workflow/capture/rule behavior was validated by typecheck/build only, not by S-500/S-600 interactive smoke testing.
+- The extracted context has a broad parameter list; future work should consider whether Guard can expose a narrower domain-facing view model.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-155.
+
+Follow-up:
+
+- Commit R-156.
+- Review Home context separately because it currently includes extra fields beyond the declared `HomeViewContext`.

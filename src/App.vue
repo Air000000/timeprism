@@ -8,7 +8,6 @@ import IdlePromptBanner from "./components/IdlePromptBanner.vue";
 import InsightsView from "./components/InsightsView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import type {
-  GuardViewContext,
   HomeViewContext,
 } from "./components/viewContexts";
 import { useAutoCaptureSampler } from "./composables/useAutoCaptureSampler";
@@ -19,6 +18,7 @@ import {
 } from "./composables/useAppNavigation";
 import { useDisplayFormatters } from "./composables/useDisplayFormatters";
 import { useGuardData } from "./composables/useGuardData";
+import { useGuardViewContext } from "./composables/useGuardViewContext";
 import { useGuardWorkflow } from "./composables/useGuardWorkflow";
 import { useHeatmapCalendar } from "./composables/useHeatmapCalendar";
 import { useHeatmapGoalSetting } from "./composables/useHeatmapGoalSetting";
@@ -262,6 +262,40 @@ const {
   guardFeedback,
   guardFeedbackType,
 });
+const guardCtx = useGuardViewContext({
+  tx,
+  guardCurrentStepText,
+  guardStepLabels,
+  guardCurrentStepIndex,
+  autoCaptureEnabled,
+  onAutoCaptureToggle,
+  pendingRuleProcesses,
+  cleanProcessName,
+  formatClock,
+  formatSeconds,
+  handleSavePendingRule,
+  guardStep2Unlocked,
+  idlePrompts,
+  formatIdlePromptSpan,
+  idleActionLoading,
+  handleResolveIdle,
+  guardStep3Unlocked,
+  ruleSearch,
+  onRuleSearchInput,
+  ruleSort,
+  onRuleSortChange,
+  filteredSortedRules,
+  onRuleMappedTypeChange,
+  handleUpdateExistingRule,
+  markGuardStep3Done,
+  guardStep3Done,
+  guardStep4Unlocked,
+  foregroundDiagnostics,
+  captureBlockReasonText,
+  captureRuleText,
+  canSaveRuleFromDiagnostic,
+  handleSaveRuleFromDiagnostic,
+});
 
 const {
   todaySummary,
@@ -389,41 +423,6 @@ const homeCtx = computed(() => ({
   homeMonthActiveStreakDays: homeMonthActiveStreakDays.value,
   homePendingSummary: homePendingSummary.value,
 }) satisfies HomeViewContext & Record<string, unknown>);
-
-const guardCtx = computed<GuardViewContext>(() => ({
-  tx,
-  guardCurrentStepText: guardCurrentStepText.value,
-  guardStepLabels: guardStepLabels.value,
-  guardCurrentStepIndex: guardCurrentStepIndex.value,
-  autoCaptureEnabled: autoCaptureEnabled.value,
-  onAutoCaptureToggle,
-  pendingRuleProcesses: pendingRuleProcesses.value,
-  cleanProcessName,
-  formatClock,
-  formatSeconds,
-  handleSavePendingRule,
-  guardStep2Unlocked: guardStep2Unlocked.value,
-  idlePrompts: idlePrompts.value,
-  formatIdlePromptSpan,
-  idleActionLoading: idleActionLoading.value,
-  handleResolveIdle,
-  guardStep3Unlocked: guardStep3Unlocked.value,
-  ruleSearch: ruleSearch.value,
-  onRuleSearchInput,
-  ruleSort: ruleSort.value,
-  onRuleSortChange,
-  filteredSortedRules: filteredSortedRules.value,
-  onRuleMappedTypeChange,
-  handleUpdateExistingRule,
-  markGuardStep3Done,
-  guardStep3Done: guardStep3Done.value,
-  guardStep4Unlocked: guardStep4Unlocked.value,
-  foregroundDiagnostics: foregroundDiagnostics.value,
-  captureBlockReasonText,
-  captureRuleText,
-  canSaveRuleFromDiagnostic,
-  handleSaveRuleFromDiagnostic,
-}));
 
 onMounted(async () => {
   initLocale();
