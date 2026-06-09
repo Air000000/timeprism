@@ -6174,3 +6174,85 @@ Follow-up:
 
 - Commit R-171.
 - Continue pet/panel extraction in small slices, preferably separating pure helpers from window/DOM behavior.
+
+## 2026-06-09: R-172 Pet Panel Metrics Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shared helpers
+- pet panel
+
+Intent:
+
+- Move pet-panel pure heatmap/stack calculations out of `src/pet-panel.ts`.
+- Keep DOM rendering, Tauri events, and panel resize commands in the entry file for this small batch.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelMetrics.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| heatmap level-to-class mapping | `heatCellClass` | Same GREEN/YELLOW/gray mapping |
+| current business day key calculation | `businessDayKeyNow` | Same 4:00 day boundary |
+| heatmap fetch-window calculation | `getHeatmapFetchDays` | Same 120..720 day clamp and +62 day padding |
+| month row count calculation | `monthCellRows` | Same first-weekday/month-days formula |
+| usage-stack day selection | `pickCurrentBusinessDay` | Same exact-day preference and latest-day fallback |
+
+Behavior expected to stay the same:
+
+- Pet panel heatmap fetch range, month panel height, cell classes, and stack day selection remain unchanged.
+- `src/pet-panel.ts` still owns rendering, interval refresh, Tauri resize, and event listeners.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; calculations moved to imported helpers with the same inputs.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this pet-panel helper extraction batch.
+
+Risks:
+
+- Pet-panel visual behavior was validated by typecheck/build only, not by opening the panel in heatmap and stack modes.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-171.
+
+Follow-up:
+
+- Commit R-172.
+- Continue separating pet/panel pure helpers before touching drag, snap, resize, or prompt side effects.

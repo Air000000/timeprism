@@ -2,6 +2,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getLearnHeatmap, getUsageStack, type LearnHeatmapCell, type UsageStackDay } from "./api";
 import { getStoredOrBrowserLocale, translateForLocale, type LocaleCode } from "./lib/locale";
+import {
+  getHeatmapFetchDays,
+  heatCellClass,
+  monthCellRows,
+  pickCurrentBusinessDay,
+} from "./lib/petPanelMetrics";
 import { formatSeconds } from "./lib/time";
 import "./pet-panel.css";
 
@@ -61,36 +67,6 @@ let lastStackSig = "";
 let active = true;
 const viewMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-function heatCellClass(level: LearnHeatmapCell["level"]): string {
-  if (level === "GREEN") return "green";
-  if (level === "YELLOW") return "yellow";
-  return "gray";
-}
-
-function businessDayKeyNow(): string {
-  const now = new Date();
-  const shifted = new Date(now.getTime() - 4 * 3600 * 1000);
-  const y = shifted.getFullYear();
-  const m = (shifted.getMonth() + 1).toString().padStart(2, "0");
-  const d = shifted.getDate().toString().padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function getHeatmapFetchDays(): number {
-  const now = new Date();
-  const viewStart = new Date(viewMonthDate.getFullYear(), viewMonthDate.getMonth(), 1);
-  const diffMs = now.getTime() - viewStart.getTime();
-  const diffDays = Math.max(0, Math.ceil(diffMs / 86_400_000));
-  const days = diffDays + 62;
-  return Math.min(720, Math.max(120, days));
-}
-
-function monthCellRows(year: number, month: number): number {
-  const firstWeekday = new Date(year, month - 1, 1).getDay();
-  const monthDays = new Date(year, month, 0).getDate();
-  return Math.ceil((firstWeekday + monthDays) / 7);
-}
-
 async function resizePanelForMode(nextMode: "heatmap" | "stack") {
   try {
     if (nextMode === "stack") {
@@ -138,19 +114,6 @@ function renderHeatmap(cells: LearnHeatmapCell[]) {
     node.title = `${dayKey} ${formatSeconds(cell.learn_seconds)}`;
     miniHeatmapGrid.appendChild(node);
   }
-}
-
-function pickCurrentBusinessDay(days: UsageStackDay[]): UsageStackDay | null {
-  if (days.length === 0) {
-    return null;
-  }
-  const key = businessDayKeyNow();
-  const exact = days.find((d) => d.day === key);
-  if (exact) {
-    return exact;
-  }
-  const sorted = [...days].sort((a, b) => b.day.localeCompare(a.day));
-  return sorted[0] ?? null;
 }
 
 function renderStack(days: UsageStackDay[]) {
@@ -227,7 +190,7 @@ async function refresh() {
   updateMode(mode);
   try {
     if (mode === "heatmap") {
-      const cells = await getLearnHeatmap(getHeatmapFetchDays(), 7200);
+      const cells = await getLearnHeatmap(getHeatmapFetchDays(viewMonthDate), 7200);
       renderHeatmap(cells);
       return;
     }
