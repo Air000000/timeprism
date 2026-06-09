@@ -42,22 +42,17 @@ use services::rules::{
     list_app_rule_entries, list_pending_rule_process_entries, resolve_rule_mapping,
     save_app_rule_entry,
 };
-use services::sessions::{active_root_type, start_session_entry, stop_active_session_entry};
+use services::focus::{
+    check_focus_deviation_state, snooze_focus_guard_state,
+};
+use services::sessions::{start_session_entry, stop_active_session_entry};
 use services::startup::{get_auto_start_enabled_state, set_auto_start_enabled_state};
 use services::usage::{append_usage_log_record, persist_idle_prompt_decision};
 use services::window as window_service;
 
-static DEVIATION_STATE: Lazy<Mutex<DeviationState>> = Lazy::new(|| Mutex::new(DeviationState::default()));
 static FOREGROUND_SAMPLE_STATE: Lazy<Mutex<ForegroundSampleState>> =
     Lazy::new(|| Mutex::new(ForegroundSampleState::default()));
 const IDLE_PROMPT_THRESHOLD_MS: i64 = 300_000;
-
-#[derive(Default)]
-struct DeviationState {
-    mismatch_since: Option<i64>,
-    pending_alert: bool,
-    cooldown_until: i64,
-}
 
 #[derive(Default)]
 struct ForegroundSampleState {
@@ -583,124 +578,13 @@ fn check_focus_deviation(
     process_name: String,
     debounce_seconds: Option<i64>,
 ) -> Result<DeviationCheck, String> {
-    let now_ts = Local::now().timestamp();
-    let deb = debounce_seconds.unwrap_or(60).clamp(5, 600);
-    let process_name = normalize_process_key(&process_name);
-
     let conn = open_connection(&app)?;
-    let current_active_root = active_root_type(&conn)?;
-
-    if current_active_root.is_none() {
-        if let Ok(mut state) = DEVIATION_STATE.lock() {
-            state.mismatch_since = None;
-            state.pending_alert = false;
-        }
-        return Ok(DeviationCheck {
-            triggered: false,
-            process_name,
-            reason: "no_active_session".to_string(),
-            active_root_type: None,
-            mapped_type: None,
-            suggested_root_category_id: None,
-        });
-    }
-
-    let active_root = current_active_root.unwrap_or_else(|| "LEARN".to_string());
-    let mapped_type = conn
-        .query_row(
-            "SELECT mapped_type FROM app_rules WHERE process_name = ?1",
-            [process_name.clone()],
-            |row| row.get::<_, String>(0),
-        )
-        .unwrap_or_else(|_| "IGNORE".to_string());
-
-    let mut state = DEVIATION_STATE
-        .lock()
-        .map_err(|e| format!("failed to lock deviation state: {e}"))?;
-
-    if now_ts < state.cooldown_until {
-        return Ok(DeviationCheck {
-            triggered: false,
-            process_name,
-            reason: "cooldown".to_string(),
-            active_root_type: Some(active_root),
-            mapped_type: Some(mapped_type),
-            suggested_root_category_id: None,
-        });
-    }
-
-    if mapped_type == "IGNORE" || mapped_type == active_root {
-        state.mismatch_since = None;
-        state.pending_alert = false;
-        return Ok(DeviationCheck {
-            triggered: false,
-            process_name,
-            reason: "matched_or_ignored".to_string(),
-            active_root_type: Some(active_root),
-            mapped_type: Some(mapped_type),
-            suggested_root_category_id: None,
-        });
-    }
-
-    if state.pending_alert {
-        return Ok(DeviationCheck {
-            triggered: false,
-            process_name,
-            reason: "awaiting_user_action".to_string(),
-            active_root_type: Some(active_root),
-            mapped_type: Some(mapped_type),
-            suggested_root_category_id: None,
-        });
-    }
-
-    let since = match state.mismatch_since {
-        Some(since) => since,
-        None => {
-            state.mismatch_since = Some(now_ts);
-            return Ok(DeviationCheck {
-                triggered: false,
-                process_name,
-                reason: "debounce_started".to_string(),
-                active_root_type: Some(active_root),
-                mapped_type: Some(mapped_type),
-                suggested_root_category_id: None,
-            });
-        }
-    };
-
-    if now_ts - since < deb {
-        return Ok(DeviationCheck {
-            triggered: false,
-            process_name,
-            reason: "debouncing".to_string(),
-            active_root_type: Some(active_root),
-            mapped_type: Some(mapped_type),
-            suggested_root_category_id: None,
-        });
-    }
-
-    state.pending_alert = true;
-    Ok(DeviationCheck {
-        triggered: true,
-        process_name,
-        reason: "deviation_detected".to_string(),
-        active_root_type: Some(active_root),
-        mapped_type: Some(mapped_type.clone()),
-        suggested_root_category_id: if mapped_type == "LEARN" { Some(1) } else { Some(2) },
-    })
+    check_focus_deviation_state(&conn, process_name, debounce_seconds)
 }
 
 #[tauri::command]
 fn snooze_focus_guard(cooldown_seconds: Option<i64>) -> Result<(), String> {
-    let now_ts = Local::now().timestamp();
-    let cooldown = cooldown_seconds.unwrap_or(900).clamp(60, 7200);
-    let mut state = DEVIATION_STATE
-        .lock()
-        .map_err(|e| format!("failed to lock deviation state: {e}"))?;
-    state.pending_alert = false;
-    state.mismatch_since = None;
-    state.cooldown_until = now_ts + cooldown;
-    Ok(())
+    snooze_focus_guard_state(cooldown_seconds)
 }
 
 #[tauri::command]

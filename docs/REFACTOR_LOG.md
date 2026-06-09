@@ -1656,3 +1656,88 @@ Follow-up:
 
 - Commit R-117.
 - Continue foreground sampling-state extraction or focus-deviation service extraction.
+
+## 2026-06-09: R-118 Focus Deviation Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- focus guard
+- deviation detection
+- backend services
+
+Intent:
+
+- Move focus deviation state and debounce/cooldown logic out of `src-tauri/src/lib.rs`.
+- Keep focus guard command contracts, reasons, debounce defaults, cooldown defaults, and suggested category behavior unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/focus.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `DeviationState` and `DEVIATION_STATE` | `services::focus` | Same in-memory lifetime |
+| `check_focus_deviation` body | `services::focus::check_focus_deviation_state` | Command shell remains in `lib.rs` |
+| `snooze_focus_guard` body | `services::focus::snooze_focus_guard_state` | Command shell remains in `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Debounce default remains `60` seconds and clamps to `5..=600`.
+- Snooze default remains `900` seconds and clamps to `60..=7200`.
+- No active session still clears pending/mismatch state and returns `no_active_session`.
+- `IGNORE` or matching mapped type still returns `matched_or_ignored`.
+- Suggested category IDs remain `1` for `LEARN` and `2` otherwise.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `check_focus_deviation` and `snooze_focus_guard` now delegate to `services::focus`.
+- Command names, inputs, outputs, reasons, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 19 tests passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- Focus deviation state remains in memory as before; this batch does not change restart behavior.
+- No dedicated focus-guard state-machine characterization test was added in this batch.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-117 commit.
+
+Follow-up:
+
+- Commit R-118.
+- Continue foreground sampling-state extraction or command module thinning.
