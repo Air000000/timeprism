@@ -4383,3 +4383,85 @@ Follow-up:
 
 - Commit R-148.
 - Consider an interactive S-700/S-900 smoke check before changing cross-window navigation further.
+
+## 2026-06-09: R-149 Auto Capture Sampler Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Guard/capture polling
+
+Intent:
+
+- Move the auto-capture foreground sampling interval and feedback text out of `src/App.vue`.
+- Keep `App.vue` responsible for starting the sampler on mount and stopping it on unmount.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useAutoCaptureSampler.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `captureTimer` interval state | `useAutoCaptureSampler` | Timer start/stop returned to `App.vue` |
+| `captureForegroundOnce(5000)` polling body | `sampleAutoCapture` | Same default 5000ms interval |
+| auto-capture feedback messages | `useAutoCaptureSampler` | Same Chinese/English strings |
+
+Behavior expected to stay the same:
+
+- Auto capture still starts during main-window mount and stops during unmount.
+- Disabled auto capture still skips foreground sampling.
+- Feedback text still distinguishes stored samples, privacy/baseline skipped samples, and capture failures.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None. The same frontend API wrapper still invokes the same foreground capture command.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended; privacy filtering remains in the backend foreground/usage services.
+
+Startup/performance impact:
+
+- None expected; the sampler still uses a 5000ms interval and does not fire immediately on mount.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this timer extraction batch.
+
+Risks:
+
+- Auto-capture runtime behavior was validated by typecheck/build only, not by S-500/S-600 interactive capture smoke testing.
+- The sampler still depends on `autoCaptureEnabled` and `autoCaptureFeedback` refs owned by Guard data state.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-148.
+
+Follow-up:
+
+- Commit R-149.
+- Consider interactive capture smoke testing before further capture lifecycle changes.

@@ -14,6 +14,7 @@ import type {
   InsightsViewContext,
   SettingsViewContext,
 } from "./components/viewContexts";
+import { useAutoCaptureSampler } from "./composables/useAutoCaptureSampler";
 import {
   useAppNavigation,
   type HistorySubViewKey,
@@ -40,7 +41,6 @@ import {
   toDateTimeLocalValue,
 } from "./lib/time";
 import {
-  captureForegroundOnce,
   type LearnHeatmapCell,
   type RecentLog,
   type UsageStackDay,
@@ -185,6 +185,14 @@ const {
   refreshData,
   setErrorMessage,
 });
+const {
+  startAutoCaptureSampler,
+  stopAutoCaptureSampler,
+} = useAutoCaptureSampler({
+  autoCaptureEnabled,
+  autoCaptureFeedback,
+  tx,
+});
 
 const {
   guardStep2Unlocked,
@@ -279,7 +287,6 @@ async function refreshData() {
 }
 
 let pollTimer: number | null = null;
-let captureTimer: number | null = null;
 let navigateSectionUnlisten: UnlistenFn | null = null;
 let settingsWarmTimer: number | null = null;
 
@@ -441,20 +448,7 @@ onMounted(async () => {
     }
   }, 5000);
 
-  captureTimer = window.setInterval(() => {
-    if (!autoCaptureEnabled.value) {
-      return;
-    }
-    void captureForegroundOnce(5000)
-      .then((stored) => {
-        autoCaptureFeedback.value = stored
-          ? tx("自动采样运行中（最近一条已入库）。", "Auto capture running (latest sample stored).")
-          : tx("自动采样运行中（最近一条未入库：隐私拦截或基线样本）。", "Auto capture running (latest sample not stored: privacy block or baseline sample).");
-      })
-      .catch((e) => {
-        autoCaptureFeedback.value = tx(`自动采样失败：${e}`, `Auto capture failed: ${e}`);
-      });
-  }, 5000);
+  startAutoCaptureSampler();
 
   navigateSectionUnlisten = await listen<string>("navigate-insights-section", (event) => {
     void scrollToInsightsSection(event.payload || "heatmap");
@@ -473,10 +467,7 @@ onUnmounted(() => {
     window.clearInterval(pollTimer);
     pollTimer = null;
   }
-  if (captureTimer !== null) {
-    window.clearInterval(captureTimer);
-    captureTimer = null;
-  }
+  stopAutoCaptureSampler();
   if (settingsWarmTimer !== null) {
     window.clearTimeout(settingsWarmTimer);
     settingsWarmTimer = null;
