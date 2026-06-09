@@ -35,6 +35,13 @@ export function formatReminderWeeklyDaysText(
   return safe.map((day) => reminderWeekdayShortLabel(day, locale)).join(" ");
 }
 
+export function countDueReminders(
+  items: readonly Reminder[],
+  nowSeconds: number,
+): number {
+  return items.filter((item) => !item.done && item.next_due_timestamp <= nowSeconds).length;
+}
+
 export function formatHomeReminderDueText(
   item: Reminder,
   locale: LocaleCode,

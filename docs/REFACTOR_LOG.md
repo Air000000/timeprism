@@ -12040,3 +12040,86 @@ Follow-up:
 
 - Commit R-245.
 - Continue with small helper extractions while keeping user-visible workflows stable.
+
+## 2026-06-09: R-246 Due Reminder Count Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home overview
+- reminders
+- helper extraction
+
+Intent:
+
+- Move Home due-reminder count logic out of `useHomeOverview.ts` and into the reminder schedule helper module.
+- Keep the composable responsible for computing the current timestamp and binding the count into Home status.
+- Preserve existing due count behavior before larger Home overview cleanup.
+
+Files changed:
+
+- `src/composables/useHomeOverview.ts`
+- `src/lib/reminderSchedule.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHomeOverview.ts` | `reminderSchedule.ts` | `countDueReminders` helper |
+
+Behavior expected to stay the same:
+
+- Due reminder count still uses `Math.floor(Date.now() / 1000)` from the composable.
+- A reminder still counts as due only when it is not done and `next_due_timestamp <= now`.
+- Reminder schedule due text, visibility rules, sorting, and save/update behavior are unchanged.
+- Home status counts still read the computed due reminder count from `useHomeOverview`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same filter/count now runs through a helper function.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this due reminder count helper extraction batch.
+
+Risks:
+
+- Home reminder count display was not manually smoke-tested; validation covered compile/build and direct code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move due reminder count filtering back into `useHomeOverview.ts`.
+
+Follow-up:
+
+- Commit R-246.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.

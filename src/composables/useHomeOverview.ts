@@ -14,6 +14,7 @@ import {
   type HomeOverviewStatusCounts,
   type HomeStatusTone,
 } from "../lib/homeOverviewStatus";
+import { countDueReminders } from "../lib/reminderSchedule";
 
 type TranslateFn = (zh: string, en: string) => string;
 
@@ -67,7 +68,7 @@ export function useHomeOverview({
 
   const dueReminderCount = computed(() => {
     const now = Math.floor(Date.now() / 1000);
-    return reminders.value.filter((item) => !item.done && item.next_due_timestamp <= now).length;
+    return countDueReminders(reminders.value, now);
   });
 
   function currentStatusCounts(): HomeOverviewStatusCounts {
