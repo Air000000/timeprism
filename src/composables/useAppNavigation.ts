@@ -3,6 +3,10 @@ import { computed, ref } from "vue";
 export type MainViewKey = "home" | "insights" | "guard" | "privacy";
 export type InsightsPrimaryViewKey = "history";
 export type HistorySubViewKey = "topApps" | "allTime" | "recent";
+export type MainViewOption = {
+  key: MainViewKey;
+  label: string;
+};
 
 type TranslateFn = (zh: string, en: string) => string;
 
@@ -11,7 +15,7 @@ export function useAppNavigation(tx: TranslateFn) {
   const insightsPrimaryView = ref<InsightsPrimaryViewKey>("history");
   const historySubView = ref<HistorySubViewKey>("topApps");
 
-  const mainViews = computed<Array<{ key: MainViewKey; label: string }>>(() => [
+  const mainViews = computed<MainViewOption[]>(() => [
     { key: "home", label: tx("首页", "Home") },
     { key: "insights", label: tx("数据看板", "Insights") },
     { key: "guard", label: tx("专注守护", "Focus Guard") },

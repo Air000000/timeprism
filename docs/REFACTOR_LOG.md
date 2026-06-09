@@ -4061,3 +4061,85 @@ Follow-up:
 
 - Commit R-144.
 - Consider screenshot/manual smoke checks before larger visual or layout refactors.
+
+## 2026-06-09: R-145 App Top Navigation Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend shell
+- navigation UI
+
+Intent:
+
+- Move the main-window brand block and primary navigation tabs out of `src/App.vue`.
+- Keep navigation state and refresh side effects in `App.vue` for now.
+
+Files changed:
+
+- `src/App.vue`
+- `src/components/AppTopNav.vue`
+- `src/composables/useAppNavigation.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Top navigation template in `src/App.vue` | `src/components/AppTopNav.vue` | Template-only extraction with the same CSS classes |
+| Inline main-view option shape | `MainViewOption` in `useAppNavigation.ts` | Exported for typed component props |
+
+Behavior expected to stay the same:
+
+- Main navigation labels, active state, brand display, and tab selection behavior remain unchanged.
+- `App.vue` still owns `setMainView`, view refresh side effects, and lazy settings mount behavior.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this template-only extraction batch.
+
+Risks:
+
+- Navigation behavior is validated by typecheck/build only, not by interactive S-200 smoke testing.
+- `App.vue` still owns broad refresh orchestration and context assembly.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-144.
+
+Follow-up:
+
+- Commit R-145.
+- Continue with smaller shell/context extractions before changing refresh orchestration.

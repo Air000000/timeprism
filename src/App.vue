@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import AppTopNav from "./components/AppTopNav.vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
 import IdlePromptBanner from "./components/IdlePromptBanner.vue";
@@ -551,28 +552,12 @@ onUnmounted(() => {
 
 <template>
   <main class="layout">
-    <section class="card top-shell fixed-top-nav">
-      <div class="top-brand" :aria-label="tx('品牌区', 'Brand section')">
-        <div class="brand-logo" aria-hidden="true">TP</div>
-        <div class="brand-copy">
-          <strong>Time Prism</strong>
-          <span>{{ tx("Focus OS", "Focus OS") }}</span>
-        </div>
-      </div>
-
-      <div class="top-nav" role="tablist" :aria-label="tx('主页面导航', 'Main Navigation')">
-        <button
-          v-for="view in mainViews"
-          :key="view.key"
-          type="button"
-          class="top-nav-btn"
-          :class="{ active: currentMainView === view.key }"
-          @click="setMainView(view.key)"
-        >
-          {{ view.label }}
-        </button>
-      </div>
-    </section>
+    <AppTopNav
+      :tx="tx"
+      :main-views="mainViews"
+      :current-main-view="currentMainView"
+      @select="setMainView"
+    />
 
     <div class="content-scroll">
       <IdlePromptBanner v-if="idlePromptBannerCtx" :ctx="idlePromptBannerCtx" />
@@ -587,4 +572,3 @@ onUnmounted(() => {
     </div>
   </main>
 </template>
-
