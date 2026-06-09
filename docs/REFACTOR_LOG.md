@@ -3485,3 +3485,86 @@ Follow-up:
 
 - Commit R-137.
 - Continue Phase 4 by extracting remaining Home overview/schedule summary data, or pause for a phase-gate review.
+
+## 2026-06-09: R-138 Home Schedule Presentation Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- home
+- reminders
+
+Intent:
+
+- Move Home reminder visibility filtering and due-text formatting out of `src/App.vue`.
+- Keep reminder data ownership, sorting, and CRUD actions in `useReminders`.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useHomeSchedule.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| reminder date/time formatting and weekday labels | `useHomeSchedule` | Same locale source and label arrays |
+| weekly-day text formatting | `useHomeSchedule` | Same validation/dedup/sort behavior |
+| `reminderDueText` | `useHomeSchedule` | Same snooze/daily/weekly/one-time text behavior |
+| `reminderIsVisibleToday` and `homeScheduleItems` | `useHomeSchedule` | Same daily/weekly/one-time visibility rules |
+
+Behavior expected to stay the same:
+
+- Home schedule still lists the same visible reminders for today.
+- Reminder due text still uses the same locale, snooze, repeat, done-state, and one-time display logic.
+- Reminder CRUD/reorder/snooze/done behavior remains in `useReminders` unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Home reminder display was validated by typecheck/build only, not by interactive S-500 smoke testing.
+- Reminder presentation is now separate from reminder mutation logic; keep this boundary unless product behavior changes.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-137.
+
+Follow-up:
+
+- Commit R-138.
+- Continue Phase 4 with remaining Home overview state or perform a frontend phase-gate audit.
