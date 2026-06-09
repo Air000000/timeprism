@@ -4,6 +4,7 @@ pub mod foreground;
 pub mod privacy;
 pub mod reminders;
 pub mod rules;
+pub mod sessions;
 pub mod startup;
 pub mod time;
 pub mod window;

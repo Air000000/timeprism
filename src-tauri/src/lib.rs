@@ -42,6 +42,7 @@ use services::rules::{
     list_app_rule_entries, list_pending_rule_process_entries, resolve_rule_mapping,
     save_app_rule_entry, upsert_app_rule_entry,
 };
+use services::sessions::{active_root_type, start_session_entry, stop_active_session_entry};
 use services::startup::{get_auto_start_enabled_state, set_auto_start_enabled_state};
 use services::window as window_service;
 
@@ -186,22 +187,6 @@ fn append_usage_log_record(
     Ok((stored, block_reason))
 }
 
-fn active_root_type(conn: &Connection) -> Result<Option<String>, String> {
-    let value = conn
-        .query_row(
-            "SELECT c.root_type
-             FROM task_sessions ts
-             JOIN categories c ON c.id = ts.category_id
-             WHERE ts.end_time IS NULL
-             ORDER BY ts.id DESC
-             LIMIT 1",
-            [],
-            |row| row.get::<_, String>(0),
-        )
-        .ok();
-    Ok(value)
-}
-
 #[tauri::command]
 fn list_reminders(
     app: AppHandle,
@@ -263,35 +248,13 @@ fn create_category(app: AppHandle, input: CreateCategoryInput) -> Result<i64, St
 #[tauri::command]
 fn start_session(app: AppHandle, category_id: i64) -> Result<i64, String> {
     let conn = open_connection(&app)?;
-    let now_ts = Local::now().timestamp();
-
-    conn.execute(
-        "UPDATE task_sessions SET end_time = ?1 WHERE end_time IS NULL",
-        [now_ts],
-    )
-    .map_err(|e| format!("failed to close previous active session: {e}"))?;
-
-    conn.execute(
-        "INSERT INTO task_sessions (category_id, start_time, end_time, is_flow_target) VALUES (?1, ?2, NULL, 0)",
-        params![category_id, now_ts],
-    )
-    .map_err(|e| format!("failed to start session: {e}"))?;
-
-    Ok(conn.last_insert_rowid())
+    start_session_entry(&conn, category_id)
 }
 
 #[tauri::command]
 fn stop_active_session(app: AppHandle) -> Result<bool, String> {
     let conn = open_connection(&app)?;
-    let now_ts = Local::now().timestamp();
-    let changed = conn
-        .execute(
-            "UPDATE task_sessions SET end_time = ?1 WHERE end_time IS NULL",
-            [now_ts],
-        )
-        .map_err(|e| format!("failed to stop active session: {e}"))?;
-
-    Ok(changed > 0)
+    stop_active_session_entry(&conn)
 }
 
 #[tauri::command]

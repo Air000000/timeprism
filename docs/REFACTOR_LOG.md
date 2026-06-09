@@ -1406,3 +1406,86 @@ Follow-up:
 
 - Commit R-114.
 - Continue extracting task-session and app-usage-log service logic.
+
+## 2026-06-09: R-115 Task Session Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- task sessions
+- backend services
+
+Intent:
+
+- Move legacy/manual task-session SQL out of `src-tauri/src/lib.rs`.
+- Keep start/stop session commands and focus-deviation active-root lookup behavior unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/sessions.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `active_root_type` | `services::sessions::active_root_type` | Still used by `check_focus_deviation` |
+| `start_session` SQL body | `services::sessions::start_session_entry` | Command shell remains in `lib.rs` |
+| `stop_active_session` SQL body | `services::sessions::stop_active_session_entry` | Command shell remains in `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Starting a session still closes all currently active sessions first.
+- New sessions still use `is_flow_target = 0`.
+- Stopping a session still returns whether any active row was changed.
+- Focus-deviation checks still read the latest active session root type.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `start_session` and `stop_active_session` now delegate to `services::sessions`.
+- `check_focus_deviation` now reads active root type through `services::sessions`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 19 tests passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- No task-session-specific database characterization test was added in this batch; behavior is preserved by direct extraction and compile/test validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-114 commit.
+
+Follow-up:
+
+- Commit R-115.
+- Continue extracting app-usage-log append/privacy integration or foreground sampling state.
