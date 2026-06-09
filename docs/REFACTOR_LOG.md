@@ -8966,3 +8966,78 @@ Follow-up:
 
 - Commit R-206.
 - Continue with low-risk pet prompt/helper extractions or record detailed pet prompt smoke results.
+
+## 2026-06-09: R-207 Cross-Stack Checkpoint After Pet Prompt Descriptors
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the pet prompt descriptor helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-206 reduced `src/pet.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Pet prompt descriptor changes from R-206 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace a detailed pet prompt smoke pass for prompt display and prompt action callbacks.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-207.
+- Continue with low-risk frontend-helper batches unless detailed pet prompt smoke results are recorded.
