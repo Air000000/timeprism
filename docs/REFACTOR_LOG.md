@@ -6905,3 +6905,75 @@ Follow-up:
 
 - Commit R-180.
 - Run a checkpoint before touching pet drag/window behavior.
+
+## 2026-06-09: R-181 Cross-Stack Checkpoint After Pet Prompt/Text Extractions
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- validation checkpoint
+- pet window
+- Tauri backend compile check
+
+Intent:
+
+- Record a clean checkpoint after R-177 through R-180 moved pet DOM shell, prompt bubble DOM, reminder text, and process-name cleanup helpers out of `src/pet.ts`.
+- Confirm the Rust/Tauri side still compiles before touching drag, dock, or Tauri window event flow.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+- None; this is a docs-only validation checkpoint.
+
+Behavior expected to stay the same:
+
+- No behavior changed in this checkpoint.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `git status --short --branch` showed a clean `refactor/architecture` worktree before this docs-only entry.
+- Current entry line counts after the latest pet helper series: `src/App.vue` 420, `src/pet.ts` 664, `src/pet-panel.ts` 250.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace interactive pet/panel smoke testing; it only confirms backend compilation after the recent frontend helper extractions.
+
+Rollback:
+
+- Revert this docs-only checkpoint commit if the checkpoint note is not wanted.
+
+Follow-up:
+
+- Commit R-181.
+- Avoid drag/dock/window behavior refactors until an interactive pet smoke pass is available, or keep the next batch purely textual/data-oriented.
