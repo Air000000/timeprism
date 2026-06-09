@@ -2,7 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getLearnHeatmap, getUsageStack, type LearnHeatmapCell, type UsageStackDay } from "./api";
 import { getStoredOrBrowserLocale, translateForLocale, type LocaleCode } from "./lib/locale";
-import { queryPetPanelElements, renderPetPanelShell } from "./lib/petPanelDom";
+import {
+  queryPetPanelElements,
+  renderPetPanelShell,
+  renderPetPanelWeekHeaders,
+} from "./lib/petPanelDom";
 import {
   getHeatmapFetchDays,
   heatCellClass,
@@ -50,12 +54,7 @@ const {
 } = queryPetPanelElements();
 
 function renderWeekHeaders() {
-  miniWeekHeader.replaceChildren();
-  for (const w of petPanelWeekHeaders(getLocale())) {
-    const node = document.createElement("span");
-    node.textContent = w;
-    miniWeekHeader.appendChild(node);
-  }
+  renderPetPanelWeekHeaders(miniWeekHeader, petPanelWeekHeaders(getLocale()));
 }
 
 let mode: "heatmap" | "stack" = "heatmap";

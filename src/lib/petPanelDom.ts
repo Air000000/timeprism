@@ -63,3 +63,12 @@ export function queryPetPanelElements(root: ParentNode = document): PetPanelElem
     heatNextMonthBtn,
   };
 }
+
+export function renderPetPanelWeekHeaders(container: HTMLElement, labels: string[]) {
+  container.replaceChildren();
+  for (const label of labels) {
+    const node = document.createElement("span");
+    node.textContent = label;
+    container.appendChild(node);
+  }
+}

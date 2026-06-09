@@ -7515,3 +7515,82 @@ Follow-up:
 
 - Commit R-188.
 - Recommended next: run a detailed pet-panel smoke pass, or continue only with very small render-helper extractions.
+
+## 2026-06-09: R-189 Pet Panel Week Header DOM Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet panel
+- DOM rendering
+
+Intent:
+
+- Move pet-panel week-header DOM creation out of `src/pet-panel.ts`.
+- Keep locale label selection and refresh timing in `src/pet-panel.ts`.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelDom.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| week header node creation loop | `renderPetPanelWeekHeaders` | Same span elements, text assignment, and container replacement |
+
+Behavior expected to stay the same:
+
+- Pet-panel week headers still render the same labels into the same container.
+- `src/pet-panel.ts` still decides when week headers refresh and which labels are used.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same small DOM tree is recreated during refresh.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this week-header DOM helper extraction batch.
+
+Risks:
+
+- Pet-panel week header rendering was validated by typecheck/build only, not by opening the panel.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-188.
+
+Follow-up:
+
+- Commit R-189.
+- Continue with small heatmap/stack render helpers or record detailed pet-panel smoke results.
