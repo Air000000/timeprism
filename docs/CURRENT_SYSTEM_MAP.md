@@ -71,7 +71,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useMainRefreshPolling.ts`: main-window 5-second Home refresh polling and Guard refresh while Guard is active.
 - `src/composables/useMainViewActions.ts`: main-window tab/subview selection actions and their refresh side effects.
 - `src/composables/useMainWindowLifecycle.ts`: main-window mount/unmount startup and cleanup sequence.
-- `src/composables/useReminders.ts`: reminder list state, reminder sorting, upsert/delete/done/reorder/snooze actions, and reminder action loading.
+- `src/composables/useReminders.ts`: reminder list state, upsert/delete/done/reorder/snooze actions, and reminder action loading.
 - `src/composables/useSettingsPrivacy.ts`: settings/privacy state, auto-start loading/saving, whitelist actions, and settings refresh cache.
 - `src/composables/useSettingsViewContext.ts`: computed Settings view context assembly from settings/privacy state and handlers.
 - `src/composables/useThemeMode.ts`: main-window theme state, safe initialization, body theme attribute sync, system preference fallback, and localStorage persistence.
@@ -92,6 +92,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/petPromptDescriptors.ts`: pet prompt descriptor construction for reminders, idle prompts, and pending app-rule prompts.
 - `src/lib/petPrompts.ts`: pet prompt DTO types plus pure snooze pruning, availability filtering, and active prompt selection helpers.
 - `src/lib/petReminderText.ts`: pet reminder due-text formatting for daily, weekly, and one-time reminders.
+- `src/lib/reminderSort.ts`: shared reminder ordering comparator and sorted reminder list helper.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
 - `src/styles/app.css`: global main-window CSS previously embedded in `src/App.vue`.
 - `src/pet.ts`: pet UI orchestration, prompt action side effects, context menu orchestration, and drag/dock behavior.

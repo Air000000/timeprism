@@ -9124,3 +9124,87 @@ Follow-up:
 
 - Commit R-208.
 - Continue with small App setup section extractions or record detailed Settings smoke results.
+
+## 2026-06-09: R-209 Reminder Sort Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- reminders
+- sorting
+
+Intent:
+
+- Move shared reminder sorting rules out of `src/composables/useReminders.ts`.
+- Keep the `sortedReminders` export available from `useReminders` so existing imports and App wiring remain unchanged.
+
+Files changed:
+
+- `src/composables/useReminders.ts`
+- `src/lib/reminderSort.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| reminder group rank | `src/lib/reminderSort.ts` | Same undone-before-done order |
+| reminder repeat rank | `src/lib/reminderSort.ts` | Same none/daily/weekly order |
+| reminder comparator | `src/lib/reminderSort.ts` | Same sort-order, repeat, due time, updated time, and id tiebreakers |
+| `sortedReminders` helper | `src/lib/reminderSort.ts` | Re-exported from `useReminders` for compatibility |
+
+Behavior expected to stay the same:
+
+- Reminder lists still sort undone reminders before done reminders.
+- Sort order, repeat-rule priority, next due timestamp, updated timestamp, and id tiebreakers remain unchanged.
+- Home schedule and reminder panel consumers still receive `sortedReminders` through the existing `useReminders` return path.
+- `useReminders` still owns reminder API mutations and action loading state.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same array copy and comparator run through a helper module.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this reminder sort helper extraction batch.
+
+Risks:
+
+- Reminder ordering behavior was validated by typecheck/build only, not by manually inspecting reminder order in the Home schedule UI.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-208.
+
+Follow-up:
+
+- Commit R-209.
+- Continue with small reminder helper extractions or record detailed reminder UI smoke results.
