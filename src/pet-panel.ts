@@ -9,6 +9,11 @@ import {
   monthCellRows,
   pickCurrentBusinessDay,
 } from "./lib/petPanelMetrics";
+import {
+  buildPetPanelStackParts,
+  petPanelStackPercent,
+  petPanelStackSignature,
+} from "./lib/petPanelStack";
 import { petPanelWeekHeaders } from "./lib/petPanelText";
 import { formatSeconds } from "./lib/time";
 import "./pet-panel.css";
@@ -113,7 +118,7 @@ function renderStack(days: UsageStackDay[]) {
     return;
   }
 
-  const sig = `${day.day}|${day.total_seconds}|${day.learn_seconds}|${day.rest_seconds}`;
+  const sig = petPanelStackSignature(day);
   if (sig === lastStackSig) {
     return;
   }
@@ -124,17 +129,12 @@ function renderStack(days: UsageStackDay[]) {
   dayText.className = "stack-day";
   dayText.textContent = tx(`业务日 ${day.day}`, `Business day ${day.day}`);
 
-  const ignore = Math.max(0, day.total_seconds - day.learn_seconds - day.rest_seconds);
-  const parts = [
-    { name: tx("学", "L"), seconds: day.learn_seconds, color: "#16a34a" },
-    { name: tx("休", "B"), seconds: day.rest_seconds, color: "#8ec5ff" },
-    { name: tx("未", "U"), seconds: ignore, color: "#64748b" },
-  ].filter((item) => item.seconds > 0);
+  const parts = buildPetPanelStackParts(day, tx);
 
   const bar = document.createElement("div");
   bar.className = "mini-stack-bar";
   for (const item of parts) {
-    const pct = day.total_seconds > 0 ? (item.seconds / day.total_seconds) * 100 : 0;
+    const pct = petPanelStackPercent(item.seconds, day.total_seconds);
     const seg = document.createElement("div");
     seg.className = "mini-stack-seg";
     seg.style.width = `${Math.max(6, pct)}%`;

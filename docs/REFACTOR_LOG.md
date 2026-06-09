@@ -7279,3 +7279,84 @@ Follow-up:
 
 - Commit R-185.
 - Continue with only small pet-panel text/render helper extractions until a detailed smoke checklist result is recorded.
+
+## 2026-06-09: R-186 Pet Panel Stack Data Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet panel
+- stack rendering data
+
+Intent:
+
+- Move pet-panel stack signature, segment construction, and percent calculation out of `src/pet-panel.ts`.
+- Keep stack DOM rendering in `src/pet-panel.ts`.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelStack.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| stack render signature string | `petPanelStackSignature` | Same day/total/learn/rest fields and separator |
+| stack segment data construction | `buildPetPanelStackParts` | Same Learn/Break/Unclassified labels, colors, ignore calculation, and positive-seconds filter |
+| stack segment percent calculation | `petPanelStackPercent` | Same zero-total guard and seconds/total percentage |
+
+Behavior expected to stay the same:
+
+- Pet-panel stack bar still renders the same segments, colors, labels, widths, titles, and percentage labels.
+- `src/pet-panel.ts` still owns creating and appending the stack DOM nodes.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same stack values are computed during panel render.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this stack-data helper extraction batch.
+
+Risks:
+
+- Pet-panel stack visual behavior was validated by typecheck/build only, not by opening the stack panel.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-185.
+
+Follow-up:
+
+- Commit R-186.
+- Continue with small pet-panel render helpers or record detailed pet-panel smoke results.
