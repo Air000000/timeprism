@@ -1,4 +1,5 @@
 pub mod analytics;
+pub mod categories;
 pub mod foreground;
 pub mod privacy;
 pub mod reminders;

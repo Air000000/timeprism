@@ -1325,3 +1325,84 @@ Follow-up:
 
 - Commit R-113.
 - Continue foreground sampling-state extraction or begin command module thinning.
+
+## 2026-06-09: R-114 Category Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- categories
+- backend services
+
+Intent:
+
+- Move category list/create SQL out of `src-tauri/src/lib.rs`.
+- Keep category command names, inputs, outputs, ordering, default colors, and error strings unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/categories.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `list_categories` SQL body | `services::categories::list_category_entries` | Command shell remains in `lib.rs` |
+| `create_category` SQL body | `services::categories::create_category_entry` | Command shell remains in `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Categories are still ordered by `id ASC`.
+- Created child categories still inherit the parent `root_type`.
+- Default category colors remain `#4ade80` for `LEARN` and `#fb923c` otherwise.
+- Missing parents still return `parent category not found`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `list_categories` and `create_category` now delegate to `services::categories`.
+- Command names, inputs, outputs, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 19 tests passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- No category-specific database characterization test was added in this batch; behavior is preserved by direct extraction and compile/test validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-113 commit.
+
+Follow-up:
+
+- Commit R-114.
+- Continue extracting task-session and app-usage-log service logic.
