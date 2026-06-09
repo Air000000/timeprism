@@ -13,6 +13,11 @@ import {
   type IdlePrompt,
   type PendingRuleProcess,
 } from "../api";
+import {
+  canSaveRuleFromDiagnostic,
+  guardCaptureBlockReasonText,
+  guardCaptureRuleText,
+} from "../lib/guardDiagnostics";
 
 type TranslateFn = (zh: string, en: string) => string;
 type FeedbackTone = "info" | "ok" | "warn" | "error";
@@ -152,41 +157,11 @@ export function useGuardData({
     }
   }
 
-  function captureBlockReasonText(reason: string | null): string {
-    if (!reason) {
-      return "-";
-    }
-    if (reason === "baseline_only") {
-      return tx("首次采样仅建立基线", "First sample only sets baseline");
-    }
-    if (reason === "curtain_enabled") {
-      return tx("被窗帘模式拦截", "Blocked by Curtain mode");
-    }
-    if (reason === "incognito_window") {
-      return tx("无痕/隐私窗口拦截", "Blocked by incognito/private window");
-    }
-    if (reason === "whitelist_blocked") {
-      return tx("白名单策略降级", "Whitelisted-only policy fallback");
-    }
-    if (reason === "no_foreground_window") {
-      return tx("未获取到前台窗口", "No foreground window detected");
-    }
-    if (reason === "elapsed_too_short") {
-      return tx("采样间隔过短", "Sampling interval too short");
-    }
-    return reason;
-  }
+  const captureBlockReasonText = (reason: string | null): string =>
+    guardCaptureBlockReasonText(reason, tx);
 
-  function captureRuleText(item: ForegroundCaptureDiagnostic): string {
-    if (!item.rule_saved) {
-      return tx("未分类（规则未保存）", "Unclassified (rule not saved)");
-    }
-    return mappedTypeText(item.rule_mapped_type);
-  }
-
-  function canSaveRuleFromDiagnostic(item: ForegroundCaptureDiagnostic): boolean {
-    return item.observed_process_name !== "unknown.exe";
-  }
+  const captureRuleText = (item: ForegroundCaptureDiagnostic): string =>
+    guardCaptureRuleText(item, tx, mappedTypeText);
 
   async function handleSaveRuleFromDiagnostic(
     item: ForegroundCaptureDiagnostic,

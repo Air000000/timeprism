@@ -8479,3 +8479,87 @@ Follow-up:
 
 - Commit R-200.
 - Continue with low-risk frontend-helper/component batches unless a detailed Home smoke pass is recorded.
+
+## 2026-06-09: R-201 Guard Diagnostic Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Guard view
+- diagnostics
+
+Intent:
+
+- Move Guard foreground-capture diagnostic display helpers out of `src/composables/useGuardData.ts`.
+- Keep Guard data loading, API mutations, feedback state, refresh calls, and input handlers in `useGuardData`.
+
+Files changed:
+
+- `src/composables/useGuardData.ts`
+- `src/lib/guardDiagnostics.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| capture block reason text mapping | `guardCaptureBlockReasonText` | Same known reason keys and localized labels |
+| diagnostic rule display text | `guardCaptureRuleText` | Same unclassified text and mapped-type formatter callback |
+| unknown process save guard | `canSaveRuleFromDiagnostic` | Same `unknown.exe` predicate |
+
+Behavior expected to stay the same:
+
+- Guard diagnostics still show the same localized capture-block reason labels.
+- Unsaved diagnostic rules still show the same unclassified text.
+- Saved diagnostic rules still use the same `mappedTypeText` callback supplied by `useGuardData`.
+- Rule saving from diagnostics is still disabled only for `unknown.exe`.
+- `useGuardData` still owns Guard API loading, mutations, feedback, and refresh behavior.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same string mapping runs through a helper module.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Guard diagnostic helper extraction batch.
+
+Risks:
+
+- Guard diagnostic display was validated by typecheck/build only, not by manually opening the Guard diagnostics panel.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-200.
+
+Follow-up:
+
+- Commit R-201.
+- Continue with small Guard helper extractions or record detailed Guard view smoke results.
