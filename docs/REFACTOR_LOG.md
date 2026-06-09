@@ -4301,3 +4301,85 @@ Follow-up:
 
 - Commit R-147.
 - Consider adding a small frontend test harness before deeper timer or lifecycle changes.
+
+## 2026-06-09: R-148 Insights Section Navigation Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- Insights navigation polish
+
+Intent:
+
+- Move Insights section target switching, DOM flash highlighting, and flash timer cleanup out of `src/App.vue`.
+- Keep the Tauri `navigate-insights-section` event listener in `App.vue` so external event wiring remains visible at the shell boundary.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useInsightsSectionNavigation.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `flashInsightsSection` | `useInsightsSectionNavigation` | DOM class toggle behavior preserved |
+| `scrollToInsightsSection` | `useInsightsSectionNavigation` | Still switches to Insights/top-apps before flashing |
+| `sectionFlashTimer` cleanup | `cleanupInsightsSectionNavigation` | Called from `App.vue` unmount hook |
+
+Behavior expected to stay the same:
+
+- `navigate-insights-section` still switches the main view to Insights and selects the top-apps subview.
+- The `insights-stack-anchor` element still receives the same `section-flash` class for 1000ms.
+- Tauri event registration and unlisten cleanup remain in `App.vue`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this DOM/timer extraction batch.
+
+Risks:
+
+- The Insights section event path was validated by typecheck/build only, not by an interactive pet-to-Insights navigation smoke test.
+- The `section` payload is still intentionally ignored, matching previous behavior.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-147.
+
+Follow-up:
+
+- Commit R-148.
+- Consider an interactive S-700/S-900 smoke check before changing cross-window navigation further.

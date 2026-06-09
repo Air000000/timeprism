@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import AppTopNav from "./components/AppTopNav.vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
@@ -29,6 +29,7 @@ import { useHomeOverview } from "./composables/useHomeOverview";
 import { useHomeRhythm } from "./composables/useHomeRhythm";
 import { useHomeSchedule } from "./composables/useHomeSchedule";
 import { useInsightsData } from "./composables/useInsightsData";
+import { useInsightsSectionNavigation } from "./composables/useInsightsSectionNavigation";
 import { useLocale } from "./composables/useLocale";
 import { useReminders } from "./composables/useReminders";
 import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
@@ -62,6 +63,13 @@ const {
   selectMainView,
   selectGuardView,
 } = useAppNavigation(tx);
+const {
+  scrollToInsightsSection,
+  cleanupInsightsSectionNavigation,
+} = useInsightsSectionNavigation({
+  currentMainView,
+  selectHistoryView,
+});
 const {
   privacy,
   autoStartEnabled,
@@ -273,7 +281,6 @@ async function refreshData() {
 let pollTimer: number | null = null;
 let captureTimer: number | null = null;
 let navigateSectionUnlisten: UnlistenFn | null = null;
-let sectionFlashTimer: number | null = null;
 let settingsWarmTimer: number | null = null;
 
 function onLocaleChange(event: Event) {
@@ -281,33 +288,6 @@ function onLocaleChange(event: Event) {
   if (input.value === "zh-CN" || input.value === "en-US") {
     locale.value = input.value;
   }
-}
-
-function flashInsightsSection(target: HTMLElement | null) {
-  if (!target) {
-    return;
-  }
-  document.getElementById("insights-stack-anchor")?.classList.remove("section-flash");
-  target.classList.add("section-flash");
-
-  if (sectionFlashTimer !== null) {
-    window.clearTimeout(sectionFlashTimer);
-    sectionFlashTimer = null;
-  }
-
-  sectionFlashTimer = window.setTimeout(() => {
-    target.classList.remove("section-flash");
-    sectionFlashTimer = null;
-  }, 1000);
-}
-
-async function scrollToInsightsSection(section: string) {
-  currentMainView.value = "insights";
-  void section;
-  selectHistoryView("topApps");
-  await nextTick();
-  const target = document.getElementById("insights-stack-anchor");
-  flashInsightsSection(target);
 }
 
 const idlePromptBannerCtx = computed<IdlePromptBannerContext | null>(() => {
@@ -505,10 +485,7 @@ onUnmounted(() => {
     navigateSectionUnlisten();
     navigateSectionUnlisten = null;
   }
-  if (sectionFlashTimer !== null) {
-    window.clearTimeout(sectionFlashTimer);
-    sectionFlashTimer = null;
-  }
+  cleanupInsightsSectionNavigation();
   cleanupHeatmapGoalSetting();
 });
 </script>
