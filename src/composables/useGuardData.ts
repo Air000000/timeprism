@@ -19,6 +19,10 @@ import {
   guardCaptureRuleText,
 } from "../lib/guardDiagnostics";
 import {
+  guardIdleDecisionFeedback,
+  type GuardIdleDecision as IdleDecision,
+} from "../lib/guardIdle";
+import {
   filterSortedGuardRules,
   isGuardRuleMappedType,
   isGuardRuleSortKey,
@@ -28,7 +32,6 @@ import {
 
 type TranslateFn = (zh: string, en: string) => string;
 type FeedbackTone = "info" | "ok" | "warn" | "error";
-type IdleDecision = "LEARN" | "REST" | "IDLE" | "SKIP";
 
 type UseGuardDataOptions = {
   tx: TranslateFn;
@@ -114,25 +117,9 @@ export function useGuardData({
         remember_this_session: rememberChoice,
       });
 
-      if (decision === "LEARN") {
-        guardFeedbackType.value = "ok";
-        guardFeedback.value = rememberChoice
-          ? tx("已将该空闲时段归类为学习，并记忆本次选择。", "This idle segment is marked as Learn and remembered.")
-          : tx("已将该空闲时段归类为学习。", "This idle segment is marked as Learn.");
-      } else if (decision === "REST") {
-        guardFeedbackType.value = "ok";
-        guardFeedback.value = rememberChoice
-          ? tx("已将该空闲时段归类为休息，并记忆本次选择。", "This idle segment is marked as Break and remembered.")
-          : tx("已将该空闲时段归类为休息。", "This idle segment is marked as Break.");
-      } else if (decision === "IDLE") {
-        guardFeedbackType.value = "info";
-        guardFeedback.value = rememberChoice
-          ? tx("已将该空闲时段归类为离开，并记忆本次选择。", "This idle segment is marked as Away and remembered.")
-          : tx("已将该空闲时段归类为离开（不计入学习/休息）。", "This idle segment is marked as Away (excluded from Learn/Break).");
-      } else {
-        guardFeedbackType.value = "warn";
-        guardFeedback.value = tx("该空闲时段已暂缓，后续将继续采样。", "This idle segment is postponed. Sampling will continue.");
-      }
+      const feedback = guardIdleDecisionFeedback(decision, rememberChoice, tx);
+      guardFeedbackType.value = feedback.type;
+      guardFeedback.value = feedback.text;
 
       idleRememberChoice.value = false;
       await refreshData();

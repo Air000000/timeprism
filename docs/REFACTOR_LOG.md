@@ -8723,3 +8723,86 @@ Follow-up:
 
 - Commit R-203.
 - Continue with low-risk frontend-helper batches unless a detailed Guard smoke pass is recorded.
+
+## 2026-06-09: R-204 Guard Idle Feedback Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Guard view
+- idle prompts
+
+Intent:
+
+- Move Guard idle-decision feedback tone/text selection out of `src/composables/useGuardData.ts`.
+- Keep idle prompt lookup, `resolveIdlePrompt` invocation, remember-choice calculation, refresh calls, and error handling in `useGuardData`.
+
+Files changed:
+
+- `src/composables/useGuardData.ts`
+- `src/lib/guardIdle.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| idle decision feedback branch | `guardIdleDecisionFeedback` | Same Learn/Rest/Away/Skip tones and localized text |
+| idle decision union type | `GuardIdleDecision` | Type-only extraction |
+
+Behavior expected to stay the same:
+
+- Resolving idle prompts still sends the same decision and remember-this-session payload.
+- Learn and Rest decisions still produce `ok` feedback with remembered/non-remembered text variants.
+- Away decisions still produce `info` feedback with remembered/non-remembered text variants.
+- Skip decisions still produce `warn` feedback with the same postponed text.
+- `useGuardData` still owns idle action loading, refresh, and error feedback behavior.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same text branch runs through a helper module.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Guard idle feedback helper extraction batch.
+
+Risks:
+
+- Guard idle prompt feedback was validated by typecheck/build only, not by manually resolving idle prompts.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-203.
+
+Follow-up:
+
+- Commit R-204.
+- Continue with small Guard/helper extractions or record detailed Guard view smoke results.
