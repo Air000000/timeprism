@@ -3,6 +3,11 @@ import {
   getHeatmapGoalSecondsSetting,
   setHeatmapGoalSecondsSetting,
 } from "../api";
+import {
+  heatmapGoalMinutesToSeconds,
+  heatmapGoalSecondsToSliderMinutes,
+  normalizeHeatmapGoalMinutes,
+} from "../lib/heatmapGoalSetting";
 
 type HeatmapGoalSettingOptions = {
   setErrorMessage: (error: unknown) => void;
@@ -14,15 +19,8 @@ export function useHeatmapGoalSetting({
   const learnGoalSliderMinutes = ref(120);
   let heatmapGoalSaveTimer: number | null = null;
 
-  function normalizeGoalMinutes(minutes: number) {
-    const rounded = Number.isFinite(minutes)
-      ? Math.round(minutes / 15) * 15
-      : 120;
-    return Math.min(1440, Math.max(0, rounded));
-  }
-
   function normalizeGoalFromSlider() {
-    const total = normalizeGoalMinutes(learnGoalSliderMinutes.value);
+    const total = normalizeHeatmapGoalMinutes(learnGoalSliderMinutes.value);
     learnGoalSliderMinutes.value = total;
     return total;
   }
@@ -34,7 +32,7 @@ export function useHeatmapGoalSetting({
 
   function getHeatmapGoalSeconds(): number {
     syncGoalFromSlider();
-    return learnGoalSliderMinutes.value * 60;
+    return heatmapGoalMinutesToSeconds(learnGoalSliderMinutes.value);
   }
 
   function schedulePersistHeatmapGoal() {
@@ -45,7 +43,9 @@ export function useHeatmapGoalSetting({
 
     heatmapGoalSaveTimer = window.setTimeout(async () => {
       try {
-        await setHeatmapGoalSecondsSetting(normalizeGoalFromSlider() * 60);
+        await setHeatmapGoalSecondsSetting(
+          heatmapGoalMinutesToSeconds(normalizeGoalFromSlider()),
+        );
       } catch (e) {
         setErrorMessage(e);
       } finally {
@@ -57,8 +57,7 @@ export function useHeatmapGoalSetting({
   async function loadHeatmapGoalSecondsSetting() {
     try {
       const savedGoalSeconds = await getHeatmapGoalSecondsSetting();
-      const minutes = Math.round(savedGoalSeconds / 60 / 15) * 15;
-      learnGoalSliderMinutes.value = normalizeGoalMinutes(minutes);
+      learnGoalSliderMinutes.value = heatmapGoalSecondsToSliderMinutes(savedGoalSeconds);
     } catch (e) {
       setErrorMessage(e);
     }

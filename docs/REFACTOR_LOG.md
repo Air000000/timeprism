@@ -12354,3 +12354,89 @@ Follow-up:
 
 - Commit R-249.
 - Continue with small helper extractions while keeping the commit stream reviewable.
+
+## 2026-06-09: R-250 Heatmap Goal Setting Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- heatmap goal
+- helper extraction
+
+Intent:
+
+- Move heatmap goal numeric normalization and conversion rules out of `useHeatmapGoalSetting.ts`.
+- Keep slider state, debounce timer, API loading/saving, error handling, and cleanup inside the composable.
+- Preserve saved goal and slider behavior before larger heatmap settings cleanup.
+
+Files changed:
+
+- `src/composables/useHeatmapGoalSetting.ts`
+- `src/lib/heatmapGoalSetting.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHeatmapGoalSetting.ts` | `heatmapGoalSetting.ts` | `normalizeHeatmapGoalMinutes` |
+| `useHeatmapGoalSetting.ts` | `heatmapGoalSetting.ts` | `heatmapGoalSecondsToSliderMinutes` |
+| `useHeatmapGoalSetting.ts` | `heatmapGoalSetting.ts` | `heatmapGoalMinutesToSeconds` |
+
+Behavior expected to stay the same:
+
+- Goal minutes still round to the nearest 15-minute step.
+- Non-finite goal minutes still fall back to `120`.
+- Goal minutes still clamp to `0..1440`.
+- Saved seconds still convert to slider minutes by rounding `seconds / 60` to the nearest 15-minute step and normalizing.
+- `getHeatmapGoalSeconds` still normalizes the slider before returning seconds.
+- Debounced persistence still clears the previous timer, waits 260 ms, saves normalized seconds, and clears the timer afterward.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same numeric rules now run through helper functions.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this heatmap goal setting helper extraction batch.
+
+Risks:
+
+- Slider interaction and debounced persistence were not manually smoke-tested; validation covered compile/build and code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move heatmap goal normalization and conversion rules back into `useHeatmapGoalSetting.ts`.
+
+Follow-up:
+
+- Commit R-250.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.
