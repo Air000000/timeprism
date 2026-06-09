@@ -17,6 +17,7 @@ import {
   type InsightsPrimaryViewKey,
   type MainViewKey,
 } from "./composables/useAppNavigation";
+import { useGuardWorkflow } from "./composables/useGuardWorkflow";
 import { useLocale } from "./composables/useLocale";
 import { useReminders } from "./composables/useReminders";
 import { useSettingsPrivacy } from "./composables/useSettingsPrivacy";
@@ -136,7 +137,22 @@ const ruleSearch = ref("");
 const ruleSort = ref<"alpha_asc" | "alpha_desc" | "time_desc" | "time_asc">("alpha_asc");
 const privacyViewMounted = ref(false);
 
-const guardStep3Done = ref(false);
+const {
+  guardStep2Unlocked,
+  guardStep3Unlocked,
+  guardStep4Unlocked,
+  guardStep3Done,
+  guardCurrentStepText,
+  guardCurrentStepIndex,
+  guardStepLabels,
+  markGuardStep3Done,
+} = useGuardWorkflow({
+  tx,
+  pendingRuleProcesses,
+  idlePrompts,
+  guardFeedback,
+  guardFeedbackType,
+});
 
 const todaySummary = ref<TodaySummary>({
   learn_seconds: 0,
@@ -170,11 +186,6 @@ const recentSummary = computed(() => {
   )}s`;
 });
 
-const guardStep1Complete = computed(() => pendingRuleProcesses.value.length === 0);
-const guardStep2Unlocked = computed(() => guardStep1Complete.value);
-const guardStep2Complete = computed(() => idlePrompts.value.length === 0);
-const guardStep3Unlocked = computed(() => guardStep1Complete.value && guardStep2Complete.value);
-const guardStep4Unlocked = computed(() => guardStep3Unlocked.value && guardStep3Done.value);
 const dueReminderCount = computed(() => {
   const now = Math.floor(Date.now() / 1000);
   return reminders.value.filter((item) => !item.done && item.next_due_timestamp <= now).length;
@@ -209,38 +220,6 @@ const currentStatusTone = computed<"ok" | "warn" | "alert" | "idle">(() => {
   return "idle";
 });
 
-const guardCurrentStepText = computed(() => {
-  if (!guardStep1Complete.value) {
-    return tx("步骤 1/4：处理待分类软件", "Step 1/4: Process pending apps");
-  }
-  if (!guardStep2Complete.value) {
-    return tx("步骤 2/4：确认离开时段", "Step 2/4: Resolve idle segments");
-  }
-  if (!guardStep3Done.value) {
-    return tx("步骤 3/4：复核已有规则", "Step 3/4: Review existing rules");
-  }
-  return tx("步骤 4/4：查看采样诊断", "Step 4/4: Review diagnostics");
-});
-
-const guardCurrentStepIndex = computed(() => {
-  if (!guardStep1Complete.value) {
-    return 1;
-  }
-  if (!guardStep2Complete.value) {
-    return 2;
-  }
-  if (!guardStep3Done.value) {
-    return 3;
-  }
-  return 4;
-});
-
-const guardStepLabels = computed(() => [
-  tx("待处理软件", "Pending Apps"),
-  tx("离开确认", "Idle Review"),
-  tx("规则复核", "Rules Review"),
-  tx("采样诊断", "Diagnostics"),
-]);
 function switchInsightsSubView(next: InsightsPrimaryViewKey) {
   selectInsightsView(next);
   void refreshInsightsData();
@@ -1049,15 +1028,6 @@ function setMainView(next: MainViewKey) {
   }
 }
 
-function markGuardStep3Done() {
-  if (!guardStep3Unlocked.value) {
-    return;
-  }
-  guardStep3Done.value = true;
-  guardFeedbackType.value = "ok";
-  guardFeedback.value = tx("规则复核已完成，可进入采样诊断。", "Rules review completed. Diagnostics unlocked.");
-}
-
 async function switchUsageFilter(filter: "ALL" | "LEARN" | "REST") {
   selectedUsageProcess.value = "";
   usageRootFilter.value = filter;
@@ -1654,12 +1624,6 @@ watch(locale, (next, prev) => {
     return;
   }
   applyLocale(next);
-});
-
-watch(guardStep3Unlocked, (unlocked) => {
-  if (!unlocked) {
-    guardStep3Done.value = false;
-  }
 });
 
 onUnmounted(() => {

@@ -2898,3 +2898,87 @@ Follow-up:
 
 - Commit R-130.
 - Continue Phase 4 with Guard or Insights feature extraction.
+
+## 2026-06-09: R-131 Guard Workflow Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- guard
+
+Intent:
+
+- Move Guard workflow step completion/unlock state, labels, current step text/index, review completion action, and reset watcher out of `src/App.vue`.
+- Keep Guard data fetching and command mutations in `src/App.vue` for a later, larger Guard feature extraction batch.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useGuardWorkflow.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `guardStep3Done` | `useGuardWorkflow` | Same default: `false` |
+| Guard step completion/unlock computed values | `useGuardWorkflow` | Based on the same pending rule and idle prompt refs |
+| `guardCurrentStepText`, `guardCurrentStepIndex`, `guardStepLabels` | `useGuardWorkflow` | Same localized text |
+| `markGuardStep3Done` | `useGuardWorkflow` | Same feedback type/text mutation |
+| `watch(guardStep3Unlocked)` reset logic | `useGuardWorkflow` | Same reset when rules/idle prerequisites become incomplete |
+
+Behavior expected to stay the same:
+
+- Guard workflow still unlocks steps in the same order.
+- Rule review completion still sets the same feedback and unlocks diagnostics.
+- If earlier Guard prerequisites become incomplete, rule review completion resets.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `rg -n "guardStep1Complete|guardStep2Complete|function markGuardStep3Done|watch\\(guardStep3Unlocked" src/App.vue src/composables/useGuardWorkflow.ts` confirmed the workflow logic now lives in `useGuardWorkflow.ts`.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Guard workflow interactions were validated by typecheck/build only, not by interactive S-500 smoke testing.
+- Guard data loading and command mutations still live in `src/App.vue`.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-130.
+
+Follow-up:
+
+- Commit R-131.
+- Continue Guard extraction by moving data loading and mutation handlers into a focused composable.
