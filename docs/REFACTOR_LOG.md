@@ -8563,3 +8563,88 @@ Follow-up:
 
 - Commit R-201.
 - Continue with small Guard helper extractions or record detailed Guard view smoke results.
+
+## 2026-06-09: R-202 Guard Rule Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- Guard view
+- rules
+
+Intent:
+
+- Move Guard app-rule search/sort logic and select-value guards out of `src/composables/useGuardData.ts`.
+- Keep Guard rule API mutations, feedback state, refresh calls, and input event handlers in `useGuardData`.
+
+Files changed:
+
+- `src/composables/useGuardData.ts`
+- `src/lib/guardRules.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| app-rule query filter and sort | `filterSortedGuardRules` | Same process-name query and alpha/time sort branches |
+| sort-key select validation | `isGuardRuleSortKey` | Same four allowed values |
+| mapped-type select validation | `isGuardRuleMappedType` | Same three allowed values |
+| rule helper union types | `GuardRuleMappedType`, `GuardRuleSortKey` | Type-only extraction |
+
+Behavior expected to stay the same:
+
+- Guard rule search still filters by lowercase process-name substring.
+- Rule sorting still supports alpha ascending/descending and update time descending/ascending with the same comparisons.
+- Rule sort select events still ignore unknown values.
+- Rule mapped-type select events still ignore unknown values and assign only Learn, Rest, or Ignore.
+- `useGuardData` still owns save/update API calls, feedback text, refresh behavior, and event handler wiring.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same array copy, filtering, and sorting run through a helper module.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Guard rule helper extraction batch.
+
+Risks:
+
+- Guard rule search/sort UI behavior was validated by typecheck/build only, not by manually using the Guard rules panel.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-201.
+
+Follow-up:
+
+- Commit R-202.
+- Continue with small Guard helper extractions or record detailed Guard view smoke results.

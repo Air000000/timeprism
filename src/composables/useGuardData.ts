@@ -18,12 +18,17 @@ import {
   guardCaptureBlockReasonText,
   guardCaptureRuleText,
 } from "../lib/guardDiagnostics";
+import {
+  filterSortedGuardRules,
+  isGuardRuleMappedType,
+  isGuardRuleSortKey,
+  type GuardRuleMappedType as RuleMappedType,
+  type GuardRuleSortKey as RuleSortKey,
+} from "../lib/guardRules";
 
 type TranslateFn = (zh: string, en: string) => string;
 type FeedbackTone = "info" | "ok" | "warn" | "error";
-type RuleMappedType = "LEARN" | "REST" | "IGNORE";
 type IdleDecision = "LEARN" | "REST" | "IDLE" | "SKIP";
-type RuleSortKey = "alpha_asc" | "alpha_desc" | "time_desc" | "time_asc";
 
 type UseGuardDataOptions = {
   tx: TranslateFn;
@@ -53,25 +58,8 @@ export function useGuardData({
   const ruleSearch = ref("");
   const ruleSort = ref<RuleSortKey>("alpha_asc");
 
-  const filteredSortedRules = computed(() => {
-    const q = ruleSearch.value.trim().toLowerCase();
-    let list = appRules.value;
-    if (q) {
-      list = list.filter((rule) => rule.process_name.toLowerCase().includes(q));
-    }
-
-    const sorted = [...list];
-    if (ruleSort.value === "alpha_asc") {
-      sorted.sort((a, b) => a.process_name.localeCompare(b.process_name));
-    } else if (ruleSort.value === "alpha_desc") {
-      sorted.sort((a, b) => b.process_name.localeCompare(a.process_name));
-    } else if (ruleSort.value === "time_desc") {
-      sorted.sort((a, b) => b.updated_at - a.updated_at);
-    } else {
-      sorted.sort((a, b) => a.updated_at - b.updated_at);
-    }
-    return sorted;
-  });
+  const filteredSortedRules = computed(() =>
+    filterSortedGuardRules(appRules.value, ruleSearch.value, ruleSort.value));
 
   const currentIdlePrompt = computed(() => idlePrompts.value[0] ?? null);
 
@@ -249,14 +237,14 @@ export function useGuardData({
 
   function onRuleSortChange(event: Event) {
     const input = event.target as HTMLSelectElement;
-    if (input.value === "alpha_asc" || input.value === "alpha_desc" || input.value === "time_desc" || input.value === "time_asc") {
+    if (isGuardRuleSortKey(input.value)) {
       ruleSort.value = input.value;
     }
   }
 
   function onRuleMappedTypeChange(rule: AppRule, event: Event) {
     const input = event.target as HTMLSelectElement;
-    if (input.value === "LEARN" || input.value === "REST" || input.value === "IGNORE") {
+    if (isGuardRuleMappedType(input.value)) {
       rule.mapped_type = input.value;
     }
   }

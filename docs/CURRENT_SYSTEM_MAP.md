@@ -76,6 +76,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useThemeMode.ts`: main-window theme state, safe initialization, body theme attribute sync, system preference fallback, and localStorage persistence.
 - `src/lib/locale.ts`: shared locale code, storage key, browser fallback detection, and locale-specific text selection helpers.
 - `src/lib/guardDiagnostics.ts`: Guard foreground-capture diagnostic reason text, diagnostic rule text, and save eligibility helpers.
+- `src/lib/guardRules.ts`: Guard app-rule search/sort helpers plus rule sort-key and mapped-type guards.
 - `src/lib/petCharacter.ts`: pet character image paths, legacy path normalization, and localStorage persistence helpers.
 - `src/lib/petContextMenu.ts`: pet-window context menu item definitions and panel-mode toggle wiring.
 - `src/lib/petDock.ts`: pure pet-window dock state types, dock-edge mapping, and settle-state conversion helpers.
