@@ -77,7 +77,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/petDock.ts`: pure pet-window dock state types, dock-edge mapping, and settle-state conversion helpers.
 - `src/lib/petDom.ts`: pet-window initial shell template rendering and required DOM element lookup helpers.
 - `src/lib/petPanelDom.ts`: pet-panel initial shell template rendering, required DOM element lookup, and simple week-header DOM helpers.
-- `src/lib/petPanelMetrics.ts`: pure pet-panel heatmap sizing/fetch-window and usage-stack day selection helpers.
+- `src/lib/petPanelMetrics.ts`: pure pet-panel heatmap sizing/fetch-window, month cell data, and usage-stack day selection helpers.
 - `src/lib/petPanelStack.ts`: pure pet-panel stack signature, segment, color, and percent helpers.
 - `src/lib/petPanelText.ts`: pet-panel locale-specific week headers, mode titles, empty-state text, and stack summary labels.
 - `src/lib/petPromptDom.ts`: pet prompt bubble DOM show/hide/render helpers and action button disabled-state handling.

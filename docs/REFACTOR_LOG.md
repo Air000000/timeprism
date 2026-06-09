@@ -7594,3 +7594,86 @@ Follow-up:
 
 - Commit R-189.
 - Continue with small heatmap/stack render helpers or record detailed pet-panel smoke results.
+
+## 2026-06-09: R-190 Pet Panel Heatmap Cell Data Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet panel
+- heatmap render data
+
+Intent:
+
+- Move pet-panel heatmap month label, leading pad count, and per-day cell data calculation out of `src/pet-panel.ts`.
+- Keep heatmap DOM rendering in `src/pet-panel.ts`.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelMetrics.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| heatmap month label | `petPanelHeatmapMonthLabel` | Same `YYYY/MM` formatting |
+| heatmap leading pad count | `petPanelHeatmapPadCount` | Same first weekday calculation |
+| heatmap day-key/cell/today tuple construction | `buildPetPanelHeatmapDayCells` | Same month-day range, fallback gray cell, and today-key comparison |
+
+Behavior expected to stay the same:
+
+- Pet-panel heatmap month label remains unchanged.
+- Leading blank heatmap cells remain unchanged.
+- Heatmap cells still use the same day keys, fallback gray data, classes, titles, and today marker decision.
+- `src/pet-panel.ts` still owns creating and appending heatmap DOM nodes.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same small arrays are computed during heatmap render.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this heatmap cell-data helper extraction batch.
+
+Risks:
+
+- Pet-panel heatmap rendering was validated by typecheck/build only, not by opening the panel and switching months.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-189.
+
+Follow-up:
+
+- Commit R-190.
+- Continue with small heatmap DOM helpers or record detailed pet-panel smoke results.

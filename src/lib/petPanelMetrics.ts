@@ -1,5 +1,11 @@
 import type { LearnHeatmapCell, UsageStackDay } from "../api";
 
+export type PetPanelHeatmapDayCell = {
+  dayKey: string;
+  cell: LearnHeatmapCell;
+  isToday: boolean;
+};
+
 export function heatCellClass(level: LearnHeatmapCell["level"]): string {
   if (level === "GREEN") return "green";
   if (level === "YELLOW") return "yellow";
@@ -26,6 +32,39 @@ export function monthCellRows(year: number, month: number): number {
   const firstWeekday = new Date(year, month - 1, 1).getDay();
   const monthDays = new Date(year, month, 0).getDate();
   return Math.ceil((firstWeekday + monthDays) / 7);
+}
+
+export function petPanelHeatmapMonthLabel(viewMonthDate: Date): string {
+  const year = viewMonthDate.getFullYear();
+  const month = viewMonthDate.getMonth() + 1;
+  return `${year}/${month.toString().padStart(2, "0")}`;
+}
+
+export function petPanelHeatmapPadCount(viewMonthDate: Date): number {
+  return new Date(viewMonthDate.getFullYear(), viewMonthDate.getMonth(), 1).getDay();
+}
+
+export function buildPetPanelHeatmapDayCells(
+  cells: LearnHeatmapCell[],
+  viewMonthDate: Date,
+  now = new Date(),
+): PetPanelHeatmapDayCell[] {
+  const year = viewMonthDate.getFullYear();
+  const month = viewMonthDate.getMonth() + 1;
+  const monthKey = `${year}-${month.toString().padStart(2, "0")}`;
+  const monthDays = new Date(year, month, 0).getDate();
+  const byDay = new Map(cells.map((cell) => [cell.day, cell]));
+  const todayKey = `${year}-${month.toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
+
+  return Array.from({ length: monthDays }, (_, index) => {
+    const day = index + 1;
+    const dayKey = `${monthKey}-${day.toString().padStart(2, "0")}`;
+    return {
+      dayKey,
+      cell: byDay.get(dayKey) ?? { day: dayKey, learn_seconds: 0, level: "GRAY" as const },
+      isToday: dayKey === todayKey,
+    };
+  });
 }
 
 export function pickCurrentBusinessDay(days: UsageStackDay[], now = new Date()): UsageStackDay | null {

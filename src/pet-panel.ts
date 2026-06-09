@@ -8,9 +8,12 @@ import {
   renderPetPanelWeekHeaders,
 } from "./lib/petPanelDom";
 import {
+  buildPetPanelHeatmapDayCells,
   getHeatmapFetchDays,
   heatCellClass,
   monthCellRows,
+  petPanelHeatmapMonthLabel,
+  petPanelHeatmapPadCount,
   pickCurrentBusinessDay,
 } from "./lib/petPanelMetrics";
 import {
@@ -82,29 +85,18 @@ async function resizePanelForMode(nextMode: "heatmap" | "stack") {
 
 function renderHeatmap(cells: LearnHeatmapCell[]) {
   miniHeatmapGrid.replaceChildren();
-  const now = new Date();
-  const year = viewMonthDate.getFullYear();
-  const month = viewMonthDate.getMonth() + 1;
-  const monthKey = `${year}-${month.toString().padStart(2, "0")}`;
-  heatMonthLabel.textContent = `${year}/${month.toString().padStart(2, "0")}`;
+  heatMonthLabel.textContent = petPanelHeatmapMonthLabel(viewMonthDate);
 
-  const monthDays = new Date(year, month, 0).getDate();
-  const firstWeekday = new Date(year, month - 1, 1).getDay();
-  const byDay = new Map(cells.map((cell) => [cell.day, cell]));
-  const todayKey = `${year}-${month.toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
-
-  for (let i = 0; i < firstWeekday; i += 1) {
+  for (let i = 0; i < petPanelHeatmapPadCount(viewMonthDate); i += 1) {
     const pad = document.createElement("div");
     pad.className = "mini-heat-cell pad";
     miniHeatmapGrid.appendChild(pad);
   }
 
-  for (let day = 1; day <= monthDays; day += 1) {
-    const dayKey = `${monthKey}-${day.toString().padStart(2, "0")}`;
-    const cell = byDay.get(dayKey) ?? { day: dayKey, learn_seconds: 0, level: "GRAY" as const };
+  for (const { dayKey, cell, isToday } of buildPetPanelHeatmapDayCells(cells, viewMonthDate)) {
     const node = document.createElement("div");
     node.className = `mini-heat-cell ${heatCellClass(cell.level)}`;
-    if (dayKey === todayKey) {
+    if (isToday) {
       node.classList.add("today");
     }
     node.title = `${dayKey} ${formatSeconds(cell.learn_seconds)}`;
