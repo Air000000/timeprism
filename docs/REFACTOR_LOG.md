@@ -1066,3 +1066,87 @@ Follow-up:
 
 - Commit R-110.
 - Continue Phase 2 with foreground/capture extraction or command-shell thinning.
+
+## 2026-06-09: R-111 Foreground Platform Primitive Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- foreground capture
+- backend platform services
+
+Intent:
+
+- Move low-level foreground-window and idle-time platform wrappers out of `src-tauri/src/lib.rs`.
+- Keep `capture_foreground_once` control flow, diagnostics, idle prompts, privacy processing, and command contract unchanged.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/foreground.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| Windows API imports in `src-tauri/src/lib.rs` | `src-tauri/src/services/foreground.rs` | `windows_sys` usage is now localized |
+| `src-tauri/src/lib.rs::capture_foreground_window` | `src-tauri/src/services/foreground.rs::capture_foreground_window` | Same Windows behavior and same non-Windows error |
+| `src-tauri/src/lib.rs::current_idle_millis` | `src-tauri/src/services/foreground.rs::current_idle_millis` | Same Windows idle calculation and same non-Windows fallback |
+
+Behavior expected to stay the same:
+
+- Foreground capture still returns the same process/title tuple, including `pid-{pid}.exe` fallback.
+- Empty titles still become `Untitled Window`.
+- Non-Windows foreground capture still returns the same unsupported error.
+- Non-Windows idle time still returns `0`.
+- `capture_foreground_once` still owns sampling state, idle prompt creation, privacy processing, and diagnostics.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `capture_foreground_once` now calls `services::foreground` for platform primitives.
+- Command name, input, return shape, diagnostics, and persistence behavior unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended. Privacy filtering still happens after capture in the existing flow.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 17 tests passed.
+
+Manual smoke tests:
+
+- Not run for this extraction batch.
+
+Risks:
+
+- This batch does not yet separate foreground sampling state or idle prompt coordination; those remain in `lib.rs`.
+- Platform behavior is validated by compile/tests, not by a manual Windows foreground smoke test in this batch.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-110 commit.
+
+Follow-up:
+
+- Commit R-111.
+- Continue foreground extraction by moving sampling-state helpers or idle prompt coordination in a small follow-up batch.
