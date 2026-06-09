@@ -1,5 +1,7 @@
 export type {
   AppRule,
+  AppRuleMappedType,
+  AppRulePrivacyLevel,
   Category,
   DeviationCheck,
   ForegroundCaptureDiagnostic,

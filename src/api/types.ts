@@ -51,9 +51,12 @@ export type DeviationCheck = {
   process_name: string;
   reason: string;
   active_root_type: "LEARN" | "REST" | null;
-  mapped_type: "LEARN" | "REST" | "IGNORE" | null;
+  mapped_type: AppRuleMappedType | null;
   suggested_root_category_id: number | null;
 };
+
+export type AppRuleMappedType = "LEARN" | "REST" | "IGNORE";
+export type AppRulePrivacyLevel = "NORMAL" | "BLUR_TITLE" | "WHITELIST_ONLY";
 
 export type PrivacySettings = {
   curtain_enabled: boolean;
@@ -69,13 +72,13 @@ export type ForegroundCaptureDiagnostic = {
   stored: boolean;
   block_reason: string | null;
   rule_saved: boolean;
-  rule_mapped_type: "LEARN" | "REST" | "IGNORE";
+  rule_mapped_type: AppRuleMappedType;
 };
 
 export type AppRule = {
   process_name: string;
-  mapped_type: "LEARN" | "REST" | "IGNORE";
-  privacy_level: "NORMAL" | "BLUR_TITLE" | "WHITELIST_ONLY";
+  mapped_type: AppRuleMappedType;
+  privacy_level: AppRulePrivacyLevel;
   updated_at: number;
 };
 

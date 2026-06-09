@@ -2,9 +2,11 @@ import type { IdlePrompt } from "../api";
 import type { LocaleCode } from "./locale";
 import { formatSeconds } from "./time";
 
+import type { AppRuleMappedType } from "../api";
+
 type TranslateFn = (zh: string, en: string) => string;
 
-export type RuleMappedType = "LEARN" | "REST" | "IGNORE";
+export type RuleMappedType = AppRuleMappedType;
 
 export function formatUiClock(unixSeconds: number, locale: LocaleCode): string {
   const date = new Date(unixSeconds * 1000);

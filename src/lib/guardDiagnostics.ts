@@ -1,7 +1,7 @@
-import type { ForegroundCaptureDiagnostic } from "../api";
+import type { AppRuleMappedType, ForegroundCaptureDiagnostic } from "../api";
 
 type TranslateFn = (zh: string, en: string) => string;
-type RuleMappedType = "LEARN" | "REST" | "IGNORE";
+type RuleMappedType = AppRuleMappedType;
 
 export function guardCaptureBlockReasonText(reason: string | null, tx: TranslateFn): string {
   if (!reason) {

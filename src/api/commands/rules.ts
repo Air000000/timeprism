@@ -1,10 +1,16 @@
 import { invokeCommand } from "../client";
-import type { AppRule, DeviationCheck, PendingRuleProcess } from "../types";
+import type {
+  AppRule,
+  AppRuleMappedType,
+  AppRulePrivacyLevel,
+  DeviationCheck,
+  PendingRuleProcess,
+} from "../types";
 
 export async function saveAppRule(input: {
   process_name: string;
-  mapped_type: "LEARN" | "REST" | "IGNORE";
-  privacy_level?: "NORMAL" | "BLUR_TITLE" | "WHITELIST_ONLY";
+  mapped_type: AppRuleMappedType;
+  privacy_level?: AppRulePrivacyLevel;
 }): Promise<void> {
   return invokeCommand("save_app_rule", { input });
 }

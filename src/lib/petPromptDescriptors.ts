@@ -1,3 +1,4 @@
+import type { AppRuleMappedType } from "../api";
 import type {
   IdlePromptLite,
   PendingRuleProcessLite,
@@ -7,7 +8,7 @@ import type {
 
 type TranslateFn = (zh: string, en: string) => string;
 type IdleDecision = "LEARN" | "REST" | "IDLE" | "SKIP";
-type RuleMappedType = "LEARN" | "REST" | "IGNORE";
+type RuleMappedType = AppRuleMappedType;
 
 type PetPromptDescriptorActions = {
   completeReminder: (reminder: ReminderLite) => Promise<void>;

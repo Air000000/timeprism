@@ -1,5 +1,6 @@
 import type {
   AppRule,
+  AppRuleMappedType,
   ForegroundCaptureDiagnostic,
   IdlePrompt,
   LearnHeatmapCell,
@@ -8,6 +9,7 @@ import type {
   RecentLog,
   Reminder,
   TopApp,
+  UsageRootFilter,
 } from "../api";
 import type { HistorySubViewKey } from "../composables/useAppNavigation";
 import type { LocaleCode } from "../composables/useLocale";
@@ -15,8 +17,8 @@ import type { ReminderUpsertInput } from "../composables/useReminders";
 import type { ThemeMode } from "../composables/useThemeMode";
 
 export type TranslateFn = (zh: string, en: string) => string;
-export type AllTimeFilter = "ALL" | "LEARN" | "REST";
-export type RuleMappedType = "LEARN" | "REST" | "IGNORE";
+export type AllTimeFilter = UsageRootFilter;
+export type RuleMappedType = AppRuleMappedType;
 export type IdleDecision = "LEARN" | "REST" | "IDLE" | "SKIP";
 export type RuleSortKey = "alpha_asc" | "alpha_desc" | "time_desc" | "time_asc";
 export type FeedbackTone = "info" | "ok" | "warn" | "error";

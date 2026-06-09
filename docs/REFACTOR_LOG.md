@@ -12673,3 +12673,95 @@ Follow-up:
 
 - Commit R-253.
 - Continue with small helper/type extractions where validation can stay tight.
+
+## 2026-06-09: R-254 Shared App Rule Type Alias Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- API types
+- Guard
+- type extraction
+
+Intent:
+
+- Replace duplicated app-rule mapped-type and privacy-level unions with shared API type aliases.
+- Reuse the shared usage root-filter alias in view-context types left over after R-252.
+- Keep runtime payloads, command names, guard rule validation, and UI actions unchanged.
+
+Files changed:
+
+- `src/api.ts`
+- `src/api/types.ts`
+- `src/api/commands/rules.ts`
+- `src/components/viewContexts.ts`
+- `src/lib/displayFormatters.ts`
+- `src/lib/guardDiagnostics.ts`
+- `src/lib/guardRules.ts`
+- `src/lib/petPromptDescriptors.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| inline union types | `api/types.ts` | `AppRuleMappedType = "LEARN" | "REST" | "IGNORE"` |
+| inline union types | `api/types.ts` | `AppRulePrivacyLevel = "NORMAL" | "BLUR_TITLE" | "WHITELIST_ONLY"` |
+| `viewContexts.ts` inline alias | `UsageRootFilter` | `AllTimeFilter` now aliases the shared API type |
+
+Behavior expected to stay the same:
+
+- `saveAppRule` still sends the same `process_name`, `mapped_type`, and optional `privacy_level` payload.
+- Guard mapped-type validation still accepts only `LEARN`, `REST`, and `IGNORE`.
+- Display formatter output for mapped rule types is unchanged.
+- Guard diagnostic text, pet prompt rule actions, and view-context handler signatures keep the same runtime values.
+- Insights view context still accepts `ALL`, `LEARN`, and `REST` all-time filters.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None; TypeScript type-only extraction with unchanged invoke payloads.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None; type-only change.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this shared app rule type alias extraction batch.
+
+Risks:
+
+- Runtime risk is low because this batch changes TypeScript type aliases/imports only; manual Guard and pet prompt rule-action smoke testing was not run.
+
+Rollback:
+
+- Revert this batch to restore inline app-rule mapped-type and privacy-level union types.
+
+Follow-up:
+
+- Commit R-254.
+- Run a backend checkpoint after commit before continuing the next frontend helper/type batch.

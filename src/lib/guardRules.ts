@@ -1,6 +1,6 @@
-import type { AppRule } from "../api";
+import type { AppRule, AppRuleMappedType } from "../api";
 
-export type GuardRuleMappedType = "LEARN" | "REST" | "IGNORE";
+export type GuardRuleMappedType = AppRuleMappedType;
 export type GuardRuleSortKey = "alpha_asc" | "alpha_desc" | "time_desc" | "time_asc";
 
 export function filterSortedGuardRules(
