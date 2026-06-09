@@ -3405,3 +3405,83 @@ Follow-up:
 
 - Commit R-136.
 - Continue Phase 4 by extracting Home rhythm/overview data or by creating a focused Home data composable.
+
+## 2026-06-09: R-137 Home Rhythm Composable Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend feature extraction
+- home
+
+Intent:
+
+- Move Home seven-day rhythm bar derivation out of `src/App.vue`.
+- Keep Home data loading and `homeUsageStack` ownership unchanged for this batch.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useHomeRhythm.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `HomeRhythmBar` local shape, rhythm height constants, and height helper | `useHomeRhythm` | Same values and math |
+| `homeMonthRhythmBars` computed | `useHomeRhythm` | Same seven-day window, labels, today marker, and stacked height calculation |
+
+Behavior expected to stay the same:
+
+- Home rhythm bars still render the same seven local days.
+- Learn/rest heights, total height, labels, today marker, and computer-total data are derived the same way.
+- `refreshHomeData` still writes `getUsageStack(7, "ALL")` into `homeUsageStack`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+
+Manual smoke tests:
+
+- Not run for this composable extraction batch.
+
+Risks:
+
+- Home rhythm rendering was validated by typecheck/build only, not by interactive S-500 smoke testing.
+- `homeUsageStack` remains App-level state because data loading has not moved yet.
+- `dist-codex-check/` remains ignored locally after build validation.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-136.
+
+Follow-up:
+
+- Commit R-137.
+- Continue Phase 4 by extracting remaining Home overview/schedule summary data, or pause for a phase-gate review.
