@@ -7758,3 +7758,84 @@ Follow-up:
 
 - Commit R-191.
 - Continue with small stack DOM helpers or record detailed pet-panel smoke results.
+
+## 2026-06-09: R-192 Pet Panel Stack DOM Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet panel
+- DOM rendering
+
+Intent:
+
+- Move pet-panel usage-stack empty and non-empty DOM creation out of `src/pet-panel.ts`.
+- Keep business-day selection, stack signature caching, stack text/data computation, and render timing in `src/pet-panel.ts`.
+
+Files changed:
+
+- `src/pet-panel.ts`
+- `src/lib/petPanelDom.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| empty stack DOM creation | `renderPetPanelEmptyStack` | Same `mini-empty` class and localized text |
+| stack day/bar/segment/meta DOM creation | `renderPetPanelStack` | Same classes, segment widths, colors, titles, percentage labels, and append order |
+
+Behavior expected to stay the same:
+
+- Pet-panel usage stack still clears and recreates the same empty-state or stack DOM.
+- Stack segment width floor, color assignment, title text, and percentage-label threshold remain unchanged.
+- `src/pet-panel.ts` still owns day selection, signature comparison, text generation, and refresh timing.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same DOM nodes are created in the same render path.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this usage-stack DOM helper extraction batch.
+
+Risks:
+
+- Pet-panel usage-stack visual behavior was validated by typecheck/build only, not by opening the panel and inspecting stack mode.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-191.
+
+Follow-up:
+
+- Commit R-192.
+- Continue with small pet-panel DOM helpers or record detailed pet-panel smoke results.

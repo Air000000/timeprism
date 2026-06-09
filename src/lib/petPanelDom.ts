@@ -1,9 +1,11 @@
 import type { LearnHeatmapCell } from "../api";
 import type { PetPanelHeatmapDayCell } from "./petPanelMetrics";
+import type { PetPanelStackPart } from "./petPanelStack";
 
 type TranslateFn = (zh: string, en: string) => string;
 type HeatCellClassFn = (level: LearnHeatmapCell["level"]) => string;
 type FormatSecondsFn = (seconds: number) => string;
+type StackPercentFn = (seconds: number, totalSeconds: number) => number;
 
 export type PetPanelElements = {
   panelTitle: HTMLElement;
@@ -101,4 +103,52 @@ export function renderPetPanelHeatmapGrid(
     node.title = `${dayKey} ${formatSeconds(cell.learn_seconds)}`;
     container.appendChild(node);
   }
+}
+
+export function renderPetPanelEmptyStack(container: HTMLElement, text: string) {
+  container.replaceChildren();
+  const empty = document.createElement("div");
+  empty.className = "mini-empty";
+  empty.textContent = text;
+  container.appendChild(empty);
+}
+
+export function renderPetPanelStack(
+  container: HTMLElement,
+  dayTextValue: string,
+  parts: PetPanelStackPart[],
+  totalSeconds: number,
+  totalText: string,
+  stackPercent: StackPercentFn,
+  formatSeconds: FormatSecondsFn,
+) {
+  container.replaceChildren();
+
+  const dayText = document.createElement("div");
+  dayText.className = "stack-day";
+  dayText.textContent = dayTextValue;
+
+  const bar = document.createElement("div");
+  bar.className = "mini-stack-bar";
+  for (const item of parts) {
+    const pct = stackPercent(item.seconds, totalSeconds);
+    const seg = document.createElement("div");
+    seg.className = "mini-stack-seg";
+    seg.style.width = `${Math.max(6, pct)}%`;
+    seg.style.background = item.color;
+    seg.title = `${item.name} ${formatSeconds(item.seconds)}`;
+    if (pct >= 16) {
+      const label = document.createElement("span");
+      label.className = "mini-stack-pct";
+      label.textContent = `${Math.round(pct)}%`;
+      seg.appendChild(label);
+    }
+    bar.appendChild(seg);
+  }
+
+  const meta = document.createElement("div");
+  meta.className = "mini-stack-meta";
+  meta.textContent = totalText;
+
+  container.append(dayText, bar, meta);
 }

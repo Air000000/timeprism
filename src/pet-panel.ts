@@ -4,8 +4,10 @@ import { getLearnHeatmap, getUsageStack, type LearnHeatmapCell, type UsageStackD
 import { getStoredOrBrowserLocale, translateForLocale, type LocaleCode } from "./lib/locale";
 import {
   queryPetPanelElements,
+  renderPetPanelEmptyStack,
   renderPetPanelHeatmapGrid,
   renderPetPanelShell,
+  renderPetPanelStack,
   renderPetPanelWeekHeaders,
 } from "./lib/petPanelDom";
 import {
@@ -98,11 +100,7 @@ function renderHeatmap(cells: LearnHeatmapCell[]) {
 function renderStack(days: UsageStackDay[]) {
   const day = pickCurrentBusinessDay(days);
   if (!day || day.total_seconds <= 0) {
-    panelStack.replaceChildren();
-    const empty = document.createElement("div");
-    empty.className = "mini-empty";
-    empty.textContent = petPanelEmptyStackText(tx);
-    panelStack.appendChild(empty);
+    renderPetPanelEmptyStack(panelStack, petPanelEmptyStackText(tx));
     return;
   }
 
@@ -111,37 +109,15 @@ function renderStack(days: UsageStackDay[]) {
     return;
   }
   lastStackSig = sig;
-  panelStack.replaceChildren();
-
-  const dayText = document.createElement("div");
-  dayText.className = "stack-day";
-  dayText.textContent = petPanelBusinessDayText(day.day, tx);
-
-  const parts = buildPetPanelStackParts(day, tx);
-
-  const bar = document.createElement("div");
-  bar.className = "mini-stack-bar";
-  for (const item of parts) {
-    const pct = petPanelStackPercent(item.seconds, day.total_seconds);
-    const seg = document.createElement("div");
-    seg.className = "mini-stack-seg";
-    seg.style.width = `${Math.max(6, pct)}%`;
-    seg.style.background = item.color;
-    seg.title = `${item.name} ${formatSeconds(item.seconds)}`;
-    if (pct >= 16) {
-      const label = document.createElement("span");
-      label.className = "mini-stack-pct";
-      label.textContent = `${Math.round(pct)}%`;
-      seg.appendChild(label);
-    }
-    bar.appendChild(seg);
-  }
-
-  const meta = document.createElement("div");
-  meta.className = "mini-stack-meta";
-  meta.textContent = petPanelTotalText(day.total_seconds, tx);
-
-  panelStack.append(dayText, bar, meta);
+  renderPetPanelStack(
+    panelStack,
+    petPanelBusinessDayText(day.day, tx),
+    buildPetPanelStackParts(day, tx),
+    day.total_seconds,
+    petPanelTotalText(day.total_seconds, tx),
+    petPanelStackPercent,
+    formatSeconds,
+  );
 }
 
 function updateMode(next: "heatmap" | "stack") {
