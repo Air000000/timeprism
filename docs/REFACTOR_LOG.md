@@ -8881,3 +8881,88 @@ Follow-up:
 
 - Commit R-205.
 - Continue with low-risk frontend-helper batches unless a detailed Guard smoke pass is recorded.
+
+## 2026-06-09: R-206 Pet Prompt Descriptor Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend helper
+- pet window
+- prompt bubble
+
+Intent:
+
+- Move pet prompt descriptor array construction out of `src/pet.ts`.
+- Keep Tauri command invocation, transient mood side effects, snooze map mutation, and prompt refresh callbacks in `src/pet.ts`.
+
+Files changed:
+
+- `src/pet.ts`
+- `src/lib/petPromptDescriptors.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| reminder prompt descriptor creation | `buildPetPromptDescriptors` | Same title, detail, Done, and Snooze 10m labels |
+| idle prompt descriptor creation | `buildPetPromptDescriptors` | Same title, detail, Learn/Break/Away/Remind later labels |
+| pending app-rule descriptor creation | `buildPetPromptDescriptors` | Same title, detail, Learn/Break/Unclassified/Remind later labels |
+| prompt action wiring shape | callback options passed from `src/pet.ts` | Same command/mood/refresh side effects remain in caller |
+
+Behavior expected to stay the same:
+
+- Reminder due prompts still display the same content and due-time detail.
+- Idle prompts still display the same duration detail and action labels.
+- Pending app-rule prompts still display the same cleaned process name, total time, and action labels.
+- Prompt actions still invoke the same Tauri commands with the same payloads from `src/pet.ts`.
+- Reminder, idle, and rule postpone behavior still mutates the same snooze map and refreshes the prompt bubble.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None changed; existing command calls remain in `src/pet.ts`.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same descriptor array is built during prompt refresh.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this pet prompt descriptor helper extraction batch.
+
+Risks:
+
+- Pet prompt bubble behavior was validated by typecheck/build only, not by manually triggering reminder, idle, or app-rule prompts.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-205.
+
+Follow-up:
+
+- Commit R-206.
+- Continue with low-risk pet prompt/helper extractions or record detailed pet prompt smoke results.

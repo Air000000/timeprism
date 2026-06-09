@@ -37,9 +37,9 @@ import {
 	pruneExpiredPromptSnoozes,
 	type IdlePromptLite,
 	type PendingRuleProcessLite,
-	type PromptDescriptor,
 	type ReminderLite,
 } from "./lib/petPrompts";
+import { buildPetPromptDescriptors } from "./lib/petPromptDescriptors";
 import {
 	hidePromptBubble,
 	renderPromptBubble,
@@ -225,149 +225,64 @@ async function refreshPromptBubble() {
 			invoke<PendingRuleProcessLite[]>("list_pending_rule_processes", { limit: 3 }),
 		]);
 
-		const descriptors: PromptDescriptor[] = [];
-
-		for (const reminder of dueReminders) {
-			const key = `reminder-${reminder.id}`;
-			descriptors.push({
-				key,
-				title: tx("日程提醒", "Reminder Due"),
-				detail: `${reminder.content} · ${formatPetReminderDueText(
-					reminder,
-					tx,
-					getLocale(),
-				)}`,
-				actions: [
-					{
-						label: tx("完成", "Done"),
-						run: async () => {
-							await invoke("set_reminder_done", {
-								input: { id: reminder.id, done: true },
-							});
-							setTransientMood(tx("提醒已完成", "Reminder done"));
-							await refreshPromptBubble();
-						},
-					},
-					{
-						label: tx("稍后10分钟", "Snooze 10m"),
-						run: async () => {
-							await invoke("snooze_reminder", {
-								id: reminder.id,
-								snoozeSeconds: 600,
-							});
-							setTransientMood(tx("稍后提醒成功", "Reminder snoozed"));
-							await refreshPromptBubble();
-						},
-					},
-				],
-			});
-		}
-
-		for (const idle of idleItems) {
-			const idleSeconds = Math.max(0, Math.floor(idle.duration_ms / 1000));
-			const key = `idle-${idle.id}`;
-			descriptors.push({
-				key,
-				title: tx("离开时段待确认", "Idle Segment Confirmation"),
-				detail: tx(
-					`持续 ${formatSeconds(idleSeconds)}，请尽快归类`,
-					`${formatSeconds(idleSeconds)} idle time, please classify`,
-				),
-				actions: [
-					{
-						label: tx("学习", "Learn"),
-						run: async () => {
-							await invoke("resolve_idle_prompt", {
-								input: { prompt_id: idle.id, decision: "LEARN", remember_this_session: false },
-							});
-							setTransientMood(tx("已标记为学习", "Marked as Learn"));
-							await refreshPromptBubble();
-						},
-					},
-					{
-						label: tx("休息", "Break"),
-						run: async () => {
-							await invoke("resolve_idle_prompt", {
-								input: { prompt_id: idle.id, decision: "REST", remember_this_session: false },
-							});
-							setTransientMood(tx("已标记为休息", "Marked as Break"));
-							await refreshPromptBubble();
-						},
-					},
-					{
-						label: tx("离开", "Away"),
-						run: async () => {
-							await invoke("resolve_idle_prompt", {
-								input: { prompt_id: idle.id, decision: "IDLE", remember_this_session: false },
-							});
-							setTransientMood(tx("已标记为离开", "Marked as Away"));
-							await refreshPromptBubble();
-						},
-					},
-					{
-						label: tx("稍后提醒", "Remind later"),
-						run: async () => {
-							await invoke("resolve_idle_prompt", {
-								input: { prompt_id: idle.id, decision: "SKIP", remember_this_session: false },
-							});
-							promptSnoozeUntilByKey.set(key, Date.now() + 60_000);
-							await refreshPromptBubble();
-						},
-					},
-				],
-			});
-		}
-
-		for (const pending of pendingItems) {
-			const process = pending.process_name;
-			const key = `rule-${process}`;
-			descriptors.push({
-				key,
-				title: tx("新软件待判定", "New App Needs Classification"),
-				detail: `${cleanPetProcessName(process, tx)} · ${formatSeconds(
-					Math.max(0, pending.total_seconds),
-				)}`,
-				actions: [
-					{
-						label: tx("学习", "Learn"),
-						run: async () => {
-							await invoke("save_app_rule", {
-								input: { process_name: process, mapped_type: "LEARN", privacy_level: "NORMAL" },
-							});
-							setTransientMood(tx("已设为学习", "Set to Learn"));
-							await refreshPromptBubble();
-						},
-					},
-					{
-						label: tx("休息", "Break"),
-						run: async () => {
-							await invoke("save_app_rule", {
-								input: { process_name: process, mapped_type: "REST", privacy_level: "NORMAL" },
-							});
-							setTransientMood(tx("已设为休息", "Set to Break"));
-							await refreshPromptBubble();
-						},
-					},
-					{
-						label: tx("未分类", "Unclassified"),
-						run: async () => {
-							await invoke("save_app_rule", {
-								input: { process_name: process, mapped_type: "IGNORE", privacy_level: "NORMAL" },
-							});
-							setTransientMood(tx("已设为未分类", "Set to Unclassified"));
-							await refreshPromptBubble();
-						},
-					},
-					{
-						label: tx("稍后提醒", "Remind later"),
-						run: async () => {
-							promptSnoozeUntilByKey.set(key, Date.now() + 15 * 60_000);
-							await refreshPromptBubble();
-						},
-					},
-				],
-			});
-		}
+		const descriptors = buildPetPromptDescriptors({
+			dueReminders,
+			idleItems,
+			pendingItems,
+			tx,
+			cleanProcessName: (processName) => cleanPetProcessName(processName, tx),
+			formatReminderDueText: (reminder) => formatPetReminderDueText(reminder, tx, getLocale()),
+			formatSeconds,
+			actions: {
+				completeReminder: async (reminder) => {
+					await invoke("set_reminder_done", {
+						input: { id: reminder.id, done: true },
+					});
+					setTransientMood(tx("提醒已完成", "Reminder done"));
+					await refreshPromptBubble();
+				},
+				snoozeReminder: async (reminder) => {
+					await invoke("snooze_reminder", {
+						id: reminder.id,
+						snoozeSeconds: 600,
+					});
+					setTransientMood(tx("稍后提醒成功", "Reminder snoozed"));
+					await refreshPromptBubble();
+				},
+				resolveIdle: async (idle, decision, promptKey) => {
+					await invoke("resolve_idle_prompt", {
+						input: { prompt_id: idle.id, decision, remember_this_session: false },
+					});
+					if (decision === "LEARN") {
+						setTransientMood(tx("已标记为学习", "Marked as Learn"));
+					} else if (decision === "REST") {
+						setTransientMood(tx("已标记为休息", "Marked as Break"));
+					} else if (decision === "IDLE") {
+						setTransientMood(tx("已标记为离开", "Marked as Away"));
+					} else {
+						promptSnoozeUntilByKey.set(promptKey, Date.now() + 60_000);
+					}
+					await refreshPromptBubble();
+				},
+				saveRule: async (processName, mappedType) => {
+					await invoke("save_app_rule", {
+						input: { process_name: processName, mapped_type: mappedType, privacy_level: "NORMAL" },
+					});
+					if (mappedType === "LEARN") {
+						setTransientMood(tx("已设为学习", "Set to Learn"));
+					} else if (mappedType === "REST") {
+						setTransientMood(tx("已设为休息", "Set to Break"));
+					} else {
+						setTransientMood(tx("已设为未分类", "Set to Unclassified"));
+					}
+					await refreshPromptBubble();
+				},
+				postponeRule: async (promptKey) => {
+					promptSnoozeUntilByKey.set(promptKey, Date.now() + 15 * 60_000);
+					await refreshPromptBubble();
+				},
+			},
+		});
 
 		const nowMs = Date.now();
 		pruneExpiredPromptSnoozes(promptSnoozeUntilByKey, nowMs);

@@ -88,11 +88,12 @@ Important sibling folders in the larger workspace:
 - `src/lib/petPanelText.ts`: pet-panel locale-specific week headers, mode titles, empty-state text, and stack summary labels.
 - `src/lib/petPromptDom.ts`: pet prompt bubble DOM show/hide/render helpers and action button disabled-state handling.
 - `src/lib/petProcessName.ts`: pet-window process name cleanup for idle pseudo-processes and `.exe` suffixes.
+- `src/lib/petPromptDescriptors.ts`: pet prompt descriptor construction for reminders, idle prompts, and pending app-rule prompts.
 - `src/lib/petPrompts.ts`: pet prompt DTO types plus pure snooze pruning, availability filtering, and active prompt selection helpers.
 - `src/lib/petReminderText.ts`: pet reminder due-text formatting for daily, weekly, and one-time reminders.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
 - `src/styles/app.css`: global main-window CSS previously embedded in `src/App.vue`.
-- `src/pet.ts`: pet UI, prompt bubble, quick actions, context menu orchestration, and drag/dock behavior.
+- `src/pet.ts`: pet UI orchestration, prompt action side effects, context menu orchestration, and drag/dock behavior.
 - `src/pet-panel.ts`: mini heatmap and weekly activity panel.
 - `src-tauri/src/lib.rs`: Tauri command shells, app setup, command registration, and global shortcut wiring.
 - `src-tauri/src/db/connection.rs`: database path resolution, legacy DB migration, SQLite connection opening.
