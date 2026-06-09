@@ -5703,3 +5703,73 @@ Follow-up:
 
 - Commit R-165.
 - Continue only with small shell wiring extractions or run smoke tests.
+
+## 2026-06-09: R-166 Shell Cleanup Health Checkpoint
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- validation
+- frontend shell cleanup checkpoint
+
+Intent:
+
+- Record a clean checkpoint after R-160 through R-165 shell wiring and state cleanup.
+- Validate that the Rust Tauri side still checks after the latest frontend shell-only changes.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to stay the same:
+
+- No source behavior changed in this docs-only checkpoint.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `git status --short --branch` showed a clean `refactor/architecture` worktree before the checkpoint note.
+- `cargo check` from `src-tauri` passed.
+- R-160 through R-165 each passed `pnpm.cmd run typecheck`, `pnpm.cmd run build:check`, `git diff --check`, and `git diff --cached --check` before commit.
+- `src/App.vue` line count after R-165: 442.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint confirms compilation and traceability, not interactive UI behavior.
+- Manual smoke remains recommended before deeper refresh/lifecycle orchestration changes.
+
+Rollback:
+
+- No source rollback needed for this docs-only checkpoint.
+- Revert this checkpoint commit if the validation note is not wanted.
+
+Follow-up:
+
+- Commit R-166.
+- Prefer an interactive main-window smoke pass before refactoring `refreshData` or `setMainView`.
