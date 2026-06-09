@@ -9523,3 +9523,76 @@ Follow-up:
 
 - Commit R-213.
 - Continue with a backend checkpoint after commit.
+
+## 2026-06-09: R-214 Cross-Stack Checkpoint After Home Reminder Schedule Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the Home reminder schedule helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-213 reduced `useHomeSchedule.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Home reminder schedule helper changes from R-213 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace detailed Home reminder UI smoke tests for schedule visibility and due-text states.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-214.
+- Continue with low-risk frontend-helper batches unless detailed Home reminder UI smoke results are recorded.
