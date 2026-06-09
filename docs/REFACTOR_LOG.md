@@ -11883,3 +11883,87 @@ Follow-up:
 
 - Commit R-243.
 - Continue with small helper extractions while avoiding untested modal or drag/drop behavior rewrites.
+
+## 2026-06-09: R-244 Home Goal Progress Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home overview
+- helper extraction
+
+Intent:
+
+- Move Home learning-goal progress calculations out of `useHomeOverview.ts` and into a focused pure helper.
+- Keep Home overview refs, recent-summary text, pending counts, and status-helper binding inside the composable.
+- Preserve existing percentage, fill, and overflow behavior before larger Home overview decomposition.
+
+Files changed:
+
+- `src/composables/useHomeOverview.ts`
+- `src/lib/homeOverviewProgress.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHomeOverview.ts` | `homeOverviewProgress.ts` | `buildHomeGoalProgress` helper for ratio, percent text, fill clamp, and overflow tier |
+
+Behavior expected to stay the same:
+
+- Goal seconds still use `Math.max(0, learnGoalSliderMinutes * 60)`.
+- Goal progress ratio still returns `0` when goal seconds are not positive.
+- Progress ratio still clamps only the lower bound to `0`; values above `1` are preserved for percent text and overflow detection.
+- Percent text still uses `(ratio * 100).toFixed(0)` plus `%`.
+- Fill percent still rounds ratio to a whole percent and clamps to `0..100`.
+- Overflow tier still becomes `active` only when the rounded percent is greater than `100`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same numeric calculations now run through a helper function.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home goal progress helper extraction batch.
+
+Risks:
+
+- Home progress visuals were not manually smoke-tested; validation covered compile/build and code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move Home goal progress calculations back into `useHomeOverview.ts`.
+
+Follow-up:
+
+- Commit R-244.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.

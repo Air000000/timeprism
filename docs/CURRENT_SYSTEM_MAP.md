@@ -54,7 +54,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar computed adapters, helper adapters for cell classes/progress/fetch windows, and Home heatmap summaries.
 - `src/composables/useHeatmapGoalSetting.ts`: heatmap goal slider state, saved goal loading, 15-minute normalization, debounced persistence, and timer cleanup.
 - `src/composables/useHomeData.ts`: Home data refresh orchestration for summary, logs, heatmap, pending work, reminders, and rhythm stack.
-- `src/composables/useHomeOverview.ts`: Home summary state, goal progress, recent activity summary, pending counts, and status-helper binding.
+- `src/composables/useHomeOverview.ts`: Home summary state, goal progress adapter, recent activity summary, pending counts, and status-helper binding.
 - `src/composables/useHomeReminderPanel.ts`: Home reminder modal draft state, edit-draft adapter, feedback, quick actions, weekly-day chips, and drag/drop event handling.
 - `src/composables/useHomeRhythm.ts`: Home seven-day rhythm bar computed adapter from usage-stack data.
 - `src/composables/useHomeRhythmTooltip.ts`: Home rhythm summary adapter plus hover-tooltip event state/placement.
@@ -85,6 +85,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/heatmapCalendarProgress.ts`: heatmap green maximum, current-month goal progress, active streak, and fetch-window helpers.
 - `src/lib/heatmapCalendarText.ts`: heatmap month keys, localized month/week labels, and day-number label helpers.
 - `src/lib/homeOverviewStatus.ts`: Home current-status label, status tone, and pending-summary text helpers.
+- `src/lib/homeOverviewProgress.ts`: Home learning-goal progress ratio, percent text, fill clamp, and overflow-tier helpers.
 - `src/lib/homeReminderDraft.ts`: Home reminder edit-draft construction for one-time, daily, and weekly reminders.
 - `src/lib/homeReminderReorder.ts`: Home reminder drag/drop ordering helper that preserves undone/done grouping.
 - `src/lib/homeRhythmBars.ts`: Home seven-day rhythm bar construction, scale, and segment-height helpers.

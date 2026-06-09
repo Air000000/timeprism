@@ -6,6 +6,7 @@ import type {
   Reminder,
   TodaySummary,
 } from "../api";
+import { buildHomeGoalProgress } from "../lib/homeOverviewProgress";
 import {
   homeCurrentStatusLabel,
   homeCurrentStatusTone,
@@ -47,19 +48,11 @@ export function useHomeOverview({
 
   const todayLearnSeconds = computed(() => todaySummary.value.learn_seconds ?? 0);
   const todayRestSeconds = computed(() => todaySummary.value.rest_seconds ?? 0);
-  const goalProgressRatio = computed(() => {
-    const goal = Math.max(0, learnGoalSliderMinutes.value * 60);
-    if (goal <= 0) {
-      return 0;
-    }
-    return Math.max(0, todayLearnSeconds.value / goal);
-  });
-  const goalProgressPct = computed(() => `${(goalProgressRatio.value * 100).toFixed(0)}%`);
-  const goalProgressNum = computed(() => Math.round(goalProgressRatio.value * 100));
-  const goalProgressFillNum = computed(() => Math.max(0, Math.min(100, goalProgressNum.value)));
-  const goalOverflowTier = computed<"none" | "active">(() => (
-    goalProgressNum.value > 100 ? "active" : "none"
-  ));
+  const goalProgress = computed(() =>
+    buildHomeGoalProgress(todayLearnSeconds.value, learnGoalSliderMinutes.value));
+  const goalProgressPct = computed(() => goalProgress.value.percentText);
+  const goalProgressFillNum = computed(() => goalProgress.value.fillPercent);
+  const goalOverflowTier = computed(() => goalProgress.value.overflowTier);
 
   const recentSummary = computed(() => {
     const latest = recentLogs.value[0];
