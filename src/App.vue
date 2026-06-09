@@ -10,7 +10,6 @@ import SettingsView from "./components/SettingsView.vue";
 import type {
   GuardViewContext,
   HomeViewContext,
-  IdlePromptBannerContext,
   InsightsViewContext,
   SettingsViewContext,
 } from "./components/viewContexts";
@@ -29,6 +28,7 @@ import { useHomeData } from "./composables/useHomeData";
 import { useHomeOverview } from "./composables/useHomeOverview";
 import { useHomeRhythm } from "./composables/useHomeRhythm";
 import { useHomeSchedule } from "./composables/useHomeSchedule";
+import { useIdlePromptBannerContext } from "./composables/useIdlePromptBannerContext";
 import { useInsightsData } from "./composables/useInsightsData";
 import { useInsightsSectionNavigation } from "./composables/useInsightsSectionNavigation";
 import { useLazySettingsMount } from "./composables/useLazySettingsMount";
@@ -200,6 +200,15 @@ const {
   autoCaptureFeedback,
   tx,
 });
+const idlePromptBannerCtx = useIdlePromptBannerContext({
+  tx,
+  currentIdlePrompt,
+  formatIdlePromptSpan,
+  idleRememberChoice,
+  onIdleRememberChoiceChange,
+  idleActionLoading,
+  handleResolveIdle,
+});
 
 const {
   guardStep2Unlocked,
@@ -306,22 +315,6 @@ function onLocaleChange(event: Event) {
     locale.value = input.value;
   }
 }
-
-const idlePromptBannerCtx = computed<IdlePromptBannerContext | null>(() => {
-  if (!currentIdlePrompt.value) {
-    return null;
-  }
-
-  return {
-    tx,
-    currentIdlePrompt: currentIdlePrompt.value,
-    formatIdlePromptSpan,
-    idleRememberChoice: idleRememberChoice.value,
-    onIdleRememberChoiceChange,
-    idleActionLoading: idleActionLoading.value,
-    handleResolveIdle,
-  };
-});
 
 const homeCtx = computed(() => ({
   tx,

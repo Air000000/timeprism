@@ -4698,3 +4698,82 @@ Follow-up:
 
 - Commit R-152.
 - Continue with context assembly extraction or run an interactive smoke pass.
+
+## 2026-06-09: R-153 Idle Prompt Banner Context Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend composable
+- context assembly
+
+Intent:
+
+- Move the smallest top-level view context computed value out of `src/App.vue`.
+- Establish a low-risk pattern before considering larger Home/Guard/Insights context assembly extraction.
+
+Files changed:
+
+- `src/App.vue`
+- `src/composables/useIdlePromptBannerContext.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `idlePromptBannerCtx` computed block | `useIdlePromptBannerContext` | Same nullable context shape |
+
+Behavior expected to stay the same:
+
+- Idle prompt banner still renders only when `currentIdlePrompt` exists.
+- Banner props still receive the same formatter, remember-choice state, action loading state, and idle resolution handler.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this context extraction batch.
+
+Risks:
+
+- Idle prompt interaction behavior was validated by typecheck/build only, not by S-500 interactive idle prompt smoke testing.
+- Larger context assemblies may need a different extraction shape if parameter lists become too broad.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to R-152.
+
+Follow-up:
+
+- Commit R-153.
+- Consider extracting another small context before attempting Home or Guard context assembly.
