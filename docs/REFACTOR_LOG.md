@@ -1235,3 +1235,93 @@ Follow-up:
 
 - Commit R-112.
 - Continue with foreground sampling-state extraction or window service extraction.
+
+## 2026-06-09: R-113 Window Service Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- window management
+- pet window
+- pet panel
+
+Intent:
+
+- Move main-window, pet-window, and pet-panel behavior out of `src-tauri/src/lib.rs`.
+- Keep Tauri command names and payloads unchanged while making command bodies thin delegates.
+- Add focused pure tests around pet settle mode normalization and monitor-bound clamping.
+
+Files changed:
+
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/services/mod.rs`
+- `src-tauri/src/services/window.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `set_main_close_behavior` | `services::window::set_main_close_behavior` | Setup and recreated main windows use the same close-to-hide behavior |
+| `reveal_main_window` | `services::window::reveal_main_window` | Same unminimize/center/show/focus sequence |
+| `ensure_pet_window_position` | `services::window::ensure_pet_window_position` | Same corner fallback and always-on-top behavior |
+| Pet monitor/clamp/settle helpers | `services::window` private helpers | Same mode names, size, and clamping rules |
+| Pet panel positioning helper | `services::window` private helper | Same side-flip and bounds clamping |
+| Main/pet/panel command bodies | `services::window` service functions | Command shells remain in `lib.rs` |
+
+Behavior expected to stay the same:
+
+- Main window is still hidden instead of closed.
+- Startup setup still reveals the main window and positions the pet window.
+- Global shortcut still summons the pet window.
+- Pet and panel labels, URLs, titles, sizes, transparency, taskbar behavior, and events are unchanged.
+- Pet settle modes remain `free`, `dock_left`, and `dock_right`.
+- Pet panel resize clamps remain width `150..=300` and height `96..=260`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- `show_main_window`, `show_main_window_section`, `summon_pet_window`, `sync_pet_window_layout`, `settle_pet_window`, `show_pet_panel`, `hide_pet_panel`, `sync_pet_panel_position`, `resize_pet_panel`, `move_pet_window`, `hide_pet_window`, `close_pet_window`, and `begin_pet_drag` now delegate to `services::window`.
+- Command names, inputs, outputs, emitted event names, and registration unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo check` from `src-tauri` passed.
+- `cargo test` from `src-tauri` passed: 19 tests passed.
+
+Manual smoke tests:
+
+- Not run. This batch did not launch the Tauri app or manually move windows.
+
+Risks:
+
+- Tauri window behavior is compile-tested but not manually smoke-tested in this batch.
+- The service still depends directly on Tauri APIs, which is appropriate for the current extraction phase but limits pure unit coverage.
+
+Rollback:
+
+- Revert this batch commit after it is committed, or reset `refactor/architecture` to the R-112 commit.
+
+Follow-up:
+
+- Commit R-113.
+- Continue foreground sampling-state extraction or begin command module thinning.

@@ -5,3 +5,4 @@ pub mod reminders;
 pub mod rules;
 pub mod startup;
 pub mod time;
+pub mod window;

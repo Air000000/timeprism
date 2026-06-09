@@ -41,7 +41,7 @@ Important sibling folders in the larger workspace:
 - `src/components/GuardView.vue`: pending apps, idle queue, rules, diagnostics.
 - `src/pet.ts`: pet UI, prompt bubble, quick actions, context menu.
 - `src/pet-panel.ts`: mini heatmap and weekly activity panel.
-- `src-tauri/src/lib.rs`: Tauri command shells, foreground sampling state, idle prompts, and window management.
+- `src-tauri/src/lib.rs`: Tauri command shells, foreground sampling state, and idle prompts.
 - `src-tauri/src/db/connection.rs`: database path resolution, legacy DB migration, SQLite connection opening.
 - `src-tauri/src/db/migrations.rs`: SQLite schema creation, table upgrade helpers, default seed data, and heatmap snapshot table creation.
 - `src-tauri/src/domain/*.rs`: backend DTOs and command input/output structs grouped by feature area.
@@ -52,6 +52,7 @@ Important sibling folders in the larger workspace:
 - `src-tauri/src/services/rules.rs`: app rule lookup, save validation, rule listing, pending-rule process queries, and related characterization tests.
 - `src-tauri/src/services/startup.rs`: Windows startup registry query/update wrappers plus non-Windows fallbacks.
 - `src-tauri/src/services/time.rs`: business-day timestamp/key helpers plus shared interval overlap and merge helpers.
+- `src-tauri/src/services/window.rs`: main, pet, and pet-panel window creation, positioning, visibility, dragging, and settle behavior.
 - `src-tauri/tauri.conf.json`: app and window configuration.
 
 ## Main Data Flow
@@ -103,7 +104,7 @@ Pet panel:
 - `src-tauri/src/lib.rs` is too broad and mixes unrelated layers.
 - Feature components consume `ctx: any`.
 - Backend SQL, migrations, services, and commands are not separated.
-- Windows APIs live in the same file as Tauri setup and SQL.
+- Foreground sampling state and idle prompt coordination still live in `src-tauri/src/lib.rs`.
 - Idle prompts are currently in process memory, so restart behavior needs a product decision.
 - Heavy startup data requests need review.
 - `task_sessions` exists despite the v1 decision that automatic sampling should be the core time source.
