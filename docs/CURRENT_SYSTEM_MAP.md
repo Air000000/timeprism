@@ -48,7 +48,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useAppSettingsSection.ts`: App-level Settings privacy state, lazy mount coordination, and Settings view context assembly.
 - `src/composables/useDisplayFormatters.ts`: locale/translation adapters for shared UI display formatter helpers.
 - `src/composables/useErrorMessage.ts`: top-level main-window error message state and setter.
-- `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, rule mutations, idle resolution, and Guard input handlers.
+- `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, rule mutations, helper-backed rule-save payloads, idle resolution, and Guard input handlers.
 - `src/composables/useGuardViewContext.ts`: computed Guard view context assembly from Guard data, workflow state, formatters, and handlers.
 - `src/composables/useGuardWorkflow.ts`: guard workflow step completion/unlock state, labels, review completion, and reset watcher.
 - `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar computed adapters, helper adapters for cell classes/progress/fetch windows, and Home heatmap summaries.
@@ -79,6 +79,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/locale.ts`: shared locale code, storage key, browser fallback detection, and locale-specific text selection helpers.
 - `src/lib/guardDiagnostics.ts`: Guard foreground-capture diagnostic reason text, diagnostic rule text, and save eligibility helpers.
 - `src/lib/guardIdle.ts`: Guard idle-decision feedback tone/text helpers.
+- `src/lib/guardRuleSave.ts`: Guard app-rule save payload construction for new/default and existing rules.
 - `src/lib/guardRules.ts`: Guard app-rule search/sort helpers plus rule sort-key and mapped-type guards.
 - `src/lib/heatmapCalendarClasses.ts`: heatmap cell class-name construction for level, green intensity, future/past, and today markers.
 - `src/lib/heatmapCalendarGrid.ts`: heatmap full-month cell backfill and fixed 42-slot calendar grid construction helpers.

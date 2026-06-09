@@ -12838,3 +12838,86 @@ Follow-up:
 
 - Commit R-255.
 - Continue with small helper/type extractions while keeping behavior unchanged.
+
+## 2026-06-09: R-256 Guard Rule Save Payload Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Guard
+- helper extraction
+
+Intent:
+
+- Move repeated Guard app-rule save payload construction out of `useGuardData.ts`.
+- Keep async save calls, feedback text, error handling, and refresh behavior inside the composable.
+- Preserve default privacy-level behavior for new diagnostic/pending rules and existing privacy-level behavior for updates.
+
+Files changed:
+
+- `src/composables/useGuardData.ts`
+- `src/lib/guardRuleSave.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useGuardData.ts` | `guardRuleSave.ts` | `buildNormalGuardRuleSaveInput` helper |
+| `useGuardData.ts` | `guardRuleSave.ts` | `buildExistingGuardRuleSaveInput` helper |
+
+Behavior expected to stay the same:
+
+- Saving a rule from a foreground diagnostic still uses `observed_process_name`, the selected mapped type, and privacy level `NORMAL`.
+- Saving a pending-rule process still uses `process_name`, the selected mapped type, and privacy level `NORMAL`.
+- Updating an existing rule still preserves the rule's current `process_name`, `mapped_type`, and `privacy_level`.
+- Guard feedback messages, error handling, `setErrorMessage`, and `refreshData` calls are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None; `save_app_rule` payload shape is unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None intended; privacy-level values are preserved exactly.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Guard rule-save payload helper extraction batch.
+
+Risks:
+
+- Guard rule save/update UI flows were not manually smoke-tested; validation covered compile/build and direct code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move app-rule save payload construction back into `useGuardData.ts`.
+
+Follow-up:
+
+- Commit R-256.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.

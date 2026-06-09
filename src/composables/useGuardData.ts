@@ -23,6 +23,10 @@ import {
   type GuardIdleDecision as IdleDecision,
 } from "../lib/guardIdle";
 import {
+  buildExistingGuardRuleSaveInput,
+  buildNormalGuardRuleSaveInput,
+} from "../lib/guardRuleSave";
+import {
   filterSortedGuardRules,
   isGuardRuleMappedType,
   isGuardRuleSortKey,
@@ -146,11 +150,7 @@ export function useGuardData({
       return;
     }
     try {
-      await saveAppRule({
-        process_name: item.observed_process_name,
-        mapped_type: mappedType,
-        privacy_level: "NORMAL",
-      });
+      await saveAppRule(buildNormalGuardRuleSaveInput(item.observed_process_name, mappedType));
       guardFeedbackType.value = "ok";
       guardFeedback.value = tx(
         `已保存规则：${item.observed_process_name} -> ${mappedTypeText(mappedType)}`,
@@ -166,11 +166,7 @@ export function useGuardData({
 
   async function handleUpdateExistingRule(rule: AppRule) {
     try {
-      await saveAppRule({
-        process_name: rule.process_name,
-        mapped_type: rule.mapped_type,
-        privacy_level: rule.privacy_level,
-      });
+      await saveAppRule(buildExistingGuardRuleSaveInput(rule));
       guardFeedbackType.value = "ok";
       guardFeedback.value = tx(
         `已更新规则：${rule.process_name} -> ${mappedTypeText(rule.mapped_type)}`,
@@ -189,11 +185,7 @@ export function useGuardData({
     mappedType: RuleMappedType,
   ) {
     try {
-      await saveAppRule({
-        process_name: item.process_name,
-        mapped_type: mappedType,
-        privacy_level: "NORMAL",
-      });
+      await saveAppRule(buildNormalGuardRuleSaveInput(item.process_name, mappedType));
       guardFeedbackType.value = "ok";
       guardFeedback.value = tx(
         `已保存规则：${item.process_name} -> ${mappedTypeText(mappedType)}`,
