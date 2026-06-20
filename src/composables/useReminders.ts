@@ -7,6 +7,10 @@ import {
   snoozeReminder,
   type Reminder,
 } from "../api";
+import {
+  buildReminderReorderState,
+  hasDuplicateReminderOrderIds,
+} from "../lib/reminderReorder";
 import { sortedReminders } from "../lib/reminderSort";
 import { buildReminderSavePayload, type ReminderUpsertInput } from "../lib/reminderUpsert";
 
@@ -76,26 +80,19 @@ export function useReminders({ tx, refreshData, setErrorMessage }: UseRemindersO
       return;
     }
 
-    const orderedSet = new Set(orderedIds);
-    if (orderedSet.size !== orderedIds.length) {
+    if (hasDuplicateReminderOrderIds(orderedIds)) {
       throw new Error(tx("排序数据无效", "Invalid reminder ordering"));
     }
 
-    const previous = reminders.value.map((item) => ({ ...item }));
-    const sortedCurrent = sortedReminders(reminders.value);
-    const untouched = sortedCurrent.filter((item) => !orderedSet.has(item.id));
-    const orderedItems = orderedIds
-      .map((id) => reminders.value.find((item) => item.id === id))
-      .filter((item): item is Reminder => Boolean(item));
-    const nextItems = [...orderedItems, ...untouched].map((item, index) => ({
-      ...item,
-      sort_order: index,
-    }));
+    const { previous, nextItems, nextOrderedIds } = buildReminderReorderState(
+      reminders.value,
+      orderedIds,
+    );
 
     reminders.value = nextItems;
     reminderActionLoading.value = true;
     try {
-      await setReminderOrder({ ordered_ids: nextItems.map((item) => item.id) });
+      await setReminderOrder({ ordered_ids: nextOrderedIds });
       await refreshData();
     } catch (e) {
       reminders.value = previous;

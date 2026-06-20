@@ -1,6 +1,6 @@
 # Current System Map
 
-Last reviewed: 2026-06-09.
+Last reviewed: 2026-06-20.
 
 ## Repository Shape
 
@@ -71,7 +71,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useMainRefreshPolling.ts`: main-window 5-second Home refresh polling and Guard refresh while Guard is active.
 - `src/composables/useMainViewActions.ts`: main-window tab/subview selection actions and their refresh side effects.
 - `src/composables/useMainWindowLifecycle.ts`: main-window mount/unmount startup and cleanup sequence.
-- `src/composables/useReminders.ts`: reminder list state, upsert/delete/done/reorder/snooze actions, and reminder action loading.
+- `src/composables/useReminders.ts`: reminder list state, upsert/delete/done/reorder/snooze actions, helper-backed reorder state, and reminder action loading.
 - `src/composables/useSettingsPrivacy.ts`: settings/privacy state, auto-start loading/saving, whitelist actions, and settings refresh cache.
 - `src/composables/useSettingsViewContext.ts`: computed Settings view context assembly from settings/privacy state and handlers.
 - `src/composables/useThemeMode.ts`: main-window theme state, safe initialization, body theme attribute sync, system preference fallback, and localStorage persistence.
@@ -107,6 +107,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/petPrompts.ts`: pet prompt DTO types plus pure snooze pruning, availability filtering, and active prompt selection helpers.
 - `src/lib/petReminderText.ts`: pet reminder due-text formatting for daily, weekly, and one-time reminders.
 - `src/lib/reminderSchedule.ts`: Home reminder visibility, due-count rules, due-text, and weekly-day formatting helpers.
+- `src/lib/reminderReorder.ts`: reminder optimistic reorder state construction and duplicate-order id detection helpers.
 - `src/lib/reminderSort.ts`: shared reminder ordering comparator and sorted reminder list helper.
 - `src/lib/reminderUpsert.ts`: reminder form input normalization and save-payload construction for one-time, daily, and weekly reminders.
 - `src/lib/reminderWeekdays.ts`: shared weekday options, default weekly reminder days, weekday labels, weekly-day normalization, and weekly-day toggle helpers.

@@ -12994,3 +12994,89 @@ Follow-up:
 
 - Commit R-257.
 - Continue with small helper extractions while preserving save/refresh behavior.
+
+## 2026-06-20: R-258 Reminder Reorder State Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- reminders
+- helper extraction
+
+Intent:
+
+- Move optimistic reminder reorder state construction out of `useReminders.ts`.
+- Keep loading guards, translated validation error text, backend persistence, refresh, error reporting, and rollback side effects inside the composable.
+- Preserve current reorder semantics before any broader reminder state refactor.
+
+Files changed:
+
+- `src/composables/useReminders.ts`
+- `src/lib/reminderReorder.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useReminders.ts` | `reminderReorder.ts` | `hasDuplicateReminderOrderIds` helper |
+| `useReminders.ts` | `reminderReorder.ts` | `buildReminderReorderState` helper for previous state, optimistic next items, and persisted id order |
+
+Behavior expected to stay the same:
+
+- Reorder still returns early when another reminder action is loading or the ordered id list is empty.
+- Duplicate ordered ids still throw the same translated invalid-ordering error from `useReminders.ts`.
+- Previous reminder state is still copied before optimistic mutation and restored on persistence failure.
+- Ordered ids still map to existing reminders only; missing ids are ignored as before.
+- Untouched reminders are still appended in `sortedReminders` order.
+- Optimistic `sort_order` values are still reassigned from `0` in final list order.
+- `setReminderOrder` still receives the final optimistic item ids, then `refreshData` runs on success.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None; `set_reminder_order` payload shape is unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected; the same reorder calculations now run through helper functions.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this reminder reorder state helper extraction batch.
+
+Risks:
+
+- Reminder drag/drop and persistence behavior were not manually smoke-tested; validation covered compile/build and code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move optimistic reorder state construction back into `useReminders.ts`.
+
+Follow-up:
+
+- Commit R-258.
+- Run a backend checkpoint after commit before continuing the next frontend helper batch.
