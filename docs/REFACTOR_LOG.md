@@ -14134,3 +14134,90 @@ Follow-up:
 
 - Commit R-271.
 - Continue backend refactors only where helper boundaries are small and testable.
+
+## 2026-06-20: R-272 Analytics Usage Stack Include Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend
+- analytics services
+- helper extraction
+- characterization tests
+
+Intent:
+
+- Move usage-stack root-filter include logic into `analytics_params.rs`.
+- Keep usage-stack SQL, interval clipping, day buckets, segment aggregation, and result ordering in `analytics.rs`.
+- Add focused tests for `ALL`, `LEARN`, and `REST` include behavior before deeper usage-stack refactors.
+
+Files changed:
+
+- `src-tauri/src/services/analytics.rs`
+- `src-tauri/src/services/analytics_params.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `analytics.rs` | `analytics_params.rs` | `usage_stack_includes_mapped_type` helper |
+
+Behavior expected to stay the same:
+
+- `ALL` still includes `LEARN`, `REST`, and `IGNORE` mapped rows.
+- `LEARN` still includes only `LEARN` mapped rows.
+- `REST` still includes only `REST` mapped rows.
+- Usage-stack invalid filter validation still happens before the query loop.
+- SQL query body, row parsing, interval clipping, day accumulation, segment names, and result ordering are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- No command signatures changed.
+- No command invocation path was intentionally changed.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo test analytics_params` passed in `src-tauri` with 6 focused tests.
+- `cargo check` passed in `src-tauri`.
+- `cargo test` passed in `src-tauri` with 25 tests.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this analytics usage-stack include helper extraction batch.
+
+Risks:
+
+- Usage-stack UI and live analytics output were not manually smoke-tested.
+- Validation covered include-filter boundaries and the existing backend test suite, but not live rendering against a real user database.
+
+Rollback:
+
+- Revert this batch to move the usage-stack include `match` expression back into `analytics.rs`.
+
+Follow-up:
+
+- Commit R-272.
+- Continue backend refactors only where helper boundaries are small and testable.

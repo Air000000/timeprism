@@ -6,7 +6,8 @@ use rusqlite::{params, Connection};
 use super::analytics_params::{
     heatmap_goal_seconds, is_usage_stack_root_filter, learn_heatmap_goal_seconds,
     learn_heatmap_level, learn_heatmap_span_days, normalize_usage_root_filter, recent_log_limit,
-    top_apps_all_time_limit, top_apps_today_limit, usage_stack_span_days,
+    top_apps_all_time_limit, top_apps_today_limit, usage_stack_includes_mapped_type,
+    usage_stack_span_days,
 };
 use super::time::{
     business_day_key_from_start, business_day_start_for_timestamp, business_day_window_from_local,
@@ -562,12 +563,7 @@ pub(crate) fn usage_stack(
             continue;
         }
 
-        let include = match filter.as_str() {
-            "LEARN" => mapped_type == "LEARN",
-            "REST" => mapped_type == "REST",
-            _ => true,
-        };
-        if !include {
+        if !usage_stack_includes_mapped_type(&filter, &mapped_type) {
             continue;
         }
 

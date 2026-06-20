@@ -47,6 +47,14 @@ pub(crate) fn is_usage_stack_root_filter(filter: &str) -> bool {
     matches!(filter, "ALL" | "LEARN" | "REST")
 }
 
+pub(crate) fn usage_stack_includes_mapped_type(filter: &str, mapped_type: &str) -> bool {
+    match filter {
+        "LEARN" => mapped_type == "LEARN",
+        "REST" => mapped_type == "REST",
+        _ => true,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -113,5 +121,20 @@ mod tests {
         assert!(is_usage_stack_root_filter("REST"));
         assert!(!is_usage_stack_root_filter("IGNORE"));
         assert!(!is_usage_stack_root_filter(""));
+    }
+
+    #[test]
+    fn usage_stack_include_filter_matches_existing_mapping_rules() {
+        assert!(usage_stack_includes_mapped_type("ALL", "LEARN"));
+        assert!(usage_stack_includes_mapped_type("ALL", "REST"));
+        assert!(usage_stack_includes_mapped_type("ALL", "IGNORE"));
+
+        assert!(usage_stack_includes_mapped_type("LEARN", "LEARN"));
+        assert!(!usage_stack_includes_mapped_type("LEARN", "REST"));
+        assert!(!usage_stack_includes_mapped_type("LEARN", "IGNORE"));
+
+        assert!(usage_stack_includes_mapped_type("REST", "REST"));
+        assert!(!usage_stack_includes_mapped_type("REST", "LEARN"));
+        assert!(!usage_stack_includes_mapped_type("REST", "IGNORE"));
     }
 }
