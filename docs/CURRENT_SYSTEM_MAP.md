@@ -111,7 +111,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/reminderSort.ts`: shared reminder ordering comparator and sorted reminder list helper.
 - `src/lib/reminderUpsert.ts`: reminder form input normalization and save-payload construction for one-time, daily, and weekly reminders.
 - `src/lib/reminderWeekdays.ts`: shared weekday options, default weekly reminder days, weekday labels, weekly-day normalization, and weekly-day toggle helpers.
-- `src/lib/settingsPrivacy.ts`: Settings privacy defaults and whitelist process-name normalization helpers.
+- `src/lib/settingsPrivacy.ts`: Settings privacy defaults, privacy-save payload, whitelist payload, and whitelist process-name normalization helpers.
 - `src/lib/time.ts`: shared frontend time/date formatting and parsing helpers.
 - `src/styles/app.css`: global main-window CSS previously embedded in `src/App.vue`.
 - `src/pet.ts`: pet UI orchestration, prompt action side effects, context menu orchestration, and drag/dock behavior.

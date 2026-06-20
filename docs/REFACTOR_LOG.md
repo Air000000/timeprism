@@ -13153,3 +13153,89 @@ Follow-up:
 
 - Commit R-259.
 - Continue with small helper extractions while preserving optimistic update and rollback behavior.
+
+## 2026-06-20: R-260 Settings Privacy Payload Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- settings privacy
+- helper extraction
+
+Intent:
+
+- Move privacy-save payload construction and whitelist item payload construction into `src/lib/settingsPrivacy.ts`.
+- Keep Tauri command calls, refresh cache state, feedback state, and error handling inside `useSettingsPrivacy.ts`.
+- Reduce repeated object literal construction before continuing larger settings refactors.
+
+Files changed:
+
+- `src/composables/useSettingsPrivacy.ts`
+- `src/lib/settingsPrivacy.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useSettingsPrivacy.ts` | `settingsPrivacy.ts` | `buildPrivacySettingsUpdateInput` helper |
+| `useSettingsPrivacy.ts` | `settingsPrivacy.ts` | `buildWhitelistItemInput` helper |
+
+Behavior expected to stay the same:
+
+- Privacy settings save still persists `curtain_enabled`, `browser_title_mode`, and `whitelist_only_enabled`.
+- Whitelist add still normalizes the input process name and sends it with `enabled: true`.
+- Whitelist remove still sends the selected process name with `enabled: false`.
+- Auto-start save, feedback messages, `refreshPrivacy`, `refreshData`, and error handling remain in `useSettingsPrivacy.ts`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- No command names or invocation order were changed.
+- Existing calls to `setAutoStartEnabled`, `updatePrivacySettings`, and `setWhitelistItem` remain on the same user actions.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- No intended change to privacy settings semantics or whitelist semantics.
+- Payload construction is centralized only to make future review easier.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this settings privacy payload helper extraction batch.
+
+Risks:
+
+- Settings save, auto-start save, whitelist add, and whitelist remove were not manually smoke-tested in the UI.
+- Validation covered compile/build checks and code-path equivalence only.
+
+Rollback:
+
+- Revert this batch to move privacy-save and whitelist payload object construction back into `useSettingsPrivacy.ts`.
+
+Follow-up:
+
+- Commit R-260.
+- Run a backend checkpoint after commit before continuing the next helper batch.

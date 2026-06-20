@@ -9,6 +9,8 @@ import {
   updatePrivacySettings,
 } from "../api";
 import {
+  buildPrivacySettingsUpdateInput,
+  buildWhitelistItemInput,
   defaultPrivacySettings,
   normalizeWhitelistProcessName,
 } from "../lib/settingsPrivacy";
@@ -84,11 +86,7 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
   async function handleSavePrivacySettings() {
     try {
       await setAutoStartEnabled(autoStartEnabled.value);
-      await updatePrivacySettings({
-        curtain_enabled: privacy.value.curtain_enabled,
-        browser_title_mode: privacy.value.browser_title_mode,
-        whitelist_only_enabled: privacy.value.whitelist_only_enabled,
-      });
+      await updatePrivacySettings(buildPrivacySettingsUpdateInput(privacy.value));
       privacyFeedbackType.value = "ok";
       privacyFeedback.value = tx(
         `隐私设置已保存（浏览器模式：${browserModeText(privacy.value.browser_title_mode)}）。`,
@@ -110,10 +108,7 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
     }
 
     try {
-      await setWhitelistItem({
-        process_name: processName,
-        enabled: true,
-      });
+      await setWhitelistItem(buildWhitelistItemInput(processName, true));
       whitelistInput.value = "";
       privacyFeedbackType.value = "ok";
       privacyFeedback.value = tx(`已加入白名单：${processName}`, `Added to whitelist: ${processName}`);
@@ -127,10 +122,7 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
 
   async function handleRemoveWhitelist(processName: string) {
     try {
-      await setWhitelistItem({
-        process_name: processName,
-        enabled: false,
-      });
+      await setWhitelistItem(buildWhitelistItemInput(processName, false));
       privacyFeedbackType.value = "warn";
       privacyFeedback.value = tx(`已移除白名单：${processName}`, `Removed from whitelist: ${processName}`);
       await refreshPrivacy();
