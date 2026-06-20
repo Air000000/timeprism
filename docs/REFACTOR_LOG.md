@@ -13949,3 +13949,101 @@ Follow-up:
 
 - Commit R-269.
 - Continue with small behavior-preserving helper extractions.
+
+## 2026-06-20: R-270 Analytics Parameter Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend
+- analytics services
+- helper extraction
+- characterization tests
+
+Intent:
+
+- Move analytics parameter defaults, clamps, root-filter normalization, and usage-stack filter validation into `src-tauri/src/services/analytics_params.rs`.
+- Keep SQL query bodies, row parsing, aggregation, heatmap sealing, and command-facing service functions in `analytics.rs`.
+- Add focused characterization tests for the extracted parameter behavior before continuing larger analytics refactors.
+
+Files changed:
+
+- `src-tauri/src/services/analytics.rs`
+- `src-tauri/src/services/analytics_params.rs`
+- `src-tauri/src/services/mod.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `analytics.rs` | `analytics_params.rs` | recent-log limit default/clamp |
+| `analytics.rs` | `analytics_params.rs` | top-app today/all-time limit default/clamp |
+| `analytics.rs` | `analytics_params.rs` | heatmap span-days and goal-seconds default/clamp |
+| `analytics.rs` | `analytics_params.rs` | saved heatmap goal-seconds clamp |
+| `analytics.rs` | `analytics_params.rs` | usage-stack span-days default/clamp |
+| `analytics.rs` | `analytics_params.rs` | root-filter trim/uppercase normalization and usage-stack validation |
+
+Behavior expected to stay the same:
+
+- Recent logs still default to 12 and clamp to `1..=100`.
+- Top apps today still default to 5 and clamp to `1..=20`.
+- All-time top apps still default to 10 and clamp to `1..=30`.
+- Heatmap span days still default to 35 and clamp to `7..=2000`.
+- Heatmap goal seconds still default to 7200 and clamp to `0..=86400`.
+- Stored heatmap goal seconds still clamp to `0..=86400`.
+- Usage stack span days still default to 14 and clamp to `3..=366`.
+- Root filters still trim whitespace and uppercase before use.
+- Usage stack still rejects filters outside `ALL`, `LEARN`, and `REST`.
+- All-time top-app filtering still treats unknown filters through the existing default branch.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- No command signatures changed.
+- No SQL query body, bind order, row mapping, or command invocation path was intentionally changed.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo test analytics_params` passed in `src-tauri` with 4 focused tests.
+- `cargo check` passed in `src-tauri`.
+- `cargo test` passed in `src-tauri` with 23 tests.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this analytics parameter helper extraction batch.
+
+Risks:
+
+- Analytics screens and Tauri commands were not manually smoke-tested.
+- Validation covered compile checks, focused parameter tests, and the existing backend test suite, but not live database analytics output in the UI.
+
+Rollback:
+
+- Revert this batch to move analytics parameter normalization back into `analytics.rs` and remove `analytics_params.rs`.
+
+Follow-up:
+
+- Commit R-270.
+- Continue backend refactors only where helper boundaries are small and testable.

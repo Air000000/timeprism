@@ -3,13 +3,18 @@ use std::collections::{BTreeMap, HashMap};
 use chrono::Local;
 use rusqlite::{params, Connection};
 
+use super::analytics_params::{
+    heatmap_goal_seconds, is_usage_stack_root_filter, learn_heatmap_goal_seconds,
+    learn_heatmap_span_days, normalize_usage_root_filter, recent_log_limit,
+    top_apps_all_time_limit, top_apps_today_limit, usage_stack_span_days,
+};
+use super::time::{
+    business_day_key_from_start, business_day_start_for_timestamp, business_day_window_from_local,
+    merge_intervals_total, overlap_seconds,
+};
 use crate::db::migrations::ensure_heatmap_snapshot_table;
 use crate::domain::analytics::{
     LearnHeatmapCell, RecentLogEntry, TodaySummary, TopApp, UsageStackDay, UsageStackSegment,
-};
-use super::time::{
-    business_day_key_from_start, business_day_start_for_timestamp,
-    business_day_window_from_local, merge_intervals_total, overlap_seconds,
 };
 
 const HEATMAP_LOCK_GOAL_SECONDS: i64 = 7200;
@@ -25,7 +30,11 @@ fn parse_i64_config(conn: &Connection, key: &str, default_value: i64) -> i64 {
     .unwrap_or(default_value)
 }
 
-fn compute_learn_seconds_for_window(conn: &Connection, start_ts: i64, end_ts: i64) -> Result<i64, String> {
+fn compute_learn_seconds_for_window(
+    conn: &Connection,
+    start_ts: i64,
+    end_ts: i64,
+) -> Result<i64, String> {
     let mut log_stmt = conn
         .prepare(
             "SELECT l.start_timestamp, l.duration_ms
@@ -135,7 +144,7 @@ pub(crate) fn list_recent_log_entries(
     conn: &Connection,
     limit: Option<i64>,
 ) -> Result<Vec<RecentLogEntry>, String> {
-    let cap = limit.unwrap_or(12).clamp(1, 100);
+    let cap = recent_log_limit(limit);
     let (start_ts, end_ts) = business_day_window_from_local(Local::now())?;
 
     let mut stmt = conn
@@ -221,7 +230,7 @@ pub(crate) fn list_top_apps_today_entries(
 ) -> Result<Vec<TopApp>, String> {
     let (start_ts, end_ts) = business_day_window_from_local(Local::now())?;
 
-    let cap = limit.unwrap_or(5).clamp(1, 20);
+    let cap = top_apps_today_limit(limit);
 
     let mut stmt = conn
         .prepare(
@@ -264,12 +273,9 @@ pub(crate) fn list_top_apps_all_time_entries(
     root_filter: Option<String>,
     include_ignore: Option<bool>,
 ) -> Result<Vec<TopApp>, String> {
-    let cap = limit.unwrap_or(10).clamp(1, 30);
+    let cap = top_apps_all_time_limit(limit);
     let keep_ignore = include_ignore.unwrap_or(true);
-    let filter = root_filter
-        .unwrap_or_else(|| "ALL".to_string())
-        .trim()
-        .to_uppercase();
+    let filter = normalize_usage_root_filter(root_filter);
 
     let (sql, bind_filter): (&str, Option<String>) = match filter.as_str() {
         "LEARN" => (
@@ -367,8 +373,8 @@ pub(crate) fn learn_heatmap(
     goal_seconds: Option<i64>,
 ) -> Result<Vec<LearnHeatmapCell>, String> {
     ensure_heatmap_snapshot_table(conn)?;
-    let span_days = days.unwrap_or(35).clamp(7, 2000);
-    let goal = goal_seconds.unwrap_or(7200).clamp(0, 86400);
+    let span_days = learn_heatmap_span_days(days);
+    let goal = learn_heatmap_goal_seconds(goal_seconds);
     let lock_goal = parse_i64_config(conn, "heatmap_lock_goal_seconds", HEATMAP_LOCK_GOAL_SECONDS)
         .clamp(0, 86_400);
 
@@ -406,7 +412,8 @@ pub(crate) fn learn_heatmap(
 
     let mut snapshots: HashMap<String, (i64, String)> = HashMap::new();
     for row in snapshot_rows {
-        let (day_key, seconds, level) = row.map_err(|e| format!("failed to parse heatmap snapshot row: {e}"))?;
+        let (day_key, seconds, level) =
+            row.map_err(|e| format!("failed to parse heatmap snapshot row: {e}"))?;
         snapshots.insert(day_key, (seconds, level));
     }
 
@@ -472,8 +479,8 @@ pub(crate) fn learn_heatmap(
                 (0, "GRAY".to_string())
             }
         } else {
-            let seconds = compute_learn_seconds_for_window(conn, day_start_ts, day_start_ts + 86_400)?
-                .max(0);
+            let seconds =
+                compute_learn_seconds_for_window(conn, day_start_ts, day_start_ts + 86_400)?.max(0);
             let lv = if seconds <= 0 {
                 "GRAY"
             } else if seconds < goal {
@@ -496,14 +503,14 @@ pub(crate) fn learn_heatmap(
 }
 
 pub(crate) fn heatmap_goal_seconds_setting(conn: &Connection) -> i64 {
-    parse_i64_config(conn, "heatmap_goal_seconds", 7_200).clamp(0, 86_400)
+    heatmap_goal_seconds(parse_i64_config(conn, "heatmap_goal_seconds", 7_200))
 }
 
 pub(crate) fn set_heatmap_goal_seconds_setting(
     conn: &Connection,
     goal_seconds: i64,
 ) -> Result<i64, String> {
-    let normalized = goal_seconds.clamp(0, 86_400);
+    let normalized = heatmap_goal_seconds(goal_seconds);
     conn.execute(
         "INSERT INTO app_config (key, value) VALUES ('heatmap_goal_seconds', ?1)
          ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -518,12 +525,9 @@ pub(crate) fn usage_stack(
     days: Option<i64>,
     root_filter: Option<String>,
 ) -> Result<Vec<UsageStackDay>, String> {
-    let span_days = days.unwrap_or(14).clamp(3, 366);
-    let filter = root_filter
-        .unwrap_or_else(|| "ALL".to_string())
-        .trim()
-        .to_uppercase();
-    if !matches!(filter.as_str(), "ALL" | "LEARN" | "REST") {
+    let span_days = usage_stack_span_days(days);
+    let filter = normalize_usage_root_filter(root_filter);
+    if !is_usage_stack_root_filter(&filter) {
         return Err("root_filter must be ALL, LEARN, or REST".to_string());
     }
 
