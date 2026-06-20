@@ -11,6 +11,7 @@ import {
   homeCurrentStatusLabel,
   homeCurrentStatusTone,
   homePendingSummaryText,
+  homeRecentSummaryText,
   type HomeOverviewStatusCounts,
   type HomeStatusTone,
 } from "../lib/homeOverviewStatus";
@@ -55,16 +56,8 @@ export function useHomeOverview({
   const goalProgressFillNum = computed(() => goalProgress.value.fillPercent);
   const goalOverflowTier = computed(() => goalProgress.value.overflowTier);
 
-  const recentSummary = computed(() => {
-    const latest = recentLogs.value[0];
-    if (!latest) {
-      return tx("暂无最近记录", "No recent records");
-    }
-    return `${cleanProcessName(latest.process_name)} · ${formatClock(latest.start_timestamp)} · ${Math.max(
-      0,
-      Math.floor(latest.duration_ms / 1000),
-    )}s`;
-  });
+  const recentSummary = computed(() =>
+    homeRecentSummaryText(recentLogs.value[0], cleanProcessName, formatClock, tx));
 
   const dueReminderCount = computed(() => {
     const now = Math.floor(Date.now() / 1000);

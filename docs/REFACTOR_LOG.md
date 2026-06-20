@@ -14779,3 +14779,86 @@ Follow-up:
 
 - Commit R-279.
 - Continue with small behavior-preserving helper extractions.
+
+## 2026-06-20: R-280 Home Overview Recent Summary Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home overview
+- helper extraction
+
+Intent:
+
+- Move Home recent activity summary text construction into `homeOverviewStatus.ts`.
+- Keep `useHomeOverview.ts` responsible for reactive data binding, due reminder count, goal progress, and status count aggregation.
+- Group Home overview display text helpers together before any larger overview refactor.
+
+Files changed:
+
+- `src/composables/useHomeOverview.ts`
+- `src/lib/homeOverviewStatus.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHomeOverview.ts` | `homeOverviewStatus.ts` | `homeRecentSummaryText` helper |
+
+Behavior expected to stay the same:
+
+- Empty recent logs still display `暂无最近记录` / `No recent records`.
+- Non-empty recent logs still display cleaned process name, formatted start clock, and floored non-negative duration seconds.
+- The separator between process, clock, and duration remains ` · `.
+- Goal progress, due reminder count, current status label/tone, and pending summary are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- No intended change to recent-log privacy display behavior; the helper uses the same `cleanProcessName` input.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home overview recent summary helper extraction batch.
+
+Risks:
+
+- Home overview recent activity rendering was not manually smoke-tested.
+- Validation covered compile/build checks and source-level text-format equivalence.
+
+Rollback:
+
+- Revert this batch to move recent activity summary construction back into `useHomeOverview.ts`.
+
+Follow-up:
+
+- Commit R-280.
+- Run a backend checkpoint after commit before continuing the next helper batch.

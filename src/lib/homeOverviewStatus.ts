@@ -1,3 +1,5 @@
+import type { RecentLog } from "../api";
+
 type TranslateFn = (zh: string, en: string) => string;
 
 export type HomeStatusTone = "ok" | "warn" | "alert" | "idle";
@@ -59,4 +61,19 @@ export function homePendingSummaryText(
     return tx("当前没有新的待处理项，首页会保持安静。", "No pending items right now, so home stays quiet.");
   }
   return parts.join(" · ");
+}
+
+export function homeRecentSummaryText(
+  latest: RecentLog | undefined,
+  cleanProcessName: (name: string) => string,
+  formatClock: (unixSeconds: number) => string,
+  tx: TranslateFn,
+): string {
+  if (!latest) {
+    return tx("暂无最近记录", "No recent records");
+  }
+  return `${cleanProcessName(latest.process_name)} · ${formatClock(latest.start_timestamp)} · ${Math.max(
+    0,
+    Math.floor(latest.duration_ms / 1000),
+  )}s`;
 }
