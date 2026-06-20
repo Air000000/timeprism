@@ -22,6 +22,16 @@ pub(crate) fn heatmap_goal_seconds(goal_seconds: i64) -> i64 {
     goal_seconds.clamp(0, 86_400)
 }
 
+pub(crate) fn learn_heatmap_level(learn_seconds: i64, goal_seconds: i64) -> &'static str {
+    if learn_seconds <= 0 {
+        "GRAY"
+    } else if learn_seconds < goal_seconds {
+        "YELLOW"
+    } else {
+        "GREEN"
+    }
+}
+
 pub(crate) fn usage_stack_span_days(days: Option<i64>) -> i64 {
     days.unwrap_or(14).clamp(3, 366)
 }
@@ -72,6 +82,15 @@ mod tests {
         assert_eq!(usage_stack_span_days(None), 14);
         assert_eq!(usage_stack_span_days(Some(1)), 3);
         assert_eq!(usage_stack_span_days(Some(400)), 366);
+    }
+
+    #[test]
+    fn heatmap_level_matches_existing_thresholds() {
+        assert_eq!(learn_heatmap_level(0, 7200), "GRAY");
+        assert_eq!(learn_heatmap_level(-1, 7200), "GRAY");
+        assert_eq!(learn_heatmap_level(7199, 7200), "YELLOW");
+        assert_eq!(learn_heatmap_level(7200, 7200), "GREEN");
+        assert_eq!(learn_heatmap_level(1, 0), "GREEN");
     }
 
     #[test]

@@ -5,7 +5,7 @@ use rusqlite::{params, Connection};
 
 use super::analytics_params::{
     heatmap_goal_seconds, is_usage_stack_root_filter, learn_heatmap_goal_seconds,
-    learn_heatmap_span_days, normalize_usage_root_filter, recent_log_limit,
+    learn_heatmap_level, learn_heatmap_span_days, normalize_usage_root_filter, recent_log_limit,
     top_apps_all_time_limit, top_apps_today_limit, usage_stack_span_days,
 };
 use super::time::{
@@ -122,13 +122,7 @@ fn seal_historical_heatmap_snapshot(
 
     let day_end_ts = day_start_ts + 86_400;
     let learn_seconds = compute_learn_seconds_for_window(conn, day_start_ts, day_end_ts)?.max(0);
-    let level = if learn_seconds <= 0 {
-        "GRAY"
-    } else if learn_seconds < goal_seconds {
-        "YELLOW"
-    } else {
-        "GREEN"
-    };
+    let level = learn_heatmap_level(learn_seconds, goal_seconds);
 
     conn.execute(
         "INSERT OR IGNORE INTO daily_heatmap_snapshot (day_key, learn_seconds, goal_seconds, level, sealed_at)
@@ -481,14 +475,7 @@ pub(crate) fn learn_heatmap(
         } else {
             let seconds =
                 compute_learn_seconds_for_window(conn, day_start_ts, day_start_ts + 86_400)?.max(0);
-            let lv = if seconds <= 0 {
-                "GRAY"
-            } else if seconds < goal {
-                "YELLOW"
-            } else {
-                "GREEN"
-            }
-            .to_string();
+            let lv = learn_heatmap_level(seconds, goal).to_string();
             (seconds, lv)
         };
 

@@ -14047,3 +14047,90 @@ Follow-up:
 
 - Commit R-270.
 - Continue backend refactors only where helper boundaries are small and testable.
+
+## 2026-06-20: R-271 Analytics Heatmap Level Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend
+- analytics services
+- helper extraction
+- characterization tests
+
+Intent:
+
+- Move heatmap `GRAY` / `YELLOW` / `GREEN` threshold selection into `analytics_params.rs`.
+- Reuse the same helper for historical heatmap snapshot sealing and current-day heatmap cell rendering.
+- Add a focused characterization test for boundary behavior before any deeper heatmap refactor.
+
+Files changed:
+
+- `src-tauri/src/services/analytics.rs`
+- `src-tauri/src/services/analytics_params.rs`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `analytics.rs` | `analytics_params.rs` | `learn_heatmap_level` helper |
+
+Behavior expected to stay the same:
+
+- `learn_seconds <= 0` still maps to `GRAY`.
+- Positive learn seconds below the goal still map to `YELLOW`.
+- Learn seconds equal to or above the goal still map to `GREEN`.
+- With a zero goal, positive learn seconds still map to `GREEN`.
+- Historical snapshot sealing and current-day heatmap cells now share the same threshold helper.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- No command signatures changed.
+- No SQL query body, bind order, row mapping, snapshot insert, or command invocation path was intentionally changed.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `cargo test analytics_params` passed in `src-tauri` with 5 focused tests.
+- `cargo check` passed in `src-tauri`.
+- `cargo test` passed in `src-tauri` with 24 tests.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this analytics heatmap level helper extraction batch.
+
+Risks:
+
+- Heatmap UI and persisted snapshot behavior were not manually smoke-tested.
+- Validation covered threshold boundaries and the existing backend test suite, but not live heatmap rendering against a real user database.
+
+Rollback:
+
+- Revert this batch to move the two heatmap level conditionals back into `analytics.rs`.
+
+Follow-up:
+
+- Commit R-271.
+- Continue backend refactors only where helper boundaries are small and testable.
