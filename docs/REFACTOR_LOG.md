@@ -14389,3 +14389,76 @@ Follow-up:
 
 - Commit R-274.
 - Run a backend checkpoint after commit before continuing the next helper batch.
+
+## 2026-06-20: R-275 Cross-Stack Checkpoint After Settings Privacy Input Event Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the Settings privacy input event helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-274 moved settings checkbox/text event parsing into `settingsPrivacy.ts`.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Settings privacy input event helper changes from R-274 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace manual Settings privacy interaction smoke testing.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-275.
+- Continue with small behavior-preserving helper extractions.
