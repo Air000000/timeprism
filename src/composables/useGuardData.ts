@@ -20,6 +20,8 @@ import {
 } from "../lib/guardDiagnostics";
 import {
   guardIdleDecisionFeedback,
+  selectGuardIdlePrompt,
+  shouldRememberGuardIdleDecision,
   type GuardIdleDecision as IdleDecision,
 } from "../lib/guardIdle";
 import {
@@ -105,16 +107,14 @@ export function useGuardData({
     decision: IdleDecision,
     promptId?: number,
   ) {
-    const prompt = promptId
-      ? idlePrompts.value.find((item) => item.id === promptId) ?? null
-      : currentIdlePrompt.value;
+    const prompt = selectGuardIdlePrompt(idlePrompts.value, currentIdlePrompt.value, promptId);
     if (!prompt || idleActionLoading.value) {
       return;
     }
 
     idleActionLoading.value = true;
     try {
-      const rememberChoice = idleRememberChoice.value && decision !== "SKIP";
+      const rememberChoice = shouldRememberGuardIdleDecision(idleRememberChoice.value, decision);
       await resolveIdlePrompt({
         prompt_id: prompt.id,
         decision,

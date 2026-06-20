@@ -13312,3 +13312,89 @@ Follow-up:
 
 - Commit R-261.
 - Continue with small behavior-preserving helper extractions.
+
+## 2026-06-20: R-262 Guard Idle Prompt Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Guard view
+- helper extraction
+
+Intent:
+
+- Move idle prompt selection and idle remember-decision rules into `src/lib/guardIdle.ts`.
+- Keep `resolveIdlePrompt`, loading state, feedback state, and refresh behavior inside `useGuardData.ts`.
+- Reduce inline decision logic in the largest remaining Guard composable without changing the idle resolution flow.
+
+Files changed:
+
+- `src/composables/useGuardData.ts`
+- `src/lib/guardIdle.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useGuardData.ts` | `guardIdle.ts` | `selectGuardIdlePrompt` helper |
+| `useGuardData.ts` | `guardIdle.ts` | `shouldRememberGuardIdleDecision` helper |
+
+Behavior expected to stay the same:
+
+- Resolving an idle prompt with a provided truthy `promptId` still finds that prompt by id.
+- Resolving without a truthy `promptId` still falls back to `currentIdlePrompt`.
+- Missing prompt or active idle action still returns early.
+- Remember choice still applies only when the checkbox is selected and the decision is not `SKIP`.
+- `resolveIdlePrompt`, feedback messages, clearing `idleRememberChoice`, `refreshData`, and error handling are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- No command names or invocation order were changed.
+- Existing calls to `resolveIdlePrompt` remain on the same user action.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Guard idle helper extraction batch.
+
+Risks:
+
+- Idle prompt resolution was not manually smoke-tested in the UI.
+- Validation covered compile/build checks and exact code-path equivalence for selection and remember-choice rules.
+
+Rollback:
+
+- Revert this batch to move idle prompt selection and remember-choice calculation back into `useGuardData.ts`.
+
+Follow-up:
+
+- Commit R-262.
+- Run a backend checkpoint after commit before continuing the next helper batch.

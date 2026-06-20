@@ -1,3 +1,5 @@
+import type { IdlePrompt } from "../api";
+
 type TranslateFn = (zh: string, en: string) => string;
 type GuardFeedbackTone = "info" | "ok" | "warn" | "error";
 
@@ -7,6 +9,23 @@ export type GuardIdleDecisionFeedback = {
   type: GuardFeedbackTone;
   text: string;
 };
+
+export function selectGuardIdlePrompt(
+  prompts: IdlePrompt[],
+  currentPrompt: IdlePrompt | null,
+  promptId?: number,
+): IdlePrompt | null {
+  return promptId
+    ? prompts.find((item) => item.id === promptId) ?? null
+    : currentPrompt;
+}
+
+export function shouldRememberGuardIdleDecision(
+  rememberChoice: boolean,
+  decision: GuardIdleDecision,
+): boolean {
+  return rememberChoice && decision !== "SKIP";
+}
 
 export function guardIdleDecisionFeedback(
   decision: GuardIdleDecision,
