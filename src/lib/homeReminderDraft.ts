@@ -1,4 +1,5 @@
 import type { Reminder } from "../api";
+import type { ReminderUpsertInput } from "./reminderUpsert";
 import { defaultReminderWeeklyDays } from "./reminderWeekdays";
 
 type ReminderDraftFormatters = {
@@ -10,6 +11,16 @@ export type HomeReminderEditDraft = {
   content: string;
   dailyTime?: string;
   enabled: boolean;
+  remindAt: string;
+  repeatRule: Reminder["repeat_rule"];
+  weeklyDays: number[];
+};
+
+export type HomeReminderUpsertDraft = {
+  content: string;
+  dailyTime: string;
+  enabled: boolean;
+  id: number | null;
   remindAt: string;
   repeatRule: Reminder["repeat_rule"];
   weeklyDays: number[];
@@ -40,5 +51,19 @@ export function buildHomeReminderEditDraft(
       : "",
     repeatRule: item.repeat_rule,
     weeklyDays: defaultReminderWeeklyDays(),
+  };
+}
+
+export function buildHomeReminderUpsertInput(
+  draft: HomeReminderUpsertDraft,
+): ReminderUpsertInput {
+  return {
+    id: draft.id ?? undefined,
+    content: draft.content,
+    repeat_rule: draft.repeatRule,
+    remind_at_text: draft.remindAt,
+    daily_time_text: draft.dailyTime,
+    weekly_days: draft.weeklyDays,
+    reminder_enabled: draft.enabled,
   };
 }

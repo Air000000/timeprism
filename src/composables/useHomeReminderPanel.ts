@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import type { Reminder } from "../api";
 import type { FeedbackTone, HomeViewContext } from "../components/viewContexts";
-import { buildHomeReminderEditDraft } from "../lib/homeReminderDraft";
+import { buildHomeReminderEditDraft, buildHomeReminderUpsertInput } from "../lib/homeReminderDraft";
 import { buildHomeReminderDropOrder } from "../lib/homeReminderReorder";
 import {
   defaultReminderWeeklyDays,
@@ -80,15 +80,15 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
     }
 
     try {
-      await ctx.handleUpsertReminder({
-        id: reminderEditId.value ?? undefined,
+      await ctx.handleUpsertReminder(buildHomeReminderUpsertInput({
+        id: reminderEditId.value,
         content,
-        repeat_rule: reminderDraftRepeat.value,
-        remind_at_text: reminderDraftAt.value,
-        daily_time_text: reminderDraftDailyTime.value,
-        weekly_days: reminderDraftWeeklyDays.value,
-        reminder_enabled: reminderEnabled.value,
-      });
+        repeatRule: reminderDraftRepeat.value,
+        remindAt: reminderDraftAt.value,
+        dailyTime: reminderDraftDailyTime.value,
+        weeklyDays: reminderDraftWeeklyDays.value,
+        enabled: reminderEnabled.value,
+      }));
       reminderFeedbackType.value = "ok";
       reminderFeedback.value = reminderEditId.value === null
         ? ctx.tx("提醒已创建", "Reminder created")

@@ -13631,3 +13631,89 @@ Follow-up:
 
 - Commit R-265.
 - Continue with small behavior-preserving helper extractions.
+
+## 2026-06-20: R-266 Home Reminder Upsert Input Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home reminder panel
+- helper extraction
+
+Intent:
+
+- Move Home reminder modal save-input construction into `src/lib/homeReminderDraft.ts`.
+- Keep modal state, empty-content validation, feedback state, and API-facing action calls in `useHomeReminderPanel.ts`.
+- Centralize the mapping from modal draft field names to `ReminderUpsertInput` field names.
+
+Files changed:
+
+- `src/composables/useHomeReminderPanel.ts`
+- `src/lib/homeReminderDraft.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHomeReminderPanel.ts` | `homeReminderDraft.ts` | `HomeReminderUpsertDraft` type |
+| `useHomeReminderPanel.ts` | `homeReminderDraft.ts` | `buildHomeReminderUpsertInput` helper |
+
+Behavior expected to stay the same:
+
+- Reminder content is still trimmed in `saveReminderFromModal` before validation and save.
+- Empty reminder content still sets warn feedback and returns before calling `handleUpsertReminder`.
+- New reminders still pass `id: undefined`; edited reminders still pass their numeric id.
+- Repeat rule, one-time remind text, daily time text, weekly days, and enabled state still map to the same `ReminderUpsertInput` fields.
+- Success feedback, reset behavior, and error feedback remain in `useHomeReminderPanel.ts`.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- No command names or invocation order were changed.
+- Existing reminder upsert action flow remains on the same modal save user action.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home reminder upsert input helper extraction batch.
+
+Risks:
+
+- Reminder create/edit from the modal was not manually smoke-tested.
+- Validation covered compile/build checks and source-level field mapping equivalence.
+
+Rollback:
+
+- Revert this batch to move reminder upsert object construction back into `useHomeReminderPanel.ts`.
+
+Follow-up:
+
+- Commit R-266.
+- Run a backend checkpoint after commit before continuing the next helper batch.
