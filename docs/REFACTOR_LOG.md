@@ -13471,3 +13471,90 @@ Follow-up:
 
 - Commit R-263.
 - Continue with small behavior-preserving helper extractions.
+
+## 2026-06-20: R-264 Guard Input Event Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Guard view
+- helper extraction
+
+Intent:
+
+- Move Guard DOM input event value parsing into `src/lib/guardInputEvents.ts`.
+- Keep `useGuardData.ts` responsible for writing parsed values into refs or mutable rule rows.
+- Reduce repeated `event.target` casts while preserving existing event-handler behavior.
+
+Files changed:
+
+- `src/composables/useGuardData.ts`
+- `src/lib/guardInputEvents.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useGuardData.ts` | `guardInputEvents.ts` | checkbox `checked` extraction |
+| `useGuardData.ts` | `guardInputEvents.ts` | text input `value` extraction |
+| `useGuardData.ts` | `guardInputEvents.ts` | rule sort select parsing with `isGuardRuleSortKey` |
+| `useGuardData.ts` | `guardInputEvents.ts` | mapped-type select parsing with `isGuardRuleMappedType` |
+
+Behavior expected to stay the same:
+
+- Auto-capture toggle still writes the checkbox `checked` value to `autoCaptureEnabled`.
+- Idle remember toggle still writes the checkbox `checked` value to `idleRememberChoice`.
+- Rule search input still writes the raw text input value to `ruleSearch`.
+- Rule sort changes still update `ruleSort` only when the selected value is a valid Guard rule sort key.
+- Rule mapped-type changes still mutate `rule.mapped_type` only when the selected value is a valid mapped type.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Guard input event helper extraction batch.
+
+Risks:
+
+- Guard UI input interactions were not manually smoke-tested.
+- Validation covered compile/build checks and source-level equivalence of value parsing and invalid-value guards.
+
+Rollback:
+
+- Revert this batch to move DOM event parsing back into `useGuardData.ts`.
+
+Follow-up:
+
+- Commit R-264.
+- Run a backend checkpoint after commit before continuing the next helper batch.

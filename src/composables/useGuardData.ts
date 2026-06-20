@@ -25,13 +25,17 @@ import {
   type GuardIdleDecision as IdleDecision,
 } from "../lib/guardIdle";
 import {
+  guardCheckedFromEvent,
+  guardRuleMappedTypeFromEvent,
+  guardRuleSortKeyFromEvent,
+  guardTextValueFromEvent,
+} from "../lib/guardInputEvents";
+import {
   buildExistingGuardRuleSaveInput,
   buildNormalGuardRuleSaveInput,
 } from "../lib/guardRuleSave";
 import {
   filterSortedGuardRules,
-  isGuardRuleMappedType,
-  isGuardRuleSortKey,
   type GuardRuleMappedType as RuleMappedType,
   type GuardRuleSortKey as RuleSortKey,
 } from "../lib/guardRules";
@@ -200,31 +204,28 @@ export function useGuardData({
   }
 
   function onAutoCaptureToggle(event: Event) {
-    const input = event.target as HTMLInputElement;
-    autoCaptureEnabled.value = input.checked;
+    autoCaptureEnabled.value = guardCheckedFromEvent(event);
   }
 
   function onIdleRememberChoiceChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    idleRememberChoice.value = input.checked;
+    idleRememberChoice.value = guardCheckedFromEvent(event);
   }
 
   function onRuleSearchInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    ruleSearch.value = input.value;
+    ruleSearch.value = guardTextValueFromEvent(event);
   }
 
   function onRuleSortChange(event: Event) {
-    const input = event.target as HTMLSelectElement;
-    if (isGuardRuleSortKey(input.value)) {
-      ruleSort.value = input.value;
+    const sortKey = guardRuleSortKeyFromEvent(event);
+    if (sortKey) {
+      ruleSort.value = sortKey;
     }
   }
 
   function onRuleMappedTypeChange(rule: AppRule, event: Event) {
-    const input = event.target as HTMLSelectElement;
-    if (isGuardRuleMappedType(input.value)) {
-      rule.mapped_type = input.value;
+    const mappedType = guardRuleMappedTypeFromEvent(event);
+    if (mappedType) {
+      rule.mapped_type = mappedType;
     }
   }
 

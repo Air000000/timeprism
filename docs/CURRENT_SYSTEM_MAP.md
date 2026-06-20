@@ -79,6 +79,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/locale.ts`: shared locale code, storage key, browser fallback detection, and locale-specific text selection helpers.
 - `src/lib/guardDiagnostics.ts`: Guard foreground-capture diagnostic reason text, diagnostic rule text, and save eligibility helpers.
 - `src/lib/guardIdle.ts`: Guard idle prompt selection, idle remember-decision rules, and idle-decision feedback tone/text helpers.
+- `src/lib/guardInputEvents.ts`: Guard DOM input event value parsing for checkboxes, text inputs, sort selects, and mapped-type selects.
 - `src/lib/guardRuleSave.ts`: Guard app-rule save payload construction for new/default and existing rules.
 - `src/lib/guardRules.ts`: Guard app-rule search/sort helpers plus rule sort-key and mapped-type guards.
 - `src/lib/heatmapCalendarClasses.ts`: heatmap cell class-name construction for level, green intensity, future/past, and today markers.
