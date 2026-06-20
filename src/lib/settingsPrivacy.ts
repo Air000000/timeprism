@@ -17,6 +17,14 @@ export function normalizeWhitelistProcessName(input: string): string {
   return input.trim().toLowerCase();
 }
 
+export function settingsCheckedFromEvent(event: Event): boolean {
+  return (event.target as HTMLInputElement).checked;
+}
+
+export function settingsTextValueFromEvent(event: Event): string {
+  return (event.target as HTMLInputElement).value;
+}
+
 export function buildPrivacySettingsUpdateInput(settings: PrivacySettings): PrivacySettings {
   return {
     curtain_enabled: settings.curtain_enabled,

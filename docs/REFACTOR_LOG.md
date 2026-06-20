@@ -14306,3 +14306,86 @@ Follow-up:
 
 - Commit R-273.
 - Continue backend refactors only where helper boundaries are small and testable.
+
+## 2026-06-20: R-274 Settings Privacy Input Event Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Settings privacy
+- helper extraction
+
+Intent:
+
+- Move Settings privacy checkbox/text input event value parsing into `settingsPrivacy.ts`.
+- Keep `useSettingsPrivacy.ts` responsible for writing parsed values into refs and for all save/refresh/feedback flows.
+- Reduce DOM event casting inside the settings privacy composable.
+
+Files changed:
+
+- `src/composables/useSettingsPrivacy.ts`
+- `src/lib/settingsPrivacy.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useSettingsPrivacy.ts` | `settingsPrivacy.ts` | `settingsCheckedFromEvent` helper |
+| `useSettingsPrivacy.ts` | `settingsPrivacy.ts` | `settingsTextValueFromEvent` helper |
+
+Behavior expected to stay the same:
+
+- Auto-start checkbox changes still write `event.target.checked` to `autoStartEnabled`.
+- Whitelist text input changes still write `event.target.value` to `whitelistInput`.
+- Privacy settings save, whitelist add/remove, refresh cache, feedback, and error handling are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- No intended change to privacy or whitelist behavior.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this settings privacy input event helper extraction batch.
+
+Risks:
+
+- Settings checkbox and whitelist input interactions were not manually smoke-tested in the UI.
+- Validation covered compile/build checks and source-level equivalence of event value parsing.
+
+Rollback:
+
+- Revert this batch to move settings privacy event parsing back into `useSettingsPrivacy.ts`.
+
+Follow-up:
+
+- Commit R-274.
+- Run a backend checkpoint after commit before continuing the next helper batch.

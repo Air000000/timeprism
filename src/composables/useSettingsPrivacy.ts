@@ -13,6 +13,8 @@ import {
   buildWhitelistItemInput,
   defaultPrivacySettings,
   normalizeWhitelistProcessName,
+  settingsCheckedFromEvent,
+  settingsTextValueFromEvent,
 } from "../lib/settingsPrivacy";
 
 type TranslateFn = (zh: string, en: string) => string;
@@ -134,13 +136,11 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
   }
 
   function onAutoStartChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    autoStartEnabled.value = input.checked;
+    autoStartEnabled.value = settingsCheckedFromEvent(event);
   }
 
   function onWhitelistInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    whitelistInput.value = input.value;
+    whitelistInput.value = settingsTextValueFromEvent(event);
   }
 
   return {
