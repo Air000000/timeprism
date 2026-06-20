@@ -55,6 +55,14 @@ pub(crate) fn usage_stack_includes_mapped_type(filter: &str, mapped_type: &str) 
     }
 }
 
+pub(crate) fn usage_stack_segment_name(mapped_type: &str, process_name: &str) -> String {
+    if mapped_type == "IGNORE" {
+        format!("{process_name} (IGNORE)")
+    } else {
+        process_name.to_string()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -136,5 +144,12 @@ mod tests {
         assert!(usage_stack_includes_mapped_type("REST", "REST"));
         assert!(!usage_stack_includes_mapped_type("REST", "LEARN"));
         assert!(!usage_stack_includes_mapped_type("REST", "IGNORE"));
+    }
+
+    #[test]
+    fn usage_stack_segment_names_mark_ignored_processes() {
+        assert_eq!(usage_stack_segment_name("IGNORE", "chat.exe"), "chat.exe (IGNORE)");
+        assert_eq!(usage_stack_segment_name("LEARN", "code.exe"), "code.exe");
+        assert_eq!(usage_stack_segment_name("REST", "music.exe"), "music.exe");
     }
 }
