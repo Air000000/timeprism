@@ -90,7 +90,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/homeOverviewStatus.ts`: Home current-status label, status tone, and pending-summary text helpers.
 - `src/lib/homeOverviewProgress.ts`: Home learning-goal progress ratio, percent text, fill clamp, and overflow-tier helpers.
 - `src/lib/homeReminderDraft.ts`: Home reminder edit-draft construction and modal save-input construction for one-time, daily, and weekly reminders.
-- `src/lib/homeReminderReorder.ts`: Home reminder drag/drop ordering helper that preserves undone/done grouping.
+- `src/lib/homeReminderReorder.ts`: Home reminder drag/drop data helpers and ordering helper that preserves undone/done grouping.
 - `src/lib/homeRhythmBars.ts`: Home seven-day rhythm bar construction, scale, and segment-height helpers.
 - `src/lib/homeRhythmTooltip.ts`: Home rhythm summary, compact duration, segment labels, tooltip palettes, and tone text helpers.
 - `src/lib/insightsMetrics.ts`: Insights bar-width scaling, recent-log business-day keys, and recent timeline grouping helpers.

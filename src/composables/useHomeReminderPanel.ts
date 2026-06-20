@@ -2,7 +2,12 @@ import { ref } from "vue";
 import type { Reminder } from "../api";
 import type { FeedbackTone, HomeViewContext } from "../components/viewContexts";
 import { buildHomeReminderEditDraft, buildHomeReminderUpsertInput } from "../lib/homeReminderDraft";
-import { buildHomeReminderDropOrder } from "../lib/homeReminderReorder";
+import {
+  buildHomeReminderDropOrder,
+  readHomeReminderDraggedId,
+  setHomeReminderDragData,
+  shouldIgnoreHomeReminderDrop,
+} from "../lib/homeReminderReorder";
 import {
   defaultReminderWeeklyDays,
   reminderWeekdayOptions,
@@ -144,11 +149,7 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
   function handleReminderDragStart(item: Reminder, event?: DragEvent) {
     draggingReminderId.value = item.id;
     dropTargetReminderId.value = item.id;
-    if (event?.dataTransfer) {
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.dropEffect = "move";
-      event.dataTransfer.setData("text/plain", String(item.id));
-    }
+    setHomeReminderDragData(event, item.id);
   }
 
   function handleReminderDragEnter(item: Reminder) {
@@ -165,11 +166,10 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
 
   async function handleReminderDrop(targetItem: Reminder, event?: DragEvent) {
     const ctx = getCtx();
-    const draggedId = draggingReminderId.value
-      ?? Number.parseInt(event?.dataTransfer?.getData("text/plain") ?? "", 10);
+    const draggedId = readHomeReminderDraggedId(draggingReminderId.value, event);
     draggingReminderId.value = null;
     dropTargetReminderId.value = null;
-    if (!Number.isFinite(draggedId) || draggedId === targetItem.id) {
+    if (shouldIgnoreHomeReminderDrop(draggedId, targetItem.id)) {
       return;
     }
 

@@ -13790,3 +13790,89 @@ Follow-up:
 
 - Commit R-267.
 - Continue with small behavior-preserving helper extractions.
+
+## 2026-06-20: R-268 Home Reminder Drag Data Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home reminder panel
+- helper extraction
+
+Intent:
+
+- Move Home reminder drag dataTransfer setup, dragged-id reading, and invalid-drop checks into `src/lib/homeReminderReorder.ts`.
+- Keep drag state refs, drop state cleanup, feedback state, and reorder action calls in `useHomeReminderPanel.ts`.
+- Keep existing undone/done grouping reorder logic unchanged while centralizing drag/drop data rules.
+
+Files changed:
+
+- `src/composables/useHomeReminderPanel.ts`
+- `src/lib/homeReminderReorder.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHomeReminderPanel.ts` | `homeReminderReorder.ts` | `setHomeReminderDragData` helper |
+| `useHomeReminderPanel.ts` | `homeReminderReorder.ts` | `readHomeReminderDraggedId` helper |
+| `useHomeReminderPanel.ts` and `buildHomeReminderDropOrder` | `homeReminderReorder.ts` | `shouldIgnoreHomeReminderDrop` helper |
+
+Behavior expected to stay the same:
+
+- Drag start still sets `draggingReminderId` and `dropTargetReminderId` before writing dataTransfer metadata.
+- dataTransfer still uses `effectAllowed: "move"`, `dropEffect: "move"`, and `text/plain` with the reminder id string.
+- Drop still prefers the active `draggingReminderId` and falls back to parsing `text/plain` from dataTransfer.
+- Drop still clears drag refs before returning on invalid or same-item drops.
+- Reorder calculation still rejects invalid dragged ids, same-item drops, missing dragged items, cross done/undone group moves, and no-op indexes.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home reminder drag data helper extraction batch.
+
+Risks:
+
+- Reminder drag/drop was not manually smoke-tested in the UI.
+- Validation covered compile/build checks and source-level equivalence of drag data handling and invalid-drop guards.
+
+Rollback:
+
+- Revert this batch to move drag dataTransfer handling and invalid-drop checks back into `useHomeReminderPanel.ts` and `buildHomeReminderDropOrder`.
+
+Follow-up:
+
+- Commit R-268.
+- Run a backend checkpoint after commit before continuing the next helper batch.

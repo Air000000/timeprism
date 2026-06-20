@@ -1,11 +1,35 @@
 import type { Reminder } from "../api";
 
+const HOME_REMINDER_DRAG_MIME = "text/plain";
+
+export function setHomeReminderDragData(event: DragEvent | undefined, id: number): void {
+  if (!event?.dataTransfer) {
+    return;
+  }
+
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.dropEffect = "move";
+  event.dataTransfer.setData(HOME_REMINDER_DRAG_MIME, String(id));
+}
+
+export function readHomeReminderDraggedId(
+  activeDraggedId: number | null,
+  event?: DragEvent,
+): number {
+  return activeDraggedId
+    ?? Number.parseInt(event?.dataTransfer?.getData(HOME_REMINDER_DRAG_MIME) ?? "", 10);
+}
+
+export function shouldIgnoreHomeReminderDrop(draggedId: number, targetId: number): boolean {
+  return !Number.isFinite(draggedId) || draggedId === targetId;
+}
+
 export function buildHomeReminderDropOrder(
   items: readonly Reminder[],
   draggedId: number,
   targetItem: Pick<Reminder, "id" | "done">,
 ): number[] | null {
-  if (!Number.isFinite(draggedId) || draggedId === targetItem.id) {
+  if (shouldIgnoreHomeReminderDrop(draggedId, targetItem.id)) {
     return null;
   }
 
