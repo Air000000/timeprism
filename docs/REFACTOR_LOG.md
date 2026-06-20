@@ -13239,3 +13239,76 @@ Follow-up:
 
 - Commit R-260.
 - Run a backend checkpoint after commit before continuing the next helper batch.
+
+## 2026-06-20: R-261 Cross-Stack Checkpoint After Settings Privacy Payload Helper
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- checkpoint
+- frontend helper
+- Tauri integration guard
+
+Intent:
+
+- Confirm that the settings privacy payload helper extraction does not break Rust/Tauri compile checks.
+- Record a clean checkpoint after R-260 centralized privacy settings and whitelist payload construction.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| none | none | Documentation-only checkpoint |
+
+Behavior expected to stay the same:
+
+- No runtime behavior changes in this checkpoint.
+- Settings privacy payload helper changes from R-260 remain covered by their existing TypeScript and build checks.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None in this checkpoint.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace manual settings save and whitelist smoke testing.
+
+Rollback:
+
+- Revert this documentation-only checkpoint commit if the log entry needs correction.
+
+Follow-up:
+
+- Commit R-261.
+- Continue with small behavior-preserving helper extractions.
