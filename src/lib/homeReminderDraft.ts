@@ -26,6 +26,18 @@ export type HomeReminderUpsertDraft = {
   weeklyDays: number[];
 };
 
+export function defaultHomeReminderDraft(): HomeReminderUpsertDraft {
+  return {
+    content: "",
+    dailyTime: "09:00",
+    enabled: true,
+    id: null,
+    remindAt: "",
+    repeatRule: "NONE",
+    weeklyDays: defaultReminderWeeklyDays(),
+  };
+}
+
 export function buildHomeReminderEditDraft(
   item: Reminder,
   formatters: ReminderDraftFormatters,

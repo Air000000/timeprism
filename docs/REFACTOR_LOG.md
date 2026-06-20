@@ -14462,3 +14462,89 @@ Follow-up:
 
 - Commit R-275.
 - Continue with small behavior-preserving helper extractions.
+
+## 2026-06-20: R-276 Home Reminder Default Draft Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Home reminder panel
+- helper extraction
+
+Intent:
+
+- Move Home reminder modal default draft construction into `homeReminderDraft.ts`.
+- Reuse the same default helper for composable initialization and `resetReminderDraft`.
+- Keep modal state refs, validation, feedback, quick actions, and drag/drop behavior in `useHomeReminderPanel.ts`.
+
+Files changed:
+
+- `src/composables/useHomeReminderPanel.ts`
+- `src/lib/homeReminderDraft.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useHomeReminderPanel.ts` | `homeReminderDraft.ts` | `defaultHomeReminderDraft` helper |
+
+Behavior expected to stay the same:
+
+- A new/reset reminder draft still has `id: null`.
+- Default content and one-time reminder datetime text are still empty strings.
+- Default repeat rule is still `NONE`.
+- Default enabled state is still `true`.
+- Default daily time is still `09:00`.
+- Default weekly days still come from `defaultReminderWeeklyDays()`.
+- Save validation, save payload construction, feedback messages, quick actions, and drag/drop behavior are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home reminder default draft helper extraction batch.
+
+Risks:
+
+- Reminder modal open/reset behavior was not manually smoke-tested.
+- Validation covered compile/build checks and source-level default-value equivalence.
+
+Rollback:
+
+- Revert this batch to move Home reminder default draft literals back into `useHomeReminderPanel.ts`.
+
+Follow-up:
+
+- Commit R-276.
+- Run a backend checkpoint after commit before continuing the next helper batch.

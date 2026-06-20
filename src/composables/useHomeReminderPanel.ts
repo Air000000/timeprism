@@ -1,7 +1,11 @@
 import { ref } from "vue";
 import type { Reminder } from "../api";
 import type { FeedbackTone, HomeViewContext } from "../components/viewContexts";
-import { buildHomeReminderEditDraft, buildHomeReminderUpsertInput } from "../lib/homeReminderDraft";
+import {
+  buildHomeReminderEditDraft,
+  buildHomeReminderUpsertInput,
+  defaultHomeReminderDraft,
+} from "../lib/homeReminderDraft";
 import {
   buildHomeReminderDropOrder,
   readHomeReminderDraggedId,
@@ -9,7 +13,6 @@ import {
   shouldIgnoreHomeReminderDrop,
 } from "../lib/homeReminderReorder";
 import {
-  defaultReminderWeeklyDays,
   reminderWeekdayOptions,
   toggleReminderWeeklyDay,
   type ReminderWeekdayOption,
@@ -18,14 +21,15 @@ import {
 export const weekdayOptions = reminderWeekdayOptions;
 
 export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
+  const initialReminderDraft = defaultHomeReminderDraft();
   const scheduleModalOpen = ref(false);
-  const reminderEditId = ref<number | null>(null);
-  const reminderDraftContent = ref("");
-  const reminderDraftRepeat = ref<Reminder["repeat_rule"]>("NONE");
-  const reminderEnabled = ref(true);
-  const reminderDraftAt = ref("");
-  const reminderDraftDailyTime = ref("09:00");
-  const reminderDraftWeeklyDays = ref<number[]>(defaultReminderWeeklyDays());
+  const reminderEditId = ref<number | null>(initialReminderDraft.id);
+  const reminderDraftContent = ref(initialReminderDraft.content);
+  const reminderDraftRepeat = ref<Reminder["repeat_rule"]>(initialReminderDraft.repeatRule);
+  const reminderEnabled = ref(initialReminderDraft.enabled);
+  const reminderDraftAt = ref(initialReminderDraft.remindAt);
+  const reminderDraftDailyTime = ref(initialReminderDraft.dailyTime);
+  const reminderDraftWeeklyDays = ref<number[]>(initialReminderDraft.weeklyDays);
   const reminderFeedback = ref("");
   const reminderFeedbackType = ref<FeedbackTone>("info");
   const draggingReminderId = ref<number | null>(null);
@@ -40,13 +44,14 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
   }
 
   function resetReminderDraft() {
-    reminderEditId.value = null;
-    reminderDraftContent.value = "";
-    reminderDraftRepeat.value = "NONE";
-    reminderEnabled.value = true;
-    reminderDraftAt.value = "";
-    reminderDraftDailyTime.value = "09:00";
-    reminderDraftWeeklyDays.value = defaultReminderWeeklyDays();
+    const draft = defaultHomeReminderDraft();
+    reminderEditId.value = draft.id;
+    reminderDraftContent.value = draft.content;
+    reminderDraftRepeat.value = draft.repeatRule;
+    reminderEnabled.value = draft.enabled;
+    reminderDraftAt.value = draft.remindAt;
+    reminderDraftDailyTime.value = draft.dailyTime;
+    reminderDraftWeeklyDays.value = draft.weeklyDays;
   }
 
   function openReminderComposer() {
