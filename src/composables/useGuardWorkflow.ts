@@ -1,5 +1,6 @@
 import { computed, ref, watch, type Ref } from "vue";
 import type { IdlePrompt, PendingRuleProcess } from "../api";
+import { buildGuardWorkflowState } from "../lib/guardWorkflowState";
 
 type TranslateFn = (zh: string, en: string) => string;
 type FeedbackTone = "info" | "ok" | "warn" | "error";
@@ -21,11 +22,17 @@ export function useGuardWorkflow({
 }: UseGuardWorkflowOptions) {
   const guardStep3Done = ref(false);
 
-  const guardStep1Complete = computed(() => pendingRuleProcesses.value.length === 0);
-  const guardStep2Unlocked = computed(() => guardStep1Complete.value);
-  const guardStep2Complete = computed(() => idlePrompts.value.length === 0);
-  const guardStep3Unlocked = computed(() => guardStep1Complete.value && guardStep2Complete.value);
-  const guardStep4Unlocked = computed(() => guardStep3Unlocked.value && guardStep3Done.value);
+  const guardWorkflowState = computed(() =>
+    buildGuardWorkflowState(
+      pendingRuleProcesses.value.length,
+      idlePrompts.value.length,
+      guardStep3Done.value,
+    ));
+  const guardStep1Complete = computed(() => guardWorkflowState.value.step1Complete);
+  const guardStep2Unlocked = computed(() => guardWorkflowState.value.step2Unlocked);
+  const guardStep2Complete = computed(() => guardWorkflowState.value.step2Complete);
+  const guardStep3Unlocked = computed(() => guardWorkflowState.value.step3Unlocked);
+  const guardStep4Unlocked = computed(() => guardWorkflowState.value.step4Unlocked);
 
   const guardCurrentStepText = computed(() => {
     if (!guardStep1Complete.value) {
@@ -40,18 +47,7 @@ export function useGuardWorkflow({
     return tx("步骤 4/4：查看采样诊断", "Step 4/4: Review diagnostics");
   });
 
-  const guardCurrentStepIndex = computed(() => {
-    if (!guardStep1Complete.value) {
-      return 1;
-    }
-    if (!guardStep2Complete.value) {
-      return 2;
-    }
-    if (!guardStep3Done.value) {
-      return 3;
-    }
-    return 4;
-  });
+  const guardCurrentStepIndex = computed(() => guardWorkflowState.value.currentStepIndex);
 
   const guardStepLabels = computed(() => [
     tx("待处理软件", "Pending Apps"),

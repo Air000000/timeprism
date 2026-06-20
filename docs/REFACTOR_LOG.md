@@ -14621,3 +14621,88 @@ Follow-up:
 
 - Commit R-277.
 - Continue with small behavior-preserving helper extractions.
+
+## 2026-06-20: R-278 Guard Workflow State Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- Guard workflow
+- helper extraction
+
+Intent:
+
+- Move Guard workflow step completion, unlock, and current-index calculation into `guardWorkflowState.ts`.
+- Keep step text, labels, review completion feedback, and reset watcher in `useGuardWorkflow.ts`.
+- Make the workflow state transition logic easier to inspect before any Guard UI behavior changes.
+
+Files changed:
+
+- `src/composables/useGuardWorkflow.ts`
+- `src/lib/guardWorkflowState.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Moved/extracted:
+
+| From | To | Notes |
+| --- | --- | --- |
+| `useGuardWorkflow.ts` | `guardWorkflowState.ts` | `buildGuardWorkflowState` helper |
+
+Behavior expected to stay the same:
+
+- Step 1 is still complete only when there are no pending rule processes.
+- Step 2 is still unlocked when Step 1 is complete and complete when there are no idle prompts.
+- Step 3 is still unlocked when Steps 1 and 2 are complete.
+- Step 4 is still unlocked only when Step 3 is unlocked and marked done.
+- Current step index still returns 1, 2, 3, then 4 using the same conditions.
+- Step text, labels, mark-step-3-done feedback, and reset watcher behavior are unchanged.
+
+Behavior intentionally changed:
+
+- None.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None expected.
+
+Automated validation:
+
+- `pnpm.cmd run typecheck` passed.
+- `pnpm.cmd run build:check` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Guard workflow state helper extraction batch.
+
+Risks:
+
+- Guard workflow UI progression was not manually smoke-tested.
+- Validation covered compile/build checks and source-level state-equivalence only.
+
+Rollback:
+
+- Revert this batch to move Guard workflow state calculations back into `useGuardWorkflow.ts`.
+
+Follow-up:
+
+- Commit R-278.
+- Run a backend checkpoint after commit before continuing the next helper batch.

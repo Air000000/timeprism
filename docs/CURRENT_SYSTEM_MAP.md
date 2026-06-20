@@ -50,7 +50,7 @@ Important sibling folders in the larger workspace:
 - `src/composables/useErrorMessage.ts`: top-level main-window error message state and setter.
 - `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, rule mutations, helper-backed rule-save payloads, idle resolution, and Guard input handlers.
 - `src/composables/useGuardViewContext.ts`: computed Guard view context assembly from Guard data, workflow state, formatters, and handlers.
-- `src/composables/useGuardWorkflow.ts`: guard workflow step completion/unlock state, labels, review completion, and reset watcher.
+- `src/composables/useGuardWorkflow.ts`: guard workflow helper-backed step state, labels, review completion, and reset watcher.
 - `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar computed adapters, helper adapters for cell classes/progress/fetch windows, and Home heatmap summaries.
 - `src/composables/useHeatmapGoalSetting.ts`: heatmap goal slider state, saved goal loading, helper-backed normalization, debounced persistence, and timer cleanup.
 - `src/composables/useHomeData.ts`: Home data refresh orchestration for summary, logs, heatmap, pending work, reminders, and rhythm stack.
@@ -82,6 +82,7 @@ Important sibling folders in the larger workspace:
 - `src/lib/guardInputEvents.ts`: Guard DOM input event value parsing for checkboxes, text inputs, sort selects, and mapped-type selects.
 - `src/lib/guardRuleSave.ts`: Guard app-rule save payload construction for new/default and existing rules.
 - `src/lib/guardRules.ts`: Guard app-rule search/sort helpers plus rule sort-key and mapped-type guards.
+- `src/lib/guardWorkflowState.ts`: Guard workflow step completion, unlock, and current-index state helper.
 - `src/lib/heatmapCalendarClasses.ts`: heatmap cell class-name construction for level, green intensity, future/past, and today markers.
 - `src/lib/heatmapCalendarGrid.ts`: heatmap full-month cell backfill and fixed 42-slot calendar grid construction helpers.
 - `src/lib/heatmapCalendarProgress.ts`: heatmap green maximum, current-month goal progress, active streak, and fetch-window helpers.
