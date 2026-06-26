@@ -15149,3 +15149,82 @@ Rollback:
 Follow-up:
 
 - Commit R-284.
+
+## 2026-06-26: R-285 Single Instance Timing Guard
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend
+- Tauri startup
+- timing guard
+
+Intent:
+
+- Prevent multiple `timeprism.exe` processes from sampling and writing overlapping app usage logs into the same SQLite database.
+- Bring the existing main window forward when a second launch is attempted.
+
+Files changed:
+
+- `src-tauri/Cargo.toml`
+- `src-tauri/Cargo.lock`
+- `src-tauri/src/lib.rs`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- A second TimePrism launch no longer creates a second long-running process.
+- The existing main window is shown, unminimized, focused, and revealed through the existing window service.
+
+Behavior expected to stay the same:
+
+- Auto capture sampling logic is unchanged.
+- Existing analytics and database rows are unchanged.
+- Historical overlapping logs are not deleted or rewritten.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Adds the official Tauri single-instance plugin at app startup.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri` after downloading `tauri-plugin-single-instance v2.4.2` outside the local Windows sandbox.
+- `.\node_modules\.bin\vue-tsc.cmd --noEmit` passed.
+- `.\node_modules\.bin\vite.cmd build --outDir dist-codex-check --emptyOutDir` passed outside the local Windows sandbox after esbuild `spawn EPERM` inside the sandbox.
+- `cargo build --release` passed in `src-tauri`.
+- `git diff --check` passed.
+
+Manual smoke tests:
+
+- Terminated two old `timeprism.exe` processes that were running from the release path.
+- Started the rebuilt release `timeprism.exe`; one process was present.
+- Started the rebuilt release `timeprism.exe` again; process list still showed only one `timeprism.exe` process.
+- Observed for about 65 seconds; process list still showed one `timeprism.exe` process.
+
+Risks:
+
+- `tauri build --no-bundle` was not completed because pnpm install was blocked by ignored esbuild build scripts; Rust release build and Vite build were run separately instead.
+- The observation window did not create new usage rows, so log-overlap prevention is inferred from the single-process guarantee rather than new-row sampling.
+
+Rollback:
+
+- Revert this batch to allow multiple TimePrism processes again.
+
+Follow-up:
+
+- Commit R-285.
