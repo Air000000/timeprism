@@ -174,47 +174,51 @@ pub(crate) fn list_recent_log_entries(
 
 pub(crate) fn today_summary(conn: &Connection) -> Result<TodaySummary, String> {
     let (start_ts, end_ts) = business_day_window_from_local(Local::now())?;
-    let mut learn_seconds = 0_i64;
-    let mut rest_seconds = 0_i64;
 
     let mut stmt = conn
         .prepare(
-            "SELECT COALESCE(r.mapped_type, 'IGNORE') AS mapped_type,
-                    SUM(
-                        MAX(
-                            0,
-                            MIN(l.start_timestamp + (l.duration_ms / 1000), ?2) - MAX(l.start_timestamp, ?1)
-                        )
-                    ) AS duration_seconds
+            "SELECT l.start_timestamp,
+                    l.duration_ms,
+                    COALESCE(r.mapped_type, 'IGNORE') AS mapped_type
              FROM app_usage_logs l
              LEFT JOIN app_rules r ON r.process_name = l.process_name
              WHERE l.start_timestamp < ?2
-               AND (l.start_timestamp + (l.duration_ms / 1000)) > ?1
-             GROUP BY mapped_type",
+               AND (l.start_timestamp + (l.duration_ms / 1000)) > ?1",
         )
         .map_err(|e| format!("failed to prepare summary query: {e}"))?;
 
     let rows = stmt
         .query_map(params![start_ts, end_ts], |row| {
-            let root_type: String = row.get(0)?;
-            let duration_seconds: i64 = row.get(1)?;
-            Ok((root_type, duration_seconds.max(0)))
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, i64>(1)?.max(0),
+                row.get::<_, String>(2)?.to_uppercase(),
+            ))
         })
         .map_err(|e| format!("failed to query summary rows: {e}"))?;
 
+    let mut learn_intervals = Vec::new();
+    let mut rest_intervals = Vec::new();
     for row in rows {
-        let (root_type, duration_seconds) =
+        let (seg_start, duration_ms, mapped_type) =
             row.map_err(|e| format!("failed to parse summary row: {e}"))?;
-        if root_type == "LEARN" {
-            learn_seconds = duration_seconds;
-        } else if root_type == "REST" {
-            rest_seconds = duration_seconds;
+        let seg_end = seg_start + (duration_ms / 1000);
+        let clip_start = seg_start.max(start_ts);
+        let clip_end = seg_end.min(end_ts);
+        if clip_end <= clip_start {
+            continue;
+        }
+
+        if mapped_type == "LEARN" {
+            learn_intervals.push((clip_start, clip_end));
+        } else if mapped_type == "REST" {
+            rest_intervals.push((clip_start, clip_end));
         }
     }
 
     Ok(TodaySummary {
-        learn_seconds,
-        rest_seconds,
+        learn_seconds: merge_intervals_total(learn_intervals).max(0),
+        rest_seconds: merge_intervals_total(rest_intervals).max(0),
         active_session_id: None,
     })
 }
@@ -626,4 +630,65 @@ pub(crate) fn usage_stack(
     result.reverse();
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn analytics_test_conn() -> Connection {
+        let conn = Connection::open_in_memory().expect("open analytics test db");
+        conn.execute_batch(
+            "CREATE TABLE app_rules (
+                process_name TEXT PRIMARY KEY,
+                mapped_type TEXT NOT NULL
+            );
+             CREATE TABLE app_usage_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                process_name TEXT NOT NULL,
+                window_title TEXT NOT NULL,
+                start_timestamp INTEGER NOT NULL,
+                duration_ms INTEGER NOT NULL
+            );",
+        )
+        .expect("create analytics test tables");
+        conn
+    }
+
+    fn insert_rule(conn: &Connection, process_name: &str, mapped_type: &str) {
+        conn.execute(
+            "INSERT INTO app_rules (process_name, mapped_type) VALUES (?1, ?2)",
+            params![process_name, mapped_type],
+        )
+        .expect("insert app rule");
+    }
+
+    fn insert_log(conn: &Connection, process_name: &str, start_timestamp: i64, duration_ms: i64) {
+        conn.execute(
+            "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
+             VALUES (?1, 'test', ?2, ?3)",
+            params![process_name, start_timestamp, duration_ms],
+        )
+        .expect("insert app usage log");
+    }
+
+    #[test]
+    fn today_summary_merges_overlapping_learn_and_rest_intervals() {
+        let conn = analytics_test_conn();
+        insert_rule(&conn, "learn-a.exe", "LEARN");
+        insert_rule(&conn, "learn-b.exe", "LEARN");
+        insert_rule(&conn, "rest-a.exe", "REST");
+        insert_rule(&conn, "rest-b.exe", "REST");
+
+        let (day_start, _) = business_day_window_from_local(Local::now()).expect("business day");
+        let base = day_start + 3600;
+        insert_log(&conn, "learn-a.exe", base, 600_000);
+        insert_log(&conn, "learn-b.exe", base + 300, 600_000);
+        insert_log(&conn, "rest-a.exe", base + 1800, 600_000);
+        insert_log(&conn, "rest-b.exe", base + 2100, 600_000);
+
+        let summary = today_summary(&conn).expect("today summary");
+        assert_eq!(summary.learn_seconds, 900);
+        assert_eq!(summary.rest_seconds, 900);
+    }
 }

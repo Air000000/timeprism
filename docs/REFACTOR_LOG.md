@@ -14935,3 +14935,78 @@ Follow-up:
 
 - Commit R-281.
 - Continue with small behavior-preserving helper extractions.
+## 2026-06-26: R-282 Today Summary Overlap Counting Fix
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend
+- analytics services
+- bug fix
+
+Intent:
+
+- Fix inflated Learn/Rest totals in `today_summary` when overlapping app usage logs share the same mapped type.
+- Keep the existing business-day clipping behavior, but merge LEARN and REST intervals before totaling them.
+- Add a regression test that fails when overlapping Learn or Rest intervals are summed instead of unioned.
+
+Files changed:
+
+- `src-tauri/src/services/analytics.rs`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- Today Learn seconds no longer double-count overlapping LEARN app-usage intervals.
+- Today Rest seconds no longer double-count overlapping REST app-usage intervals.
+
+Behavior expected to stay the same:
+
+- Logs are still clipped to the current business-day window.
+- `IGNORE` and unknown mapped types still do not contribute to Learn or Rest totals.
+- `active_session_id` remains `None`.
+- Heatmap and usage-stack aggregation paths are unchanged.
+
+Tauri commands affected:
+
+- `get_today_summary` now returns de-duplicated Learn/Rest interval totals.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Today summary now merges in-memory LEARN/REST intervals for the current business day; expected cost is small and bounded by today's matching log rows.
+
+Automated validation:
+
+- `cargo test today_summary_merges_overlapping_learn_and_rest_intervals` passed in `src-tauri`.
+- `cargo check` passed in `src-tauri`.
+- `cargo test` passed in `src-tauri` with 27 tests.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this analytics bugfix batch.
+
+Risks:
+
+- Live UI was not manually smoke-tested against a real user database.
+- Top-app rankings still sum per process as before; this fix is scoped to Learn/Rest totals returned by `get_today_summary`.
+
+Rollback:
+
+- Revert this batch to restore the previous grouped SQL SUM behavior in `today_summary`.
+
+Follow-up:
+
+- Commit R-282.
