@@ -15010,3 +15010,76 @@ Rollback:
 Follow-up:
 
 - Commit R-282.
+
+## 2026-06-26: R-283 Auto Capture Immediate Startup Sample Fix
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- auto capture sampler
+- bug fix
+
+Intent:
+
+- Reduce recorded-time drift at sampler startup by taking the first foreground sample immediately.
+- Keep the existing polling model and interval unchanged.
+
+Files changed:
+
+- `src/composables/useAutoCaptureSampler.ts`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- Auto capture no longer waits for the first 5 second timer tick before establishing its first foreground sample.
+- The first stored segment can be produced after the next interval instead of after two intervals, reducing startup undercount.
+
+Behavior expected to stay the same:
+
+- Sampling still only runs when auto capture is enabled.
+- The default interval remains 5 seconds.
+- `capture_foreground_once` arguments and feedback handling are unchanged.
+- The sampler still stops and restarts through the same lifecycle entry points.
+
+Tauri commands affected:
+
+- Existing `capture_foreground_once` calls are made sooner after sampler startup; command shape is unchanged.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- One extra foreground sample is taken at sampler startup.
+
+Automated validation:
+
+- `.\node_modules\.bin\vue-tsc.cmd --noEmit` passed.
+- `.\node_modules\.bin\vite.cmd build --outDir dist-codex-check --emptyOutDir` passed outside the local Windows sandbox after esbuild `spawn EPERM` inside the sandbox.
+- `git diff --check` passed.
+
+Manual smoke tests:
+
+- Not run for this frontend sampler batch.
+
+Risks:
+
+- Polling can still drift by up to one interval around app switches, sleep, or very short sessions.
+- Stopwatch-level precision would require a separate event-based or lower-interval tracking design.
+
+Rollback:
+
+- Revert this batch to restore delayed first sampling after sampler startup.
+
+Follow-up:
+
+- Commit R-283.

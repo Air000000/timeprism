@@ -36,6 +36,7 @@ export function useAutoCaptureSampler({
 
   function startAutoCaptureSampler() {
     stopAutoCaptureSampler();
+    sampleAutoCapture();
     captureTimer = window.setInterval(sampleAutoCapture, intervalMs);
   }
 
