@@ -15435,3 +15435,68 @@ Rollback:
 Follow-up:
 
 - Commit R-288.
+## 2026-06-29: R-289 Home Reminder Feedback Helper Backend Checkpoint
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- backend checkpoint
+- validation
+
+Intent:
+
+- Confirm the backend still compiles after the Home reminder feedback helper extraction.
+- Preserve a traceable checkpoint before the next refactor batch.
+
+Files changed:
+
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- None.
+
+Behavior expected to stay the same:
+
+- Backend commands, services, schema, and persistence remain unchanged.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- None.
+
+Automated validation:
+
+- `cargo check` passed in `src-tauri`.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Manual smoke tests:
+
+- Not run for this checkpoint.
+
+Risks:
+
+- This checkpoint does not replace a live reminder modal smoke test.
+
+Rollback:
+
+- Revert this docs-only checkpoint.
+
+Follow-up:
+
+- Commit R-289.
