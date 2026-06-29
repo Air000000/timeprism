@@ -48,7 +48,8 @@ Important sibling folders in the larger workspace:
 - `src/composables/useAppSettingsSection.ts`: App-level Settings privacy state, lazy mount coordination, and Settings view context assembly.
 - `src/composables/useDisplayFormatters.ts`: locale/translation adapters for shared UI display formatter helpers.
 - `src/composables/useErrorMessage.ts`: top-level main-window error message state and setter.
-- `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, rule mutations, helper-backed rule-save payloads, idle resolution, and Guard input handlers.
+- `src/composables/useGuardData.ts`: Guard data loading, pending rules, idle prompts, rule mutations, helper-backed feedback/rule-save payloads, idle resolution, and Guard input handlers.
+- `src/lib/guardFeedback.ts`: Guard default status text plus idle/rule feedback message helpers.
 - `src/composables/useGuardViewContext.ts`: computed Guard view context assembly from Guard data, workflow state, formatters, and handlers.
 - `src/composables/useGuardWorkflow.ts`: guard workflow helper-backed step state, labels, review completion, and reset watcher.
 - `src/composables/useHeatmapCalendar.ts`: heatmap month navigation, calendar computed adapters, helper adapters for cell classes/progress/fetch windows, and Home heatmap summaries.

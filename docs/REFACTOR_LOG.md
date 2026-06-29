@@ -15228,3 +15228,75 @@ Rollback:
 Follow-up:
 
 - Commit R-285.
+
+## 2026-06-29: R-286 Guard Feedback Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- guard workflow
+- helper extraction
+
+Intent:
+
+- Move Guard default status text and repeated idle/rule feedback message construction out of `useGuardData.ts`.
+- Keep Guard data loading, rule mutations, idle resolution, and UI behavior unchanged.
+
+Files changed:
+
+- `src/composables/useGuardData.ts`
+- `src/lib/guardFeedback.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- None.
+
+Behavior expected to stay the same:
+
+- Guard auto-capture feedback defaults remain the same.
+- Idle resolve success/error feedback remains the same.
+- Rule save/update success and failure feedback remains the same.
+- Guard command calls and mutation flow remain the same.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Negligible; this is a frontend helper extraction only.
+
+Automated validation:
+
+- `.\node_modules\.bin\vue-tsc.cmd --noEmit` passed.
+- `git diff --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Guard helper extraction batch.
+
+Risks:
+
+- Feedback text now comes from a new helper file, so any future copy change must stay synchronized there.
+
+Rollback:
+
+- Revert this batch to inline Guard feedback text back into `useGuardData.ts`.
+
+Follow-up:
+
+- Commit R-286.

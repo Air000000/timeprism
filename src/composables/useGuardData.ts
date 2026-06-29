@@ -19,6 +19,14 @@ import {
   guardCaptureRuleText,
 } from "../lib/guardDiagnostics";
 import {
+  defaultGuardAutoCaptureFeedback,
+  defaultGuardCheckFeedback,
+  guardIdleResolveErrorFeedback,
+  guardRuleSavedFeedback,
+  guardRuleSaveErrorFeedback,
+  guardRuleUpdatedFeedback,
+} from "../lib/guardFeedback";
+import {
   guardIdleDecisionFeedback,
   selectGuardIdlePrompt,
   shouldRememberGuardIdleDecision,
@@ -58,8 +66,8 @@ export function useGuardData({
 }: UseGuardDataOptions) {
   const loadingGuard = ref(false);
   const autoCaptureEnabled = ref(true);
-  const autoCaptureFeedback = ref("自动采样已开启");
-  const guardFeedback = ref("尚未执行检测");
+  const autoCaptureFeedback = ref(defaultGuardAutoCaptureFeedback(tx));
+  const guardFeedback = ref(defaultGuardCheckFeedback(tx));
   const guardFeedbackType = ref<FeedbackTone>("info");
   const foregroundDiagnostics = ref<ForegroundCaptureDiagnostic[]>([]);
   const appRules = ref<AppRule[]>([]);
@@ -77,8 +85,8 @@ export function useGuardData({
   const currentIdlePrompt = computed(() => idlePrompts.value[0] ?? null);
 
   function resetGuardFeedback() {
-    autoCaptureFeedback.value = tx("自动采样已开启", "Auto capture enabled");
-    guardFeedback.value = tx("尚未执行检测", "No check executed yet");
+    autoCaptureFeedback.value = defaultGuardAutoCaptureFeedback(tx);
+    guardFeedback.value = defaultGuardCheckFeedback(tx);
   }
 
   async function refreshGuardData() {
@@ -134,7 +142,7 @@ export function useGuardData({
     } catch (e) {
       setErrorMessage(e);
       guardFeedbackType.value = "error";
-      guardFeedback.value = tx(`空闲时段分类失败：${e}`, `Failed to classify idle segment: ${e}`);
+      guardFeedback.value = guardIdleResolveErrorFeedback(e, tx);
     } finally {
       idleActionLoading.value = false;
     }
@@ -156,15 +164,16 @@ export function useGuardData({
     try {
       await saveAppRule(buildNormalGuardRuleSaveInput(item.observed_process_name, mappedType));
       guardFeedbackType.value = "ok";
-      guardFeedback.value = tx(
-        `已保存规则：${item.observed_process_name} -> ${mappedTypeText(mappedType)}`,
-        `Rule saved: ${item.observed_process_name} -> ${mappedTypeText(mappedType)}`,
+      guardFeedback.value = guardRuleSavedFeedback(
+        item.observed_process_name,
+        mappedTypeText(mappedType),
+        tx,
       );
       await refreshData();
     } catch (e) {
       setErrorMessage(e);
       guardFeedbackType.value = "error";
-      guardFeedback.value = tx(`保存规则失败：${e}`, `Failed to save rule: ${e}`);
+      guardFeedback.value = guardRuleSaveErrorFeedback(e, tx);
     }
   }
 
@@ -172,15 +181,16 @@ export function useGuardData({
     try {
       await saveAppRule(buildExistingGuardRuleSaveInput(rule));
       guardFeedbackType.value = "ok";
-      guardFeedback.value = tx(
-        `已更新规则：${rule.process_name} -> ${mappedTypeText(rule.mapped_type)}`,
-        `Rule updated: ${rule.process_name} -> ${mappedTypeText(rule.mapped_type)}`,
+      guardFeedback.value = guardRuleUpdatedFeedback(
+        rule.process_name,
+        mappedTypeText(rule.mapped_type),
+        tx,
       );
       await refreshData();
     } catch (e) {
       setErrorMessage(e);
       guardFeedbackType.value = "error";
-      guardFeedback.value = tx(`更新规则失败：${e}`, `Failed to update rule: ${e}`);
+      guardFeedback.value = guardRuleSaveErrorFeedback(e, tx);
     }
   }
 
@@ -191,15 +201,16 @@ export function useGuardData({
     try {
       await saveAppRule(buildNormalGuardRuleSaveInput(item.process_name, mappedType));
       guardFeedbackType.value = "ok";
-      guardFeedback.value = tx(
-        `已保存规则：${item.process_name} -> ${mappedTypeText(mappedType)}`,
-        `Rule saved: ${item.process_name} -> ${mappedTypeText(mappedType)}`,
+      guardFeedback.value = guardRuleSavedFeedback(
+        item.process_name,
+        mappedTypeText(mappedType),
+        tx,
       );
       await refreshData();
     } catch (e) {
       setErrorMessage(e);
       guardFeedbackType.value = "error";
-      guardFeedback.value = tx(`保存规则失败：${e}`, `Failed to save rule: ${e}`);
+      guardFeedback.value = guardRuleSaveErrorFeedback(e, tx);
     }
   }
 
