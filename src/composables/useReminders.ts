@@ -30,10 +30,10 @@ export function useReminders({ tx, refreshData, setErrorMessage }: UseRemindersO
   const reminderActionLoading = ref(false);
   const reminderListForPanel = computed(() => sortedReminders(reminders.value));
 
-  async function handleUpsertReminder(input: ReminderUpsertInput) {
+  async function runReminderMutation(task: () => Promise<void>) {
     reminderActionLoading.value = true;
     try {
-      await saveReminder(buildReminderSavePayload(input, tx));
+      await task();
       await refreshData();
     } catch (e) {
       setErrorMessage(e);
@@ -41,38 +41,32 @@ export function useReminders({ tx, refreshData, setErrorMessage }: UseRemindersO
     } finally {
       reminderActionLoading.value = false;
     }
+  }
+
+  async function handleUpsertReminder(input: ReminderUpsertInput) {
+    await runReminderMutation(async () => {
+      await saveReminder(buildReminderSavePayload(input, tx));
+    });
   }
 
   async function handleDeleteReminder(id: number) {
     if (reminderActionLoading.value) {
       return;
     }
-    reminderActionLoading.value = true;
-    try {
+
+    await runReminderMutation(async () => {
       await deleteReminder(id);
-      await refreshData();
-    } catch (e) {
-      setErrorMessage(e);
-      throw e;
-    } finally {
-      reminderActionLoading.value = false;
-    }
+    });
   }
 
   async function handleReminderDone(id: number, done: boolean) {
     if (reminderActionLoading.value) {
       return;
     }
-    reminderActionLoading.value = true;
-    try {
+
+    await runReminderMutation(async () => {
       await setReminderDone({ id, done });
-      await refreshData();
-    } catch (e) {
-      setErrorMessage(e);
-      throw e;
-    } finally {
-      reminderActionLoading.value = false;
-    }
+    });
   }
 
   async function handleReminderReorder(orderedIds: number[]) {
@@ -107,16 +101,10 @@ export function useReminders({ tx, refreshData, setErrorMessage }: UseRemindersO
     if (reminderActionLoading.value) {
       return;
     }
-    reminderActionLoading.value = true;
-    try {
+
+    await runReminderMutation(async () => {
       await snoozeReminder(id, seconds);
-      await refreshData();
-    } catch (e) {
-      setErrorMessage(e);
-      throw e;
-    } finally {
-      reminderActionLoading.value = false;
-    }
+    });
   }
 
   return {

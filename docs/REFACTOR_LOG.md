@@ -15636,3 +15636,70 @@ Rollback:
 Follow-up:
 
 - Commit R-291.
+## 2026-06-29: R-292 Reminder Mutation Runner Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- reminders
+- helper extraction
+
+Intent:
+
+- Remove repeated loading/refresh/error mutation wrappers from `useReminders.ts`.
+- Keep reminder save, delete, done, and snooze behavior unchanged.
+
+Files changed:
+
+- `src/composables/useReminders.ts`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- None.
+
+Behavior expected to stay the same:
+
+- Reminder save/delete/done/snooze actions still set loading, refresh data, surface errors, and rethrow on failure.
+- Reminder reorder behavior remains unchanged and still handles optimistic rollback separately.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Negligible; this is a frontend composable cleanup only.
+
+Automated validation:
+
+- `.\node_modules\.bin\vue-tsc.cmd --noEmit` passed.
+- `git diff --check` passed.
+
+Manual smoke tests:
+
+- Not run for this reminder mutation helper batch.
+
+Risks:
+
+- The shared mutation runner now owns the common reminder action lifecycle, so future special cases should stay out of it unless they truly match the shared flow.
+
+Rollback:
+
+- Revert this batch to inline reminder mutation wrappers back into `useReminders.ts`.
+
+Follow-up:
+
+- Commit R-292.
