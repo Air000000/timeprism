@@ -15768,3 +15768,72 @@ Rollback:
 Follow-up:
 
 - Commit R-293.
+## 2026-06-29: R-294 Guard Rule Mutation Runner Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend guard workflow
+- refactor hygiene
+
+Intent:
+
+- Remove repeated Guard app-rule save/update wrappers from `useGuardData.ts`.
+- Keep rule payload construction, feedback text, refresh timing, and error handling unchanged.
+
+Files changed:
+
+- `src/composables/useGuardData.ts`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- None.
+
+Behavior expected to stay the same:
+
+- Saving a diagnostic-backed rule still no-ops when the diagnostic is not eligible.
+- Saving a diagnostic-backed rule still sends the same normal save payload, shows the same success message, and refreshes data afterward.
+- Updating an existing rule still sends the same existing-rule payload, shows the same update message, and refreshes data afterward.
+- Saving a pending rule still sends the same normal save payload, shows the same success message, and refreshes data afterward.
+- All Guard rule-save failures still route through `setErrorMessage`, set error tone, and show the same helper-backed error feedback.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Negligible; this is a frontend composable cleanup only.
+
+Automated validation:
+
+- `.\node_modules\.bin\vue-tsc.cmd --noEmit` passed.
+- `git diff --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Guard rule mutation runner batch.
+
+Risks:
+
+- The shared Guard rule-save runner now owns the common success/error lifecycle, so any future rule action with different refresh or feedback timing should stay separate unless it truly matches this flow.
+
+Rollback:
+
+- Revert this batch to inline Guard rule-save wrappers back into `useGuardData.ts`.
+
+Follow-up:
+
+- Commit R-294.

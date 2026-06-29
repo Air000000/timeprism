@@ -154,6 +154,22 @@ export function useGuardData({
   const captureRuleText = (item: ForegroundCaptureDiagnostic): string =>
     guardCaptureRuleText(item, tx, mappedTypeText);
 
+  async function runGuardRuleSave(
+    task: () => Promise<void>,
+    buildSuccessFeedback: () => string,
+  ) {
+    try {
+      await task();
+      guardFeedbackType.value = "ok";
+      guardFeedback.value = buildSuccessFeedback();
+      await refreshData();
+    } catch (e) {
+      setErrorMessage(e);
+      guardFeedbackType.value = "error";
+      guardFeedback.value = guardRuleSaveErrorFeedback(e, tx);
+    }
+  }
+
   async function handleSaveRuleFromDiagnostic(
     item: ForegroundCaptureDiagnostic,
     mappedType: RuleMappedType,
@@ -161,57 +177,42 @@ export function useGuardData({
     if (!canSaveRuleFromDiagnostic(item)) {
       return;
     }
-    try {
-      await saveAppRule(buildNormalGuardRuleSaveInput(item.observed_process_name, mappedType));
-      guardFeedbackType.value = "ok";
-      guardFeedback.value = guardRuleSavedFeedback(
-        item.observed_process_name,
-        mappedTypeText(mappedType),
-        tx,
-      );
-      await refreshData();
-    } catch (e) {
-      setErrorMessage(e);
-      guardFeedbackType.value = "error";
-      guardFeedback.value = guardRuleSaveErrorFeedback(e, tx);
-    }
+    await runGuardRuleSave(
+      () => saveAppRule(buildNormalGuardRuleSaveInput(item.observed_process_name, mappedType)),
+      () =>
+        guardRuleSavedFeedback(
+          item.observed_process_name,
+          mappedTypeText(mappedType),
+          tx,
+        ),
+    );
   }
 
   async function handleUpdateExistingRule(rule: AppRule) {
-    try {
-      await saveAppRule(buildExistingGuardRuleSaveInput(rule));
-      guardFeedbackType.value = "ok";
-      guardFeedback.value = guardRuleUpdatedFeedback(
-        rule.process_name,
-        mappedTypeText(rule.mapped_type),
-        tx,
-      );
-      await refreshData();
-    } catch (e) {
-      setErrorMessage(e);
-      guardFeedbackType.value = "error";
-      guardFeedback.value = guardRuleSaveErrorFeedback(e, tx);
-    }
+    await runGuardRuleSave(
+      () => saveAppRule(buildExistingGuardRuleSaveInput(rule)),
+      () =>
+        guardRuleUpdatedFeedback(
+          rule.process_name,
+          mappedTypeText(rule.mapped_type),
+          tx,
+        ),
+    );
   }
 
   async function handleSavePendingRule(
     item: PendingRuleProcess,
     mappedType: RuleMappedType,
   ) {
-    try {
-      await saveAppRule(buildNormalGuardRuleSaveInput(item.process_name, mappedType));
-      guardFeedbackType.value = "ok";
-      guardFeedback.value = guardRuleSavedFeedback(
-        item.process_name,
-        mappedTypeText(mappedType),
-        tx,
-      );
-      await refreshData();
-    } catch (e) {
-      setErrorMessage(e);
-      guardFeedbackType.value = "error";
-      guardFeedback.value = guardRuleSaveErrorFeedback(e, tx);
-    }
+    await runGuardRuleSave(
+      () => saveAppRule(buildNormalGuardRuleSaveInput(item.process_name, mappedType)),
+      () =>
+        guardRuleSavedFeedback(
+          item.process_name,
+          mappedTypeText(mappedType),
+          tx,
+        ),
+    );
   }
 
   function onAutoCaptureToggle(event: Event) {
