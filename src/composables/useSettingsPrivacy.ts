@@ -9,6 +9,15 @@ import {
   updatePrivacySettings,
 } from "../api";
 import {
+  defaultPrivacyFeedback,
+  privacySaveErrorFeedback,
+  privacySettingsSavedFeedback,
+  whitelistAddedFeedback,
+  whitelistAddErrorFeedback,
+  whitelistRemovedFeedback,
+  whitelistRemoveErrorFeedback,
+} from "../lib/settingsPrivacyFeedback";
+import {
   buildPrivacySettingsUpdateInput,
   buildWhitelistItemInput,
   defaultPrivacySettings,
@@ -33,21 +42,11 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
   const autoStartEnabled = ref(false);
   const whitelist = ref<string[]>([]);
   const whitelistInput = ref("code.exe");
-  const privacyFeedback = ref("未保存隐私设置");
+  const privacyFeedback = ref(defaultPrivacyFeedback(tx));
   const privacyFeedbackType = ref<FeedbackTone>("info");
 
-  function browserModeText(mode: PrivacySettings["browser_title_mode"]): string {
-    if (mode === "FULL") {
-      return tx("完整标题", "Full title");
-    }
-    if (mode === "BLUR") {
-      return tx("模糊标题", "Blurred title");
-    }
-    return tx("不采集标题", "No title capture");
-  }
-
   function resetPrivacyFeedback() {
-    privacyFeedback.value = tx("未保存隐私设置", "Privacy settings not saved");
+    privacyFeedback.value = defaultPrivacyFeedback(tx);
   }
 
   async function refreshPrivacy() {
@@ -90,16 +89,13 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
       await setAutoStartEnabled(autoStartEnabled.value);
       await updatePrivacySettings(buildPrivacySettingsUpdateInput(privacy.value));
       privacyFeedbackType.value = "ok";
-      privacyFeedback.value = tx(
-        `隐私设置已保存（浏览器模式：${browserModeText(privacy.value.browser_title_mode)}）。`,
-        `Privacy settings saved (browser mode: ${browserModeText(privacy.value.browser_title_mode)}).`,
-      );
+      privacyFeedback.value = privacySettingsSavedFeedback(privacy.value.browser_title_mode, tx);
       await refreshPrivacy();
       await refreshData();
     } catch (e) {
       setErrorMessage(e);
       privacyFeedbackType.value = "error";
-      privacyFeedback.value = tx(`保存失败：${e}`, `Save failed: ${e}`);
+      privacyFeedback.value = privacySaveErrorFeedback(e, tx);
     }
   }
 
@@ -113,12 +109,12 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
       await setWhitelistItem(buildWhitelistItemInput(processName, true));
       whitelistInput.value = "";
       privacyFeedbackType.value = "ok";
-      privacyFeedback.value = tx(`已加入白名单：${processName}`, `Added to whitelist: ${processName}`);
+      privacyFeedback.value = whitelistAddedFeedback(processName, tx);
       await refreshPrivacy();
     } catch (e) {
       setErrorMessage(e);
       privacyFeedbackType.value = "error";
-      privacyFeedback.value = tx(`添加失败：${e}`, `Add failed: ${e}`);
+      privacyFeedback.value = whitelistAddErrorFeedback(e, tx);
     }
   }
 
@@ -126,12 +122,12 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
     try {
       await setWhitelistItem(buildWhitelistItemInput(processName, false));
       privacyFeedbackType.value = "warn";
-      privacyFeedback.value = tx(`已移除白名单：${processName}`, `Removed from whitelist: ${processName}`);
+      privacyFeedback.value = whitelistRemovedFeedback(processName, tx);
       await refreshPrivacy();
     } catch (e) {
       setErrorMessage(e);
       privacyFeedbackType.value = "error";
-      privacyFeedback.value = tx(`移除失败：${e}`, `Remove failed: ${e}`);
+      privacyFeedback.value = whitelistRemoveErrorFeedback(e, tx);
     }
   }
 

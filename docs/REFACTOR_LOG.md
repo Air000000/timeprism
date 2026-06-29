@@ -15500,3 +15500,74 @@ Rollback:
 Follow-up:
 
 - Commit R-289.
+## 2026-06-29: R-290 Settings Privacy Feedback Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- settings privacy
+- helper extraction
+
+Intent:
+
+- Move Settings privacy browser-mode labels and repeated privacy/whitelist feedback text construction out of `useSettingsPrivacy.ts`.
+- Keep privacy save, whitelist actions, and refresh flow unchanged.
+
+Files changed:
+
+- `src/composables/useSettingsPrivacy.ts`
+- `src/lib/settingsPrivacyFeedback.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- None.
+
+Behavior expected to stay the same:
+
+- Privacy settings saved/error feedback remains the same.
+- Whitelist add/remove success and failure feedback remains the same.
+- Browser mode label text remains the same.
+- Settings refresh and command flow remain the same.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Negligible; this is a frontend helper extraction only.
+
+Automated validation:
+
+- `.\node_modules\.bin\vue-tsc.cmd --noEmit` passed.
+- `git diff --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Settings privacy helper extraction batch.
+
+Risks:
+
+- Settings feedback copy now lives in a helper file, so future wording changes must stay centralized there.
+
+Rollback:
+
+- Revert this batch to inline Settings privacy feedback text back into `useSettingsPrivacy.ts`.
+
+Follow-up:
+
+- Commit R-290.

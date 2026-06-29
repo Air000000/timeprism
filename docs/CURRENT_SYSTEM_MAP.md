@@ -74,7 +74,8 @@ Important sibling folders in the larger workspace:
 - `src/composables/useMainViewActions.ts`: main-window tab/subview selection actions and their refresh side effects.
 - `src/composables/useMainWindowLifecycle.ts`: main-window mount/unmount startup and cleanup sequence.
 - `src/composables/useReminders.ts`: reminder list state, upsert/delete/done/reorder/snooze actions, helper-backed reorder state, and reminder action loading.
-- `src/composables/useSettingsPrivacy.ts`: settings/privacy state, auto-start loading/saving, whitelist actions, and settings refresh cache.
+- `src/composables/useSettingsPrivacy.ts`: settings/privacy state, helper-backed feedback, auto-start loading/saving, whitelist actions, and settings refresh cache.
+- `src/lib/settingsPrivacyFeedback.ts`: Settings browser-mode labels plus privacy/whitelist feedback message helpers.
 - `src/composables/useSettingsViewContext.ts`: computed Settings view context assembly from settings/privacy state and handlers.
 - `src/composables/useThemeMode.ts`: main-window theme state, safe initialization, body theme attribute sync, system preference fallback, and localStorage persistence.
 - `src/lib/displayFormatters.ts`: shared UI display formatting helpers for clock text, mapped type labels, process names, and idle prompt spans.
