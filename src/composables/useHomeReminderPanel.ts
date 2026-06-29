@@ -87,6 +87,23 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
     }
   }
 
+  async function runReminderPanelAction(
+    task: () => void | Promise<void>,
+    successType: FeedbackTone,
+    buildSuccessFeedback: () => string,
+    onSuccess?: () => void,
+  ) {
+    try {
+      await task();
+      onSuccess?.();
+      reminderFeedbackType.value = successType;
+      reminderFeedback.value = buildSuccessFeedback();
+    } catch (e) {
+      reminderFeedbackType.value = "error";
+      reminderFeedback.value = `${e}`;
+    }
+  }
+
   async function saveReminderFromModal() {
     const ctx = getCtx();
     const content = reminderDraftContent.value.trim();
@@ -96,63 +113,56 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
       return;
     }
 
-    try {
-      const isCreate = reminderEditId.value === null;
-      await ctx.handleUpsertReminder(buildHomeReminderUpsertInput({
-        id: reminderEditId.value,
-        content,
-        repeatRule: reminderDraftRepeat.value,
-        remindAt: reminderDraftAt.value,
-        dailyTime: reminderDraftDailyTime.value,
-        weeklyDays: reminderDraftWeeklyDays.value,
-        enabled: reminderEnabled.value,
-      }));
-      reminderFeedbackType.value = "ok";
-      reminderFeedback.value = reminderSavedFeedback(isCreate, ctx.tx);
-      resetReminderDraft();
-    } catch (e) {
-      reminderFeedbackType.value = "error";
-      reminderFeedback.value = `${e}`;
-    }
+    const isCreate = reminderEditId.value === null;
+    await runReminderPanelAction(
+      () =>
+        ctx.handleUpsertReminder(buildHomeReminderUpsertInput({
+          id: reminderEditId.value,
+          content,
+          repeatRule: reminderDraftRepeat.value,
+          remindAt: reminderDraftAt.value,
+          dailyTime: reminderDraftDailyTime.value,
+          weeklyDays: reminderDraftWeeklyDays.value,
+          enabled: reminderEnabled.value,
+        })),
+      "ok",
+      () => reminderSavedFeedback(isCreate, ctx.tx),
+      () => {
+        resetReminderDraft();
+      },
+    );
   }
 
   async function quickDeleteReminder(id: number) {
     const ctx = getCtx();
-    try {
-      await ctx.handleDeleteReminder(id);
-      reminderFeedbackType.value = "warn";
-      reminderFeedback.value = reminderDeletedFeedback(ctx.tx);
-      if (reminderEditId.value === id) {
-        resetReminderDraft();
-      }
-    } catch (e) {
-      reminderFeedbackType.value = "error";
-      reminderFeedback.value = `${e}`;
-    }
+    await runReminderPanelAction(
+      () => ctx.handleDeleteReminder(id),
+      "warn",
+      () => reminderDeletedFeedback(ctx.tx),
+      () => {
+        if (reminderEditId.value === id) {
+          resetReminderDraft();
+        }
+      },
+    );
   }
 
   async function quickDoneReminder(id: number, done: boolean) {
     const ctx = getCtx();
-    try {
-      await ctx.handleReminderDone(id, done);
-      reminderFeedbackType.value = "ok";
-      reminderFeedback.value = reminderDoneFeedback(done, ctx.tx);
-    } catch (e) {
-      reminderFeedbackType.value = "error";
-      reminderFeedback.value = `${e}`;
-    }
+    await runReminderPanelAction(
+      () => ctx.handleReminderDone(id, done),
+      "ok",
+      () => reminderDoneFeedback(done, ctx.tx),
+    );
   }
 
   async function quickSnoozeReminder(id: number) {
     const ctx = getCtx();
-    try {
-      await ctx.handleReminderSnooze(id, 600);
-      reminderFeedbackType.value = "info";
-      reminderFeedback.value = reminderSnoozedFeedback(ctx.tx);
-    } catch (e) {
-      reminderFeedbackType.value = "error";
-      reminderFeedback.value = `${e}`;
-    }
+    await runReminderPanelAction(
+      () => ctx.handleReminderSnooze(id, 600),
+      "info",
+      () => reminderSnoozedFeedback(ctx.tx),
+    );
   }
 
   function handleReminderDragStart(item: Reminder, event?: DragEvent) {

@@ -16035,3 +16035,72 @@ Rollback:
 Follow-up:
 
 - Commit R-297.
+## 2026-06-29: R-298 Home Reminder Panel Action Runner Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend home reminder workflow
+- refactor hygiene
+
+Intent:
+
+- Remove repeated reminder panel action wrappers from `useHomeReminderPanel.ts`.
+- Keep modal validation, reminder commands, success feedback, and error surfacing unchanged.
+
+Files changed:
+
+- `src/composables/useHomeReminderPanel.ts`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- None.
+
+Behavior expected to stay the same:
+
+- Empty reminder content in the modal still exits early with the same warning feedback.
+- Saving from the modal still sends the same upsert payload, shows the same create/update success feedback, and resets the draft on success.
+- Quick delete still calls the same delete handler, shows the same warning-tone success feedback, and resets the draft only when deleting the item currently being edited.
+- Quick done and quick snooze still call the same reminder handlers and show the same success feedback.
+- All reminder panel action failures still set error tone and surface the same stringified error text.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Negligible; this is a frontend composable cleanup only.
+
+Automated validation:
+
+- `.\node_modules\.bin\vue-tsc.cmd --noEmit` passed.
+- `git diff --check` passed.
+
+Manual smoke tests:
+
+- Not run for this home reminder panel action runner batch.
+
+Risks:
+
+- The shared reminder panel runner now owns the common success/error lifecycle, so any future action with different feedback timing should stay separate unless it truly matches this flow.
+
+Rollback:
+
+- Revert this batch to inline the reminder panel action wrappers back into `useHomeReminderPanel.ts`.
+
+Follow-up:
+
+- Commit R-298.
