@@ -99,36 +99,50 @@ export function useSettingsPrivacy({ tx, refreshData, setErrorMessage }: UseSett
     }
   }
 
+  async function runWhitelistMutation(
+    task: () => Promise<void>,
+    successType: FeedbackTone,
+    buildSuccessFeedback: () => string,
+    buildErrorFeedback: (error: unknown) => string,
+    onSuccess?: () => void,
+  ) {
+    try {
+      await task();
+      onSuccess?.();
+      privacyFeedbackType.value = successType;
+      privacyFeedback.value = buildSuccessFeedback();
+      await refreshPrivacy();
+    } catch (e) {
+      setErrorMessage(e);
+      privacyFeedbackType.value = "error";
+      privacyFeedback.value = buildErrorFeedback(e);
+    }
+  }
+
   async function handleAddWhitelist() {
     const processName = normalizeWhitelistProcessName(whitelistInput.value);
     if (!processName) {
       return;
     }
 
-    try {
-      await setWhitelistItem(buildWhitelistItemInput(processName, true));
-      whitelistInput.value = "";
-      privacyFeedbackType.value = "ok";
-      privacyFeedback.value = whitelistAddedFeedback(processName, tx);
-      await refreshPrivacy();
-    } catch (e) {
-      setErrorMessage(e);
-      privacyFeedbackType.value = "error";
-      privacyFeedback.value = whitelistAddErrorFeedback(e, tx);
-    }
+    await runWhitelistMutation(
+      () => setWhitelistItem(buildWhitelistItemInput(processName, true)),
+      "ok",
+      () => whitelistAddedFeedback(processName, tx),
+      (error) => whitelistAddErrorFeedback(error, tx),
+      () => {
+        whitelistInput.value = "";
+      },
+    );
   }
 
   async function handleRemoveWhitelist(processName: string) {
-    try {
-      await setWhitelistItem(buildWhitelistItemInput(processName, false));
-      privacyFeedbackType.value = "warn";
-      privacyFeedback.value = whitelistRemovedFeedback(processName, tx);
-      await refreshPrivacy();
-    } catch (e) {
-      setErrorMessage(e);
-      privacyFeedbackType.value = "error";
-      privacyFeedback.value = whitelistRemoveErrorFeedback(e, tx);
-    }
+    await runWhitelistMutation(
+      () => setWhitelistItem(buildWhitelistItemInput(processName, false)),
+      "warn",
+      () => whitelistRemovedFeedback(processName, tx),
+      (error) => whitelistRemoveErrorFeedback(error, tx),
+    );
   }
 
   function onAutoStartChange(event: Event) {

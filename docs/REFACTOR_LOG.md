@@ -15902,3 +15902,71 @@ Rollback:
 Follow-up:
 
 - Commit R-295.
+## 2026-06-29: R-296 Settings Whitelist Mutation Runner Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend settings workflow
+- refactor hygiene
+
+Intent:
+
+- Remove repeated whitelist add/remove mutation wrappers from `useSettingsPrivacy.ts`.
+- Keep whitelist payloads, success/error feedback, and refresh behavior unchanged.
+
+Files changed:
+
+- `src/composables/useSettingsPrivacy.ts`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- None.
+
+Behavior expected to stay the same:
+
+- Adding a whitelist item still normalizes the process name, no-ops on empty input, sends the same enable payload, clears the input on success, and refreshes privacy data afterward.
+- Removing a whitelist item still sends the same disable payload, keeps the warning-tone success feedback, and refreshes privacy data afterward.
+- Whitelist add/remove failures still route through `setErrorMessage`, set error tone, and show the same helper-backed error feedback.
+- Privacy settings save behavior remains unchanged and is intentionally left outside this shared whitelist runner.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None beyond the existing whitelist operations.
+
+Startup/performance impact:
+
+- Negligible; this is a frontend composable cleanup only.
+
+Automated validation:
+
+- `.\node_modules\.bin\vue-tsc.cmd --noEmit` passed.
+- `git diff --check` passed.
+
+Manual smoke tests:
+
+- Not run for this settings whitelist mutation runner batch.
+
+Risks:
+
+- The shared whitelist runner now owns the common success/error lifecycle, so future whitelist actions with different side effects should stay separate unless they truly match this flow.
+
+Rollback:
+
+- Revert this batch to inline whitelist add/remove wrappers back into `useSettingsPrivacy.ts`.
+
+Follow-up:
+
+- Commit R-296.
