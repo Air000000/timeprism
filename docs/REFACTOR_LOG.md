@@ -15365,3 +15365,73 @@ Rollback:
 Follow-up:
 
 - Commit R-287.
+## 2026-06-29: R-288 Home Reminder Feedback Helper Extraction
+
+Status:
+
+- Passed.
+
+Primary domain:
+
+- frontend
+- home reminders
+- helper extraction
+
+Intent:
+
+- Move Home reminder feedback text construction out of `useHomeReminderPanel.ts`.
+- Keep reminder modal, quick actions, and drag/drop behavior unchanged.
+
+Files changed:
+
+- `src/composables/useHomeReminderPanel.ts`
+- `src/lib/homeReminderFeedback.ts`
+- `docs/CURRENT_SYSTEM_MAP.md`
+- `docs/REFACTOR_LOG.md`
+
+Behavior expected to change:
+
+- None.
+
+Behavior expected to stay the same:
+
+- Empty-content reminder validation message remains the same.
+- Reminder create/update/delete/done/restore/snooze feedback remains the same.
+- Reminder upsert, delete, done, snooze, and reorder flows remain the same.
+
+Tauri commands affected:
+
+- None.
+
+Database/schema impact:
+
+- None.
+
+Privacy impact:
+
+- None.
+
+Startup/performance impact:
+
+- Negligible; this is a frontend helper extraction only.
+
+Automated validation:
+
+- `.\node_modules\.bin\vue-tsc.cmd --noEmit` passed.
+- `git diff --check` passed.
+
+Manual smoke tests:
+
+- Not run for this Home reminder helper extraction batch.
+
+Risks:
+
+- Reminder feedback copy now lives in a helper file, so future wording changes must stay centralized there.
+
+Rollback:
+
+- Revert this batch to inline reminder feedback text back into `useHomeReminderPanel.ts`.
+
+Follow-up:
+
+- Commit R-288.

@@ -7,6 +7,13 @@ import {
   defaultHomeReminderDraft,
 } from "../lib/homeReminderDraft";
 import {
+  reminderContentEmptyFeedback,
+  reminderDeletedFeedback,
+  reminderDoneFeedback,
+  reminderSavedFeedback,
+  reminderSnoozedFeedback,
+} from "../lib/homeReminderFeedback";
+import {
   buildHomeReminderDropOrder,
   readHomeReminderDraggedId,
   setHomeReminderDragData,
@@ -85,11 +92,12 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
     const content = reminderDraftContent.value.trim();
     if (!content) {
       reminderFeedbackType.value = "warn";
-      reminderFeedback.value = ctx.tx("提醒内容不能为空", "Reminder content cannot be empty");
+      reminderFeedback.value = reminderContentEmptyFeedback(ctx.tx);
       return;
     }
 
     try {
+      const isCreate = reminderEditId.value === null;
       await ctx.handleUpsertReminder(buildHomeReminderUpsertInput({
         id: reminderEditId.value,
         content,
@@ -100,9 +108,7 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
         enabled: reminderEnabled.value,
       }));
       reminderFeedbackType.value = "ok";
-      reminderFeedback.value = reminderEditId.value === null
-        ? ctx.tx("提醒已创建", "Reminder created")
-        : ctx.tx("提醒已更新", "Reminder updated");
+      reminderFeedback.value = reminderSavedFeedback(isCreate, ctx.tx);
       resetReminderDraft();
     } catch (e) {
       reminderFeedbackType.value = "error";
@@ -115,7 +121,7 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
     try {
       await ctx.handleDeleteReminder(id);
       reminderFeedbackType.value = "warn";
-      reminderFeedback.value = ctx.tx("提醒已删除", "Reminder deleted");
+      reminderFeedback.value = reminderDeletedFeedback(ctx.tx);
       if (reminderEditId.value === id) {
         resetReminderDraft();
       }
@@ -130,9 +136,7 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
     try {
       await ctx.handleReminderDone(id, done);
       reminderFeedbackType.value = "ok";
-      reminderFeedback.value = done
-        ? ctx.tx("提醒已完成", "Reminder marked done")
-        : ctx.tx("提醒已恢复", "Reminder restored");
+      reminderFeedback.value = reminderDoneFeedback(done, ctx.tx);
     } catch (e) {
       reminderFeedbackType.value = "error";
       reminderFeedback.value = `${e}`;
@@ -144,7 +148,7 @@ export function useHomeReminderPanel(getCtx: () => HomeViewContext) {
     try {
       await ctx.handleReminderSnooze(id, 600);
       reminderFeedbackType.value = "info";
-      reminderFeedback.value = ctx.tx("提醒已稍后10分钟", "Reminder snoozed 10m");
+      reminderFeedback.value = reminderSnoozedFeedback(ctx.tx);
     } catch (e) {
       reminderFeedbackType.value = "error";
       reminderFeedback.value = `${e}`;
