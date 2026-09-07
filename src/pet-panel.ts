@@ -67,7 +67,7 @@ function renderWeekHeaders() {
 let mode: PetPanelMode = "heatmap";
 let timer: number | null = null;
 let lastStackSig = "";
-let active = true;
+let active = false;
 const viewMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
 async function resizePanelForMode(nextMode: PetPanelMode) {
@@ -182,7 +182,6 @@ void listen<boolean>("pet-panel-active", (event) => {
 
 updateMode("heatmap");
 renderWeekHeaders();
-void refresh();
 timer = window.setInterval(() => {
   void refresh();
 }, 5000);
