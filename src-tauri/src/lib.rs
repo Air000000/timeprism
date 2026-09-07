@@ -43,7 +43,7 @@ use services::startup::{get_auto_start_enabled_state, set_auto_start_enabled_sta
 use services::usage::append_usage_log_record;
 use services::window as window_service;
 
-#[tauri::command]
+#[tauri::command(async)]
 fn list_reminders(
     app: AppHandle,
     limit: Option<i64>,
@@ -53,7 +53,7 @@ fn list_reminders(
     list_reminder_entries(&conn, limit, include_completed)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn list_due_reminders(app: AppHandle, limit: Option<i64>) -> Result<Vec<ReminderEntry>, String> {
     let conn = open_connection(&app)?;
     list_due_reminder_entries(&conn, limit)
@@ -151,7 +151,7 @@ fn clear_idle_memory_state() -> Result<(), String> {
     foreground_service::clear_idle_memory_state()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn list_recent_logs(app: AppHandle, limit: Option<i64>) -> Result<Vec<RecentLogEntry>, String> {
     let conn = open_connection(&app)?;
     list_recent_log_entries(&conn, limit)
@@ -172,14 +172,14 @@ fn list_app_rules(app: AppHandle, limit: Option<i64>) -> Result<Vec<AppRuleEntry
     list_app_rule_entries(&conn, cap)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn list_pending_rule_processes(app: AppHandle, limit: Option<i64>) -> Result<Vec<PendingRuleProcess>, String> {
     let conn = open_connection(&app)?;
     let cap = limit.unwrap_or(10).clamp(1, 200);
     list_pending_rule_process_entries(&conn, cap)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn get_today_summary(app: AppHandle) -> Result<TodaySummary, String> {
     let conn = open_connection(&app)?;
     today_summary(&conn)
@@ -202,7 +202,7 @@ fn list_top_apps_all_time(
     list_top_apps_all_time_entries(&conn, limit, root_filter, include_ignore)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn get_learn_heatmap(
     app: AppHandle,
     days: Option<i64>,
@@ -212,7 +212,7 @@ fn get_learn_heatmap(
     learn_heatmap(&conn, days, goal_seconds)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn get_heatmap_goal_seconds_setting(app: AppHandle) -> Result<i64, String> {
     let conn = open_connection(&app)?;
     Ok(heatmap_goal_seconds_setting(&conn))
@@ -224,7 +224,7 @@ fn set_heatmap_goal_seconds_setting(app: AppHandle, goal_seconds: i64) -> Result
     save_heatmap_goal_seconds_setting(&conn, goal_seconds)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn get_usage_stack(
     app: AppHandle,
     days: Option<i64>,
