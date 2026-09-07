@@ -8,7 +8,6 @@ export function useLazySettingsMount({
   refreshSettingsData,
 }: LazySettingsMountOptions) {
   const privacyViewMounted = ref(false);
-  let settingsWarmTimer: number | null = null;
 
   function showSettingsViewAndRefresh() {
     privacyViewMounted.value = true;
@@ -18,17 +17,11 @@ export function useLazySettingsMount({
   }
 
   function startSettingsWarmup() {
-    settingsWarmTimer = window.setTimeout(() => {
-      privacyViewMounted.value = true;
-      void refreshSettingsData();
-    }, 1200);
+    // Settings data is intentionally loaded on demand so startup stays responsive.
   }
 
   function cleanupSettingsWarmup() {
-    if (settingsWarmTimer !== null) {
-      window.clearTimeout(settingsWarmTimer);
-      settingsWarmTimer = null;
-    }
+    // Kept for lifecycle compatibility; there is no startup warmup timer to clean up.
   }
 
   return {
