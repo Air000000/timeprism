@@ -9,7 +9,7 @@ on:
 
 jobs:
   checks:
-    name: Typecheck, Vite build, Rust check
+    name: Typecheck, Vite build, Rust check/test
     runs-on: windows-latest
 
     steps:
@@ -38,3 +38,7 @@ jobs:
       - name: Check Rust backend
         working-directory: src-tauri
         run: cargo check
+
+      - name: Test Rust backend
+        working-directory: src-tauri
+        run: cargo test
