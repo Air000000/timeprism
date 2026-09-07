@@ -41,36 +41,77 @@ export function useHomeData({
   getHeatmapGoalSeconds,
   setErrorMessage,
 }: UseHomeDataOptions) {
-  const loadingHome = ref(false);
+  const loadingHomeCore = ref(false);
+  const loadingHomeAnalytics = ref(false);
+  let initialHomeRefresh = true;
 
-  async function refreshHomeData() {
-    if (loadingHome.value) {
+  async function refreshHomeCoreData() {
+    if (loadingHomeCore.value) {
       return;
     }
 
-    loadingHome.value = true;
+    loadingHomeCore.value = true;
     try {
-      const [summary, logs, heatmap, pendingRules, pendingIdle, reminderRows, rhythmStack] = await Promise.all([
+      const [summary, logs, pendingRules, pendingIdle, reminderRows] = await Promise.all([
         getTodaySummary(),
         listRecentLogs(12),
-        getLearnHeatmap(getHeatmapFetchDays(), getHeatmapGoalSeconds()),
         listPendingRuleProcesses(10),
         listPendingIdlePrompts(3),
         listReminders(120, true),
-        getUsageStack(7, "ALL"),
       ]);
       todaySummary.value = summary;
       recentLogs.value = logs;
-      learnHeatmap.value = heatmap;
       pendingRuleProcesses.value = pendingRules;
       idlePrompts.value = pendingIdle;
       reminders.value = reminderRows;
+    } catch (e) {
+      setErrorMessage(e);
+    } finally {
+      loadingHomeCore.value = false;
+    }
+  }
+
+  async function refreshHomeAnalyticsData() {
+    if (loadingHomeAnalytics.value) {
+      return;
+    }
+
+    loadingHomeAnalytics.value = true;
+    try {
+      const heatmap = await getLearnHeatmap(getHeatmapFetchDays(), getHeatmapGoalSeconds());
+      learnHeatmap.value = heatmap;
+
+      const rhythmStack = await getUsageStack(7, "ALL");
       homeUsageStack.value = rhythmStack;
     } catch (e) {
       setErrorMessage(e);
     } finally {
-      loadingHome.value = false;
+      loadingHomeAnalytics.value = false;
     }
+  }
+
+  function scheduleInitialHomeAnalyticsRefresh() {
+    const run = () => {
+      void refreshHomeAnalyticsData();
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(run, { timeout: 1500 });
+      return;
+    }
+
+    window.setTimeout(run, 250);
+  }
+
+  async function refreshHomeData() {
+    if (initialHomeRefresh) {
+      initialHomeRefresh = false;
+      await refreshHomeCoreData();
+      scheduleInitialHomeAnalyticsRefresh();
+      return;
+    }
+
+    await Promise.all([refreshHomeCoreData(), refreshHomeAnalyticsData()]);
   }
 
   return {
