@@ -385,7 +385,6 @@ pub fn run() {
 
             if let Some(main_window) = app.get_webview_window("main") {
                 window_service::set_main_close_behavior(&main_window);
-                window_service::reveal_main_window(app.handle());
             }
 
             let _ = window_service::ensure_pet_window_position(app.handle(), true);
