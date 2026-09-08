@@ -89,7 +89,7 @@ fn set_reminder_order(app: AppHandle, input: SetReminderOrderInput) -> Result<bo
 #[tauri::command]
 fn snooze_reminder(app: AppHandle, id: i64, snooze_seconds: Option<i64>) -> Result<bool, String> {
     let conn = open_connection(&app)?;
-    snooze_reminder_entry(&conn, id)
+    snooze_reminder_entry(&conn, id, snooze_seconds)
 }
 
 #[tauri::command]
