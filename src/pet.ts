@@ -205,8 +205,8 @@ async function openContextMenu(clientX: number, clientY: number) {
 				hidePetWindow: () => {
 					void invoke("hide_pet_window").catch((e) => reportActionError(tx("隐藏失败", "Hide failed"), e));
 				},
-				closePetWindow: () => {
-					void invoke("close_pet_window").catch((e) => reportActionError(tx("关闭失败", "Close failed"), e));
+				quitApp: () => {
+					void invoke("quit_app").catch((e) => reportActionError(tx("退出失败", "Quit failed"), e));
 				},
 			}),
 		});
