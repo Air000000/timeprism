@@ -17,6 +17,7 @@ use domain::reminders::{
     ReminderEntry, SaveReminderInput, SetReminderDoneInput, SetReminderOrderInput,
 };
 use domain::rules::{AppRuleEntry, DeviationCheck, PendingRuleProcess, SaveAppRuleInput};
+use domain::tracking::TrackingState;
 use domain::window::{ForegroundCaptureDiagnostic, PetWindowSettleResult, SettlePetWindowInput};
 use services::analytics::{
     heatmap_goal_seconds_setting, learn_heatmap, list_recent_log_entries,
@@ -25,6 +26,7 @@ use services::analytics::{
     usage_stack,
 };
 use services::categories::{create_category_entry, list_category_entries};
+use services::focus::{check_focus_deviation_state, snooze_focus_guard_state};
 use services::foreground as foreground_service;
 use services::privacy::{
     get_privacy_settings_entry, list_whitelist_entries, set_whitelist_item_entry,
@@ -35,13 +37,14 @@ use services::reminders::{
     set_reminder_done_entry, set_reminder_order_entries, snooze_reminder_entry,
 };
 use services::rules::{list_app_rule_entries, list_pending_rule_process_entries, save_app_rule_entry};
-use services::focus::{
-    check_focus_deviation_state, snooze_focus_guard_state,
-};
 use services::sessions::{start_session_entry, stop_active_session_entry};
 use services::startup::{get_auto_start_enabled_state, set_auto_start_enabled_state};
+use services::tracking::{
+    complete_onboarding_entry, get_tracking_state_entry, set_auto_capture_enabled_entry,
+};
 use services::usage::append_usage_log_record;
 use services::window as window_service;
+use services::window_factory::create_configured_window;
 
 #[tauri::command(async)]
 fn list_reminders(
@@ -86,7 +89,7 @@ fn set_reminder_order(app: AppHandle, input: SetReminderOrderInput) -> Result<bo
 #[tauri::command]
 fn snooze_reminder(app: AppHandle, id: i64, snooze_seconds: Option<i64>) -> Result<bool, String> {
     let conn = open_connection(&app)?;
-    snooze_reminder_entry(&conn, id, snooze_seconds)
+    snooze_reminder_entry(&conn, id)
 }
 
 #[tauri::command]
@@ -122,7 +125,13 @@ fn append_app_usage_log(
     duration_ms: i64,
 ) -> Result<bool, String> {
     let conn = open_connection(&app)?;
-    let (stored, _) = append_usage_log_record(&conn, &process_name, &window_title, start_timestamp, duration_ms)?;
+    let (stored, _) = append_usage_log_record(
+        &conn,
+        &process_name,
+        &window_title,
+        start_timestamp,
+        duration_ms,
+    )?;
     Ok(stored)
 }
 
@@ -173,7 +182,10 @@ fn list_app_rules(app: AppHandle, limit: Option<i64>) -> Result<Vec<AppRuleEntry
 }
 
 #[tauri::command(async)]
-fn list_pending_rule_processes(app: AppHandle, limit: Option<i64>) -> Result<Vec<PendingRuleProcess>, String> {
+fn list_pending_rule_processes(
+    app: AppHandle,
+    limit: Option<i64>,
+) -> Result<Vec<PendingRuleProcess>, String> {
     let conn = open_connection(&app)?;
     let cap = limit.unwrap_or(10).clamp(1, 200);
     list_pending_rule_process_entries(&conn, cap)
@@ -277,6 +289,24 @@ fn set_auto_start_enabled(enabled: bool) -> Result<bool, String> {
     set_auto_start_enabled_state(enabled)
 }
 
+#[tauri::command(async)]
+fn get_tracking_state(app: AppHandle) -> Result<TrackingState, String> {
+    let conn = open_connection(&app)?;
+    get_tracking_state_entry(&conn)
+}
+
+#[tauri::command]
+fn complete_tracking_onboarding(app: AppHandle) -> Result<TrackingState, String> {
+    let conn = open_connection(&app)?;
+    complete_onboarding_entry(&conn)
+}
+
+#[tauri::command]
+fn set_auto_capture_enabled(app: AppHandle, enabled: bool) -> Result<TrackingState, String> {
+    let conn = open_connection(&app)?;
+    set_auto_capture_enabled_entry(&conn, enabled)
+}
+
 #[tauri::command]
 fn list_whitelist(app: AppHandle) -> Result<Vec<String>, String> {
     let conn = open_connection(&app)?;
@@ -289,8 +319,16 @@ fn set_whitelist_item(app: AppHandle, input: SetWhitelistItemInput) -> Result<()
     set_whitelist_item_entry(&conn, input)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn summon_pet_window(app: AppHandle) -> Result<(), String> {
+    let conn = open_connection(&app)?;
+    let tracking = get_tracking_state_entry(&conn)?;
+    drop(conn);
+    if !tracking.onboarding_completed {
+        return Err("cannot show pet before tracking onboarding is complete".to_string());
+    }
+
+    create_configured_window(&app, "pet")?;
     window_service::summon_pet_window(&app)
 }
 
@@ -367,32 +405,52 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(main_window) = app.get_webview_window("main") {
-                let _ = main_window.show();
-                let _ = main_window.unminimize();
-                let _ = main_window.set_focus();
-            }
             window_service::reveal_main_window(app);
         }))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
-                    if event.state == ShortcutState::Pressed {
-                        let _ = window_service::summon_pet_window(app);
+                    if event.state != ShortcutState::Pressed {
+                        return;
                     }
+
+                    let handle = app.clone();
+                    std::thread::spawn(move || {
+                        let tracking = open_connection(&handle)
+                            .and_then(|conn| get_tracking_state_entry(&conn));
+                        match tracking {
+                            Ok(state) if state.onboarding_completed => {
+                                if let Err(err) = create_configured_window(&handle, "pet")
+                                    .and_then(|_| window_service::summon_pet_window(&handle))
+                                {
+                                    eprintln!("global shortcut warning: failed to summon pet: {err}");
+                                }
+                            }
+                            Ok(_) => {}
+                            Err(err) => {
+                                eprintln!("global shortcut warning: failed to read tracking state: {err}");
+                            }
+                        }
+                    });
                 })
                 .build(),
         )
         .setup(|app| {
-            if let Err(err) = init_database(app.handle()) {
-                eprintln!("database init warning: {err}");
-            }
+            init_database(app.handle()).map_err(std::io::Error::other)?;
 
-            if let Some(main_window) = app.get_webview_window("main") {
-                window_service::set_main_close_behavior(&main_window);
-            }
+            let conn = open_connection(app.handle()).map_err(std::io::Error::other)?;
+            let tracking = get_tracking_state_entry(&conn).map_err(std::io::Error::other)?;
+            drop(conn);
 
-            let _ = window_service::ensure_pet_window_position(app.handle(), true);
+            let main_window = create_configured_window(app.handle(), "main")
+                .map_err(std::io::Error::other)?;
+            window_service::set_main_close_behavior(&main_window);
+
+            if tracking.onboarding_completed {
+                create_configured_window(app.handle(), "pet").map_err(std::io::Error::other)?;
+                window_service::ensure_pet_window_position(app.handle(), true)
+                    .map_err(std::io::Error::other)?;
+            }
 
             let shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyT);
             if let Err(err) = app.global_shortcut().register(shortcut) {
@@ -437,6 +495,9 @@ pub fn run() {
             update_privacy_settings,
             get_auto_start_enabled,
             set_auto_start_enabled,
+            get_tracking_state,
+            complete_tracking_onboarding,
+            set_auto_capture_enabled,
             list_whitelist,
             set_whitelist_item,
             show_main_window,
