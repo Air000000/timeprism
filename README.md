@@ -222,7 +222,7 @@ Because active-window data can be sensitive, privacy is treated as part of the d
 
 Recommended local development environment:
 
-- Node.js 20
+- Node.js 24 LTS
 - pnpm 9
 - Rust toolchain
 - Tauri v2 system prerequisites
