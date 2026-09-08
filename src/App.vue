@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { watch } from "vue";
+import { computed, watch } from "vue";
+import { summonPetWindow } from "./api";
 import AppTopNav from "./components/AppTopNav.vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
 import IdlePromptBanner from "./components/IdlePromptBanner.vue";
 import InsightsView from "./components/InsightsView.vue";
 import SettingsView from "./components/SettingsView.vue";
+import TrackingOnboardingView from "./components/TrackingOnboardingView.vue";
 import { useAutoCaptureSampler } from "./composables/useAutoCaptureSampler";
 import { useAppNavigation } from "./composables/useAppNavigation";
 import { useAppSettingsSection } from "./composables/useAppSettingsSection";
@@ -39,17 +41,40 @@ import {
   timeMinutesLabel,
   toDateTimeLocalValue,
 } from "./lib/time";
+import { trackingUiMode } from "./lib/trackingUi";
 
 const { locale, tx, initLocale, watchLocaleChanges, onLocaleChange } = useLocale();
 watchLocaleChanges();
 const { themeMode, toggleThemeMode, initThemeModeSafely } = useThemeMode();
 const { error, setErrorMessage } = useErrorMessage();
 const {
+  trackingReady,
+  onboardingCompleted,
   autoCaptureEnabled,
   captureShouldRun,
+  trackingActionLoading,
   loadTrackingState,
+  completeOnboarding,
   persistAutoCaptureEnabled,
 } = useTrackingState({ setErrorMessage });
+const trackingMode = computed(() =>
+  trackingUiMode(trackingReady.value, onboardingCompleted.value),
+);
+
+async function handleStartTracking(): Promise<void> {
+  try {
+    await completeOnboarding();
+  } catch {
+    return;
+  }
+
+  try {
+    await summonPetWindow();
+  } catch (e) {
+    setErrorMessage(e);
+  }
+}
+
 const {
   formatClock,
   mappedTypeText,
@@ -392,7 +417,33 @@ useMainWindowLifecycle({
 </script>
 
 <template>
-  <main class="layout">
+  <main v-if="trackingMode === 'loading'" class="tracking-bootstrap-shell" aria-live="polite">
+    <section class="tracking-bootstrap-card">
+      <div class="tracking-bootstrap-mark" aria-hidden="true">TP</div>
+      <div>
+        <h1>{{ tx("正在准备 TimePrism", "Preparing TimePrism") }}</h1>
+        <p>
+          {{
+            tx(
+              "正在读取本地记录设置。自动采样会保持关闭，直到状态确认完成。",
+              "Reading local tracking settings. Auto capture remains off until the state is confirmed.",
+            )
+          }}
+        </p>
+      </div>
+      <p v-if="error" class="error" role="alert">{{ error }}</p>
+    </section>
+  </main>
+
+  <TrackingOnboardingView
+    v-else-if="trackingMode === 'onboarding'"
+    :tx="tx"
+    :loading="trackingActionLoading"
+    :error="error"
+    :on-start="handleStartTracking"
+  />
+
+  <main v-else class="layout">
     <AppTopNav
       :tx="tx"
       :main-views="mainViews"
@@ -413,3 +464,66 @@ useMainWindowLifecycle({
     </div>
   </main>
 </template>
+
+<style scoped>
+.tracking-bootstrap-shell {
+  width: 860px;
+  max-width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  padding: 28px;
+  display: grid;
+  place-items: center;
+}
+
+.tracking-bootstrap-card {
+  width: min(100%, 520px);
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--card-edge);
+  border-radius: 22px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-soft), var(--inner-top);
+  backdrop-filter: blur(16px);
+}
+
+.tracking-bootstrap-mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 17px;
+  display: grid;
+  place-items: center;
+  color: #f3fbff;
+  background: linear-gradient(145deg, #2ab6a8 0%, #3b74d2 100%);
+  font-family: Arial, sans-serif;
+  font-weight: 800;
+}
+
+.tracking-bootstrap-card div:nth-child(2) {
+  display: grid;
+  gap: 5px;
+}
+
+.tracking-bootstrap-card h1,
+.tracking-bootstrap-card p {
+  margin: 0;
+}
+
+.tracking-bootstrap-card h1 {
+  font-size: 18px;
+}
+
+.tracking-bootstrap-card p {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.tracking-bootstrap-card .error {
+  grid-column: 1 / -1;
+  color: var(--danger);
+}
+</style>
