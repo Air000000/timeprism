@@ -1,6 +1,16 @@
 name: Windows Release
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release.yml"
+      - "src-tauri/tauri.conf.json"
+      - "src-tauri/Cargo.toml"
+      - "src-tauri/Cargo.lock"
+      - "package.json"
+      - "pnpm-lock.yaml"
   workflow_dispatch:
   push:
     tags:
@@ -67,15 +77,15 @@ jobs:
         working-directory: src-tauri
         run: cargo test
 
-      - name: Build installers for manual validation
-        if: github.event_name == 'workflow_dispatch'
+      - name: Build installers for validation
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
         run: pnpm tauri build --bundles nsis,msi
 
-      - name: Upload manual-build installers
-        if: github.event_name == 'workflow_dispatch'
+      - name: Upload validation installers
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
-          name: TimePrism-${{ env.TIMEPRISM_VERSION }}-windows-installers
+          name: TimePrism-${{ env.TIMEPRISM_VERSION }}-windows-installers-${{ github.event_name }}
           if-no-files-found: error
           path: |
             src-tauri/target/release/bundle/nsis/*-setup.exe
