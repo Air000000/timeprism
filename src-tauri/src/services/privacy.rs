@@ -387,19 +387,13 @@ mod tests {
     }
 
     #[test]
-    fn whitelist_only_hides_unlisted_processes_and_allows_listed_processes() {
+    fn whitelist_only_blocks_unlisted_processes_and_allows_listed_processes() {
         let conn = privacy_test_conn();
         set_config(&conn, "whitelist_only_enabled", "true");
 
         let (blocked, block_reason) =
             process_log_with_privacy(&conn, "code.exe", "Project").expect("process blocked log");
-        assert_eq!(
-            blocked,
-            Some((
-                "uncategorized.exe".to_string(),
-                "Hidden by Whitelist".to_string()
-            ))
-        );
+        assert_eq!(blocked, None);
         assert_eq!(block_reason, Some("whitelist_blocked".to_string()));
 
         conn.execute(
