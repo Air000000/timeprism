@@ -258,16 +258,28 @@ pub(super) fn initialize_connection(conn: &Connection) -> Result<(), String> {
     .map_err(|e| format!("failed to ensure reminder indexes: {e}"))?;
 
     conn.execute(
-        "INSERT OR IGNORE INTO categories (id, parent_id, name, color_hex, root_type) VALUES (1, NULL, '瀛︿範', '#22c55e', 'LEARN')",
+        "INSERT OR IGNORE INTO categories (id, parent_id, name, color_hex, root_type) VALUES (1, NULL, '学习', '#22c55e', 'LEARN')",
         [],
     )
     .map_err(|e| format!("failed to seed LEARN root: {e}"))?;
 
     conn.execute(
-        "INSERT OR IGNORE INTO categories (id, parent_id, name, color_hex, root_type) VALUES (2, NULL, '浼戞伅', '#f97316', 'REST')",
+        "INSERT OR IGNORE INTO categories (id, parent_id, name, color_hex, root_type) VALUES (2, NULL, '休息', '#f97316', 'REST')",
         [],
     )
     .map_err(|e| format!("failed to seed REST root: {e}"))?;
+
+    conn.execute(
+        "UPDATE categories SET name = '学习' WHERE id = 1 AND root_type = 'LEARN' AND name = '瀛︿範'",
+        [],
+    )
+    .map_err(|e| format!("failed to repair LEARN root name: {e}"))?;
+
+    conn.execute(
+        "UPDATE categories SET name = '休息' WHERE id = 2 AND root_type = 'REST' AND name = '浼戞伅'",
+        [],
+    )
+    .map_err(|e| format!("failed to repair REST root name: {e}"))?;
 
     let default_rules = [
         ("code.exe", "LEARN", "NORMAL"),
