@@ -32,7 +32,7 @@ Rather than relying on manual start/stop timers, it samples the foreground appli
 
 The project is intentionally scoped as a Windows-first, local-first desktop application. It does not depend on cloud accounts, remote sync, or external services for its core workflow.
 
-> **Release status:** the currently published `v0.1.0-preview` is an early portable build and predates the latest architecture/reliability work. The repository now includes a gated Windows release pipeline for NSIS `-setup.exe` and MSI installers; releases are created as drafts and smoke-tested before publication.
+> **Release status:** the currently published `v0.1.0-preview` is an early portable build and predates the latest architecture/reliability work. The repository now includes a gated Windows release pipeline for NSIS `-setup.exe` and MSI installers; packaging changes are validated on Windows before merge, while public releases remain draft-first and require an interactive installer smoke test before publication.
 
 ## What It Demonstrates
 
@@ -190,18 +190,23 @@ cargo check --all-targets
 cargo test
 ```
 
+Release-related pull requests also run an independent Windows packaging gate that builds both NSIS and MSI installers and uploads them as workflow artifacts. This verifies that the current tree can reach real Tauri installer artifacts without publishing a Release.
+
 The current desktop flow has also been manually smoke-tested on Windows for startup behavior, main views, reminder workflows, pet interactions, and full-app quit behavior.
 
-CI and smoke tests are used as project-level regression evidence; they are not a claim of production-grade hardening.
+CI, packaging validation, and smoke tests are used as project-level regression evidence; they are not a claim of production-grade hardening.
 
 ## Distribution
 
-`.github/workflows/release.yml` provides two release paths on `windows-latest`:
+`.github/workflows/release.yml` separates installer generation from publication on `windows-latest`:
 
-- **Manual dry run:** builds NSIS and MSI installers and uploads them as workflow artifacts without creating a Release.
+- **Packaging PR:** release-related pull requests validate synchronized versions, run frontend/Rust checks, build both NSIS and MSI installers, and upload the real installer artifacts without publishing anything.
+- **Manual dry run:** `workflow_dispatch` performs the same installer build on demand after merge and uploads the installers as workflow artifacts without creating a Release.
 - **Version tag:** requires the tag to exactly match the synchronized Cargo/Node/Tauri app version, then creates a **draft** GitHub Release with both installer formats.
 
-The project is currently unsigned, so Windows SmartScreen may warn about an unknown publisher. Release publication is deliberately separated from installer generation so the generated build can be smoke-tested first. See [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
+Automated packaging proves that the installers can be generated; it does not replace the interactive Windows gate. At least one generated installer must still be downloaded, installed, launched, and smoke-tested before the draft Release is made public.
+
+The project is currently unsigned, so Windows SmartScreen may warn about an unknown publisher. See [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) for the full publication gate.
 
 ## Privacy
 
