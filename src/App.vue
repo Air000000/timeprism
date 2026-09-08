@@ -46,7 +46,7 @@ import { trackingUiMode } from "./lib/trackingUi";
 const { locale, tx, initLocale, watchLocaleChanges, onLocaleChange } = useLocale();
 watchLocaleChanges();
 const { themeMode, toggleThemeMode, initThemeModeSafely } = useThemeMode();
-const { error, setErrorMessage } = useErrorMessage();
+const { error, setErrorMessage, clearErrorMessage } = useErrorMessage();
 const {
   trackingReady,
   onboardingCompleted,
@@ -349,6 +349,7 @@ const { refreshHomeData } = useHomeData({
   getHeatmapFetchDays,
   getHeatmapGoalSeconds,
   setErrorMessage,
+  clearErrorMessage,
 });
 bindMainDataRefreshHandlers({
   refreshHomeData,
