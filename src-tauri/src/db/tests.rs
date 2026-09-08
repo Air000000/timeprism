@@ -88,6 +88,15 @@ fn fresh_file_database_initialization_seeds_schema_and_defaults_and_reopens() {
             )
             .expect("read default code rule");
         assert_eq!(code_rule, "LEARN");
+
+        let learn_name: String = conn
+            .query_row("SELECT name FROM categories WHERE id = 1", [], |row| row.get(0))
+            .expect("read LEARN root name");
+        let rest_name: String = conn
+            .query_row("SELECT name FROM categories WHERE id = 2", [], |row| row.get(0))
+            .expect("read REST root name");
+        assert_eq!(learn_name, "学习");
+        assert_eq!(rest_name, "休息");
     }
 
     {
@@ -148,6 +157,40 @@ fn database_initialization_is_idempotent_and_preserves_user_values() {
         )
         .expect("count root categories");
     assert_eq!(root_count, 2);
+
+    drop(conn);
+    remove_sqlite_files(&path);
+}
+
+#[test]
+fn database_initialization_repairs_only_known_mojibake_root_names() {
+    let path = temp_db_path("root-name-repair");
+    remove_sqlite_files(&path);
+    let conn = Connection::open(&path).expect("open sqlite file");
+
+    super::migrations::initialize_connection(&conn).expect("first initialization");
+    conn.execute(
+        "UPDATE categories SET name = '瀛︿範' WHERE id = 1 AND root_type = 'LEARN'",
+        [],
+    )
+    .expect("seed known LEARN mojibake");
+    conn.execute(
+        "UPDATE categories SET name = '我的休息' WHERE id = 2 AND root_type = 'REST'",
+        [],
+    )
+    .expect("customize REST root name");
+
+    super::migrations::initialize_connection(&conn).expect("repair known root names");
+
+    let learn_name: String = conn
+        .query_row("SELECT name FROM categories WHERE id = 1", [], |row| row.get(0))
+        .expect("read repaired LEARN root name");
+    let rest_name: String = conn
+        .query_row("SELECT name FROM categories WHERE id = 2", [], |row| row.get(0))
+        .expect("read customized REST root name");
+
+    assert_eq!(learn_name, "学习");
+    assert_eq!(rest_name, "我的休息");
 
     drop(conn);
     remove_sqlite_files(&path);
