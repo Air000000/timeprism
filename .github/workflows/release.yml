@@ -69,7 +69,7 @@ jobs:
 
       - name: Build installers for manual validation
         if: github.event_name == 'workflow_dispatch'
-        run: pnpm tauri build -- --bundles nsis,msi
+        run: pnpm tauri build --bundles nsis,msi
 
       - name: Upload manual-build installers
         if: github.event_name == 'workflow_dispatch'
