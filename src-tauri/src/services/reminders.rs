@@ -1,24 +1,36 @@
-use chrono::{Datelike, Local, TimeZone};
+use chrono::{DateTime, Datelike, Local, TimeZone};
 use rusqlite::{params, Connection};
 
 use super::reminder_recurrence::{
     next_weekly_due_timestamp, normalize_repeat_rule, normalize_weekly_days, parse_weekly_days_db,
     weekly_days_to_db, NO_DUE_TIMESTAMP,
 };
-use super::time::{
-    business_day_key_from_start, business_day_start_from_local, business_day_window_from_local,
-};
 use crate::domain::reminders::{
     ReminderEntry, SaveReminderInput, SetReminderDoneInput, SetReminderOrderInput,
 };
+
+fn calendar_day_context(now: DateTime<Local>) -> Result<(i64, String, i64), String> {
+    let date = now.date_naive();
+    let start_naive = date
+        .and_hms_opt(0, 0, 0)
+        .ok_or_else(|| "failed to construct calendar day start".to_string())?;
+    let start_local = Local
+        .from_local_datetime(&start_naive)
+        .single()
+        .ok_or_else(|| "failed to resolve calendar day start".to_string())?;
+    Ok((
+        start_local.timestamp(),
+        date.format("%Y-%m-%d").to_string(),
+        now.weekday().num_days_from_sunday() as i64,
+    ))
+}
 
 fn collect_reminders(
     conn: &Connection,
     include_completed: bool,
     cap: usize,
 ) -> Result<Vec<ReminderEntry>, String> {
-    let (today_start_ts, _) = business_day_window_from_local(Local::now())?;
-    let today_key = business_day_key_from_start(today_start_ts)?;
+    let (today_start_ts, today_key, today_weekday) = calendar_day_context(Local::now())?;
     let tomorrow_start_ts = today_start_ts + 86_400;
 
     let query_limit = (cap as i64 * 6).clamp(30, 600);
@@ -85,11 +97,6 @@ fn collect_reminders(
             normalize_repeat_rule(&repeat_rule_raw).unwrap_or_else(|_| "NONE".to_string());
         let snooze_until_safe = snooze_until.filter(|v| *v > 0);
         let weekly_days = parse_weekly_days_db(weekly_days_raw);
-        let today_weekday = Local
-            .timestamp_opt(today_start_ts, 0)
-            .single()
-            .map(|dt| dt.weekday().num_days_from_sunday() as i64)
-            .unwrap_or(0);
 
         if repeat_rule == "DAILY" {
             let minutes = daily_time_minutes.map(|v| v.clamp(0, 1439));
@@ -392,11 +399,11 @@ pub(crate) fn set_reminder_done_entry(
         )
         .map_err(|_| "reminder not found".to_string())?;
     let repeat_rule = normalize_repeat_rule(&repeat_rule_raw)?;
-    let now_ts = Local::now().timestamp();
+    let now = Local::now();
+    let now_ts = now.timestamp();
 
     if repeat_rule == "DAILY" || repeat_rule == "WEEKLY" {
-        let today_start_ts = business_day_start_from_local(Local::now())?;
-        let today_key = business_day_key_from_start(today_start_ts)?;
+        let (_, today_key, _) = calendar_day_context(now)?;
         let changed = if input.done {
             conn.execute(
                 "UPDATE reminders
@@ -431,7 +438,7 @@ pub(crate) fn set_reminder_done_entry(
              WHERE id = ?3",
             params![if input.done { 1 } else { 0 }, now_ts, input.id],
         )
-        .map_err(|e| format!("failed to toggle reminder completion: {e}"))?;
+        .map_err(|e| format!("failed to toggle reminder: {e}"))?;
     Ok(changed > 0)
 }
 
