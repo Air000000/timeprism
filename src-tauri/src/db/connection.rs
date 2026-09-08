@@ -61,6 +61,10 @@ pub(super) fn migrate_legacy_db_files(
 }
 
 fn try_migrate_legacy_db(app: &AppHandle, target_path: &Path) -> Result<(), String> {
+    if target_path.exists() {
+        return Ok(());
+    }
+
     let legacy_path = legacy_db_path(app)?;
     migrate_legacy_db_files(&legacy_path, target_path)
 }
