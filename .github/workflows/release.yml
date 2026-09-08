@@ -1,5 +1,6 @@
 name: Windows Release
 
+# Packaging PRs build real Windows installers without publishing a Release.
 on:
   pull_request:
     branches:
