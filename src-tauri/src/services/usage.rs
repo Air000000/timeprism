@@ -103,3 +103,90 @@ pub(crate) fn append_usage_log_record(
     )?;
     Ok((stored, block_reason))
 }
+
+#[cfg(test)]
+mod tests {
+    use rusqlite::{params, Connection};
+
+    use super::persist_idle_prompt_decision;
+    use crate::domain::idle::IdlePromptEntry;
+
+    fn usage_test_conn() -> Connection {
+        let conn = Connection::open_in_memory().expect("open in-memory usage db");
+        conn.execute_batch(
+            r#"
+            CREATE TABLE app_rules (
+                process_name TEXT PRIMARY KEY,
+                mapped_type TEXT NOT NULL,
+                privacy_level TEXT NOT NULL,
+                created_at INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE TABLE app_usage_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                process_name TEXT NOT NULL,
+                window_title TEXT NOT NULL,
+                start_timestamp INTEGER NOT NULL,
+                duration_ms INTEGER NOT NULL
+            );
+            "#,
+        )
+        .expect("create usage test schema");
+        conn
+    }
+
+    #[test]
+    fn idle_decision_replaces_overlapping_foreground_usage() {
+        let conn = usage_test_conn();
+        conn.execute(
+            "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
+             VALUES (?1, ?2, ?3, ?4)",
+            params!["code.exe", "Project", 100_i64, 400_000_i64],
+        )
+        .expect("insert foreground segment crossing idle start");
+        conn.execute(
+            "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
+             VALUES (?1, ?2, ?3, ?4)",
+            params!["lockapp.exe", "Lock Screen", 350_i64, 100_000_i64],
+        )
+        .expect("insert foreground segment inside idle interval");
+
+        let prompt = IdlePromptEntry {
+            id: 1,
+            start_timestamp: 300,
+            end_timestamp: 600,
+            duration_ms: 300_000,
+            deferred_until_timestamp: None,
+        };
+
+        persist_idle_prompt_decision(&conn, &prompt, "REST").expect("persist idle decision");
+
+        let mut stmt = conn
+            .prepare(
+                "SELECT process_name, start_timestamp, duration_ms
+                 FROM app_usage_logs
+                 ORDER BY start_timestamp, id",
+            )
+            .expect("prepare usage rows");
+        let rows = stmt
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, i64>(1)?,
+                    row.get::<_, i64>(2)?,
+                ))
+            })
+            .expect("query usage rows")
+            .collect::<Result<Vec<_>, _>>()
+            .expect("collect usage rows");
+
+        assert_eq!(
+            rows,
+            vec![
+                ("code.exe".to_string(), 100, 200_000),
+                ("__idle_rest__.exe".to_string(), 300, 300_000),
+            ]
+        );
+    }
+}
