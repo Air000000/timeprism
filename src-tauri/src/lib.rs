@@ -357,6 +357,11 @@ fn show_main_window_section(app: AppHandle, section: String) -> Result<(), Strin
     window_service::show_main_window_section(&app, section)
 }
 
+#[tauri::command]
+fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -446,7 +451,8 @@ pub fn run() {
             move_pet_window,
             hide_pet_window,
             close_pet_window,
-            begin_pet_drag
+            begin_pet_drag,
+            quit_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
