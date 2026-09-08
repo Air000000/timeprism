@@ -4,14 +4,12 @@ import { captureForegroundOnce } from "../api";
 type TranslateFn = (zh: string, en: string) => string;
 
 type AutoCaptureSamplerOptions = {
-  autoCaptureEnabled: Ref<boolean>;
   autoCaptureFeedback: Ref<string>;
   tx: TranslateFn;
   intervalMs?: number;
 };
 
 export function useAutoCaptureSampler({
-  autoCaptureEnabled,
   autoCaptureFeedback,
   tx,
   intervalMs = 5000,
@@ -19,10 +17,6 @@ export function useAutoCaptureSampler({
   let captureTimer: number | null = null;
 
   function sampleAutoCapture() {
-    if (!autoCaptureEnabled.value) {
-      return;
-    }
-
     void captureForegroundOnce(intervalMs)
       .then((stored) => {
         autoCaptureFeedback.value = stored
