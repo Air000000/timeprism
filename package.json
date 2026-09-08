@@ -3,14 +3,17 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": "24.x"
+  },
   "type": "module",
   "scripts": {
-  "dev": "vite",
-  "typecheck": "vue-tsc --noEmit",
-  "build:check": "vue-tsc --noEmit && vite build --outDir dist-codex-check --emptyOutDir",
-  "build": "vue-tsc --noEmit && vite build",
-  "preview": "vite preview",
-  "tauri": "tauri"
+    "dev": "vite",
+    "typecheck": "vue-tsc --noEmit",
+    "build:check": "vue-tsc --noEmit && vite build --outDir dist-codex-check --emptyOutDir",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "dependencies": {
     "vue": "^3.5.13",
