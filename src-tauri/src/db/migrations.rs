@@ -174,8 +174,7 @@ pub fn ensure_heatmap_snapshot_table(conn: &Connection) -> Result<(), String> {
     Ok(())
 }
 
-pub fn init_database(app: &AppHandle) -> Result<(), String> {
-    let conn = open_connection(app)?;
+pub(super) fn initialize_connection(conn: &Connection) -> Result<(), String> {
     conn.pragma_update(None, "foreign_keys", "ON")
         .map_err(|e| format!("failed to enable foreign keys: {e}"))?;
 
@@ -211,44 +210,44 @@ pub fn init_database(app: &AppHandle) -> Result<(), String> {
           privacy_level TEXT NOT NULL CHECK(privacy_level IN ('NORMAL', 'BLUR_TITLE', 'WHITELIST_ONLY'))
         );
 
-                CREATE TABLE IF NOT EXISTS app_config (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL
-                );
+        CREATE TABLE IF NOT EXISTS app_config (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
 
-                CREATE TABLE IF NOT EXISTS app_whitelist (
-                    process_name TEXT PRIMARY KEY
-                );
+        CREATE TABLE IF NOT EXISTS app_whitelist (
+            process_name TEXT PRIMARY KEY
+        );
 
-                CREATE TABLE IF NOT EXISTS reminders (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    content TEXT NOT NULL,
-                    repeat_rule TEXT NOT NULL CHECK(repeat_rule IN ('NONE', 'DAILY', 'WEEKLY')),
-                    sort_order INTEGER NOT NULL DEFAULT 0,
-                    remind_at INTEGER NULL,
-                    daily_time_minutes INTEGER NULL,
-                    weekly_days TEXT NULL,
-                    is_completed INTEGER NOT NULL DEFAULT 0,
-                    completed_day_key TEXT NULL,
-                    completed_at INTEGER NULL,
-                    snooze_until INTEGER NULL,
-                    created_at INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL
-                );
+        CREATE TABLE IF NOT EXISTS reminders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT NOT NULL,
+            repeat_rule TEXT NOT NULL CHECK(repeat_rule IN ('NONE', 'DAILY', 'WEEKLY')),
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            remind_at INTEGER NULL,
+            daily_time_minutes INTEGER NULL,
+            weekly_days TEXT NULL,
+            is_completed INTEGER NOT NULL DEFAULT 0,
+            completed_day_key TEXT NULL,
+            completed_at INTEGER NULL,
+            snooze_until INTEGER NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        );
 
         CREATE INDEX IF NOT EXISTS idx_task_sessions_start_time ON task_sessions(start_time);
         CREATE INDEX IF NOT EXISTS idx_app_usage_logs_start ON app_usage_logs(start_timestamp);
         CREATE INDEX IF NOT EXISTS idx_app_usage_logs_process ON app_usage_logs(process_name);
-                CREATE INDEX IF NOT EXISTS idx_reminders_due_none ON reminders(repeat_rule, remind_at, is_completed);
-                CREATE INDEX IF NOT EXISTS idx_reminders_due_daily ON reminders(repeat_rule, daily_time_minutes, completed_day_key);
+        CREATE INDEX IF NOT EXISTS idx_reminders_due_none ON reminders(repeat_rule, remind_at, is_completed);
+        CREATE INDEX IF NOT EXISTS idx_reminders_due_daily ON reminders(repeat_rule, daily_time_minutes, completed_day_key);
         "#,
     )
     .map_err(|e| format!("failed to run schema init: {e}"))?;
 
-    ensure_app_rules_time_columns(&conn)?;
-    ensure_heatmap_snapshot_table(&conn)?;
-    ensure_reminders_weekly_columns(&conn)?;
-    ensure_reminders_sort_order(&conn)?;
+    ensure_app_rules_time_columns(conn)?;
+    ensure_heatmap_snapshot_table(conn)?;
+    ensure_reminders_weekly_columns(conn)?;
+    ensure_reminders_sort_order(conn)?;
     conn.execute_batch(
         r#"
         CREATE INDEX IF NOT EXISTS idx_reminders_due_none ON reminders(repeat_rule, remind_at, is_completed);
@@ -324,4 +323,9 @@ pub fn init_database(app: &AppHandle) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+pub fn init_database(app: &AppHandle) -> Result<(), String> {
+    let conn = open_connection(app)?;
+    initialize_connection(&conn)
 }
