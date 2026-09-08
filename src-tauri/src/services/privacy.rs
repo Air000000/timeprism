@@ -165,12 +165,7 @@ pub(crate) fn process_log_with_privacy(
             .unwrap_or(false);
 
         if !whitelisted {
-            final_process = "uncategorized.exe".to_string();
-            final_title = "Hidden by Whitelist".to_string();
-            return Ok((
-                Some((final_process, final_title)),
-                Some("whitelist_blocked".to_string()),
-            ));
+            return Ok((None, Some("whitelist_blocked".to_string())));
         }
     }
 
