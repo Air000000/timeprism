@@ -72,14 +72,43 @@ pub(crate) fn persist_idle_prompt_decision(
     };
 
     let process_key = normalize_process_key(process_name);
-    upsert_app_rule_entry(conn, &process_key, mapped_type, "NORMAL")?;
-    append_usage_log_direct(
-        conn,
+    let idle_start = prompt.start_timestamp.max(0);
+    let idle_end = prompt.end_timestamp.max(idle_start);
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| format!("failed to begin idle decision transaction: {e}"))?;
+
+    // Foreground samples can be persisted during the idle threshold window before the sampler
+    // knows the interval is idle. Resolving the prompt commits the retroactive classification,
+    // so replace those provisional rows instead of adding an overlapping idle row on top.
+    tx.execute(
+        "UPDATE app_usage_logs
+         SET duration_ms = MAX(0, (?1 - start_timestamp) * 1000)
+         WHERE start_timestamp < ?1
+           AND (start_timestamp + (duration_ms / 1000)) > ?1",
+        [idle_start],
+    )
+    .map_err(|e| format!("failed to trim usage at idle start: {e}"))?;
+    tx.execute(
+        "DELETE FROM app_usage_logs
+         WHERE start_timestamp >= ?1
+           AND start_timestamp < ?2",
+        params![idle_start, idle_end],
+    )
+    .map_err(|e| format!("failed to remove usage inside idle interval: {e}"))?;
+
+    upsert_app_rule_entry(&tx, &process_key, mapped_type, "NORMAL")?;
+    let stored = append_usage_log_direct(
+        &tx,
         &process_key,
         title,
         prompt.start_timestamp,
         prompt.duration_ms,
-    )
+    )?;
+
+    tx.commit()
+        .map_err(|e| format!("failed to commit idle decision transaction: {e}"))?;
+    Ok(stored)
 }
 
 pub(crate) fn append_usage_log_record(
