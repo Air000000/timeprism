@@ -80,6 +80,23 @@ fn fresh_file_database_initialization_seeds_schema_and_defaults_and_reopens() {
             .expect("read default browser mode");
         assert_eq!(browser_mode, "BLUR");
 
+        let onboarding: String = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'onboarding_completed'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("read onboarding default");
+        let auto_capture: String = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'auto_capture_enabled'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("read auto capture default");
+        assert_eq!(onboarding, "false");
+        assert_eq!(auto_capture, "false");
+
         let code_rule: String = conn
             .query_row(
                 "SELECT mapped_type FROM app_rules WHERE process_name = 'code.exe'",
@@ -163,6 +180,41 @@ fn database_initialization_is_idempotent_and_preserves_user_values() {
 }
 
 #[test]
+fn database_initialization_preserves_persisted_tracking_pause() {
+    let path = temp_db_path("tracking-pause");
+    remove_sqlite_files(&path);
+    let conn = Connection::open(&path).expect("open sqlite file");
+
+    super::migrations::initialize_connection(&conn).expect("initialize fresh database");
+    conn.execute(
+        "UPDATE app_config SET value = 'true' WHERE key = 'onboarding_completed'",
+        [],
+    )
+    .expect("mark onboarding complete");
+    conn.execute(
+        "UPDATE app_config SET value = 'false' WHERE key = 'auto_capture_enabled'",
+        [],
+    )
+    .expect("persist capture pause");
+
+    super::migrations::initialize_connection(&conn).expect("reinitialize database");
+
+    let state: (String, String) = conn
+        .query_row(
+            "SELECT
+                (SELECT value FROM app_config WHERE key = 'onboarding_completed'),
+                (SELECT value FROM app_config WHERE key = 'auto_capture_enabled')",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .expect("read persisted tracking state");
+    assert_eq!(state, ("true".to_string(), "false".to_string()));
+
+    drop(conn);
+    remove_sqlite_files(&path);
+}
+
+#[test]
 fn database_initialization_repairs_only_known_mojibake_root_names() {
     let path = temp_db_path("root-name-repair");
     remove_sqlite_files(&path);
@@ -239,6 +291,23 @@ fn legacy_schema_is_upgraded_without_losing_existing_rows() {
     assert!(column_exists(&conn, "app_rules", "updated_at"));
     assert!(column_exists(&conn, "reminders", "weekly_days"));
     assert!(column_exists(&conn, "reminders", "sort_order"));
+
+    let onboarding: String = conn
+        .query_row(
+            "SELECT value FROM app_config WHERE key = 'onboarding_completed'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("read migrated onboarding state");
+    let auto_capture: String = conn
+        .query_row(
+            "SELECT value FROM app_config WHERE key = 'auto_capture_enabled'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("read migrated capture state");
+    assert_eq!(onboarding, "true");
+    assert_eq!(auto_capture, "true");
 
     let mapped_type: String = conn
         .query_row(
