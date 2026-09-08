@@ -473,3 +473,57 @@ pub(crate) fn snooze_reminder_entry(
         .map_err(|e| format!("failed to snooze reminder: {e}"))?;
     Ok(changed > 0)
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::{Local, TimeZone, Timelike};
+    use rusqlite::Connection;
+
+    use super::collect_reminders;
+
+    fn reminders_test_conn() -> Connection {
+        let conn = Connection::open_in_memory().expect("open in-memory reminders db");
+        conn.execute_batch(
+            r#"
+            CREATE TABLE reminders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT NOT NULL,
+                repeat_rule TEXT NOT NULL,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                remind_at INTEGER,
+                daily_time_minutes INTEGER,
+                weekly_days TEXT,
+                is_completed INTEGER NOT NULL DEFAULT 0,
+                completed_day_key TEXT,
+                completed_at INTEGER,
+                snooze_until INTEGER,
+                created_at INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL DEFAULT 0
+            );
+            "#,
+        )
+        .expect("create reminders test schema");
+        conn
+    }
+
+    #[test]
+    fn daily_reminder_due_time_matches_wall_clock_minutes() {
+        let conn = reminders_test_conn();
+        conn.execute(
+            "INSERT INTO reminders
+             (content, repeat_rule, sort_order, daily_time_minutes, created_at, updated_at)
+             VALUES ('Daily check', 'DAILY', 0, 557, 1, 1)",
+            [],
+        )
+        .expect("insert daily reminder");
+
+        let items = collect_reminders(&conn, true, 10).expect("collect reminders");
+        assert_eq!(items.len(), 1);
+
+        let due = Local
+            .timestamp_opt(items[0].next_due_timestamp, 0)
+            .single()
+            .expect("convert next due to local datetime");
+        assert_eq!((due.hour(), due.minute()), (9, 17));
+    }
+}
