@@ -8,7 +8,7 @@ type PetContextMenuActions = {
   setPanelMode: (next: PetPanelWindowMode) => void;
   showMainWindow: () => void;
   hidePetWindow: () => void;
-  closePetWindow: () => void;
+  quitApp: () => void;
 };
 
 export function buildPetContextMenuItems(
@@ -42,9 +42,9 @@ export function buildPetContextMenuItems(
       action: actions.hidePetWindow,
     },
     {
-      id: "close-pet",
-      text: tx("关闭桌宠", "Close Pet"),
-      action: actions.closePetWindow,
+      id: "quit-app",
+      text: tx("退出 TimePrism", "Quit TimePrism"),
+      action: actions.quitApp,
     },
   ];
 }
