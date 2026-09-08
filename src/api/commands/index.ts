@@ -8,3 +8,4 @@ export * from "./sessions";
 export * from "./startup";
 export * from "./tracking";
 export * from "./usage";
+export * from "./window";
