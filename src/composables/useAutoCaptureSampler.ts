@@ -7,6 +7,7 @@ type AutoCaptureSamplerOptions = {
   autoCaptureFeedback: Ref<string>;
   tx: TranslateFn;
   intervalMs?: number;
+  autoCaptureEnabled?: Ref<boolean>;
 };
 
 export function useAutoCaptureSampler({
