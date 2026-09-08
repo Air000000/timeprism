@@ -27,17 +27,15 @@ fn db_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(data_dir.join("timeprism.db"))
 }
 
-fn try_migrate_legacy_db(app: &AppHandle, target_path: &Path) -> Result<(), String> {
-    if target_path.exists() {
+pub(super) fn migrate_legacy_db_files(
+    legacy_path: &Path,
+    target_path: &Path,
+) -> Result<(), String> {
+    if target_path.exists() || !legacy_path.exists() {
         return Ok(());
     }
 
-    let legacy_path = legacy_db_path(app)?;
-    if !legacy_path.exists() {
-        return Ok(());
-    }
-
-    fs::copy(&legacy_path, target_path).map_err(|e| {
+    fs::copy(legacy_path, target_path).map_err(|e| {
         format!(
             "failed to migrate legacy sqlite db from {} to {}: {e}",
             legacy_path.display(),
@@ -62,6 +60,11 @@ fn try_migrate_legacy_db(app: &AppHandle, target_path: &Path) -> Result<(), Stri
     Ok(())
 }
 
+fn try_migrate_legacy_db(app: &AppHandle, target_path: &Path) -> Result<(), String> {
+    let legacy_path = legacy_db_path(app)?;
+    migrate_legacy_db_files(&legacy_path, target_path)
+}
+
 pub fn open_connection(app: &AppHandle) -> Result<Connection, String> {
     let preferred_path = db_path(app)?;
     let migration_error = try_migrate_legacy_db(app, &preferred_path).err();
@@ -78,15 +81,12 @@ pub fn open_connection(app: &AppHandle) -> Result<Connection, String> {
 
     match Connection::open(&preferred_path) {
         Ok(conn) => Ok(conn),
-        Err(primary_err) => {
-            Connection::open(&legacy_path).map_err(|fallback_err| {
-                format!(
-                    "failed to open preferred sqlite db {}: {primary_err}; fallback legacy db {} also failed: {fallback_err}",
-                    preferred_path.display(),
-                    legacy_path.display()
-                )
-            })
-        }
+        Err(primary_err) => Connection::open(&legacy_path).map_err(|fallback_err| {
+            format!(
+                "failed to open preferred sqlite db {}: {primary_err}; fallback legacy db {} also failed: {fallback_err}",
+                preferred_path.display(),
+                legacy_path.display()
+            )
+        }),
     }
 }
-
