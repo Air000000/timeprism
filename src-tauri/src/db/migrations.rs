@@ -174,7 +174,23 @@ pub fn ensure_heatmap_snapshot_table(conn: &Connection) -> Result<(), String> {
     Ok(())
 }
 
+fn has_recognizable_timeprism_schema(conn: &Connection) -> Result<bool, String> {
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*)
+             FROM sqlite_master
+             WHERE type = 'table'
+               AND name IN ('categories', 'task_sessions', 'app_usage_logs', 'app_rules', 'app_config', 'reminders')",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("failed to inspect existing TimePrism schema: {e}"))?;
+    Ok(count > 0)
+}
+
 pub(super) fn initialize_connection(conn: &Connection) -> Result<(), String> {
+    let was_existing_timeprism_db = has_recognizable_timeprism_schema(conn)?;
+
     conn.pragma_update(None, "foreign_keys", "ON")
         .map_err(|e| format!("failed to enable foreign keys: {e}"))?;
 
@@ -317,6 +333,25 @@ pub(super) fn initialize_connection(conn: &Connection) -> Result<(), String> {
             params![key, value],
         )
         .map_err(|e| format!("failed to seed app config {key}: {e}"))?;
+    }
+
+    let tracking_defaults = if was_existing_timeprism_db {
+        [
+            ("onboarding_completed", "true"),
+            ("auto_capture_enabled", "true"),
+        ]
+    } else {
+        [
+            ("onboarding_completed", "false"),
+            ("auto_capture_enabled", "false"),
+        ]
+    };
+    for (key, value) in tracking_defaults {
+        conn.execute(
+            "INSERT OR IGNORE INTO app_config (key, value) VALUES (?1, ?2)",
+            params![key, value],
+        )
+        .map_err(|e| format!("failed to seed tracking config {key}: {e}"))?;
     }
 
     let default_whitelist = [
