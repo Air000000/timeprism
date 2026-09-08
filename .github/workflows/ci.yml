@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 20
 
@@ -25,6 +25,15 @@ jobs:
         run: |
           corepack enable
           corepack prepare pnpm@9.15.9 --activate
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build output
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          cache-on-failure: true
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -35,9 +44,9 @@ jobs:
       - name: Build frontend to temporary output
         run: pnpm run build:check
 
-      - name: Check Rust backend
+      - name: Check all Rust targets
         working-directory: src-tauri
-        run: cargo check
+        run: cargo check --all-targets
 
       - name: Test Rust backend
         working-directory: src-tauri
