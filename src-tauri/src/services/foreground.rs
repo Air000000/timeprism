@@ -47,7 +47,9 @@ struct ForegroundSnapshot {
     captured_at_ms: i64,
 }
 
-fn push_foreground_diagnostic(entry: ForegroundCaptureDiagnostic) -> Result<(), String> {
+fn push_foreground_diagnostic(mut entry: ForegroundCaptureDiagnostic) -> Result<(), String> {
+    entry.observed_window_title = "Hidden for Privacy".to_string();
+
     let mut state = FOREGROUND_SAMPLE_STATE
         .lock()
         .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
