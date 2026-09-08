@@ -13,6 +13,7 @@ pub mod time;
 pub mod tracking;
 pub mod usage;
 pub mod window;
+pub mod window_factory;
 
 #[cfg(test)]
 mod window_config_tests;
