@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from "vue";
 import AppTopNav from "./components/AppTopNav.vue";
 import GuardView from "./components/GuardView.vue";
 import HomeView from "./components/HomeView.vue";
@@ -32,6 +33,7 @@ import { useMainViewActions } from "./composables/useMainViewActions";
 import { useMainWindowLifecycle } from "./composables/useMainWindowLifecycle";
 import { useReminders } from "./composables/useReminders";
 import { useThemeMode } from "./composables/useThemeMode";
+import { useTrackingState } from "./composables/useTrackingState";
 import {
   formatSeconds,
   timeMinutesLabel,
@@ -42,6 +44,12 @@ const { locale, tx, initLocale, watchLocaleChanges, onLocaleChange } = useLocale
 watchLocaleChanges();
 const { themeMode, toggleThemeMode, initThemeModeSafely } = useThemeMode();
 const { error, setErrorMessage } = useErrorMessage();
+const {
+  autoCaptureEnabled,
+  captureShouldRun,
+  loadTrackingState,
+  persistAutoCaptureEnabled,
+} = useTrackingState({ setErrorMessage });
 const {
   formatClock,
   mappedTypeText,
@@ -146,7 +154,6 @@ const {
   setErrorMessage,
 });
 const {
-  autoCaptureEnabled,
   autoCaptureFeedback,
   guardFeedback,
   guardFeedbackType,
@@ -178,6 +185,8 @@ const {
   mappedTypeText,
   refreshData,
   setErrorMessage,
+  autoCaptureEnabled,
+  persistAutoCaptureEnabled,
 });
 const { switchHistorySubView, setMainView } = useMainViewActions({
   selectHistoryView,
@@ -208,10 +217,20 @@ const {
   startAutoCaptureSampler,
   stopAutoCaptureSampler,
 } = useAutoCaptureSampler({
-  autoCaptureEnabled,
   autoCaptureFeedback,
   tx,
 });
+watch(
+  captureShouldRun,
+  (shouldRun) => {
+    if (shouldRun) {
+      startAutoCaptureSampler();
+    } else {
+      stopAutoCaptureSampler();
+    }
+  },
+  { immediate: true },
+);
 const idlePromptBannerCtx = useIdlePromptBannerContext({
   tx,
   currentIdlePrompt,
@@ -356,13 +375,13 @@ const homeCtx = useHomeViewContext({
 useMainWindowLifecycle({
   initLocale,
   initThemeModeSafely,
+  loadTrackingState,
   loadHeatmapGoalSecondsSetting,
   resetGuardFeedback,
   resetPrivacyFeedback,
   refreshHomeData,
   startSettingsWarmup,
   startMainRefreshPolling,
-  startAutoCaptureSampler,
   startInsightsSectionNavigationListener,
   stopMainRefreshPolling,
   stopAutoCaptureSampler,
