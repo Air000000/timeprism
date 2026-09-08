@@ -462,3 +462,41 @@ pub(crate) fn list_foreground_capture_diagnostics(
     });
     Ok(items)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        list_foreground_capture_diagnostics, push_foreground_diagnostic, FOREGROUND_SAMPLE_STATE,
+    };
+    use crate::domain::window::ForegroundCaptureDiagnostic;
+
+    fn clear_diagnostics() {
+        let mut state = FOREGROUND_SAMPLE_STATE
+            .lock()
+            .expect("lock foreground sample state");
+        state.diagnostics.clear();
+    }
+
+    #[test]
+    fn diagnostics_do_not_expose_raw_window_titles() {
+        clear_diagnostics();
+        push_foreground_diagnostic(ForegroundCaptureDiagnostic {
+            id: 1,
+            captured_at_ms: 1,
+            observed_process_name: "code.exe".to_string(),
+            observed_window_title: "secret-project-name".to_string(),
+            stored: false,
+            block_reason: Some("baseline_only".to_string()),
+            rule_saved: false,
+            rule_mapped_type: "IGNORE".to_string(),
+        })
+        .expect("push diagnostic");
+
+        let items = list_foreground_capture_diagnostics(Some(10), Some(false))
+            .expect("list diagnostics");
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].observed_window_title, "Hidden for Privacy");
+
+        clear_diagnostics();
+    }
+}
