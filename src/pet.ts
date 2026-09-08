@@ -1,8 +1,8 @@
-﻿import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { Menu } from "@tauri-apps/api/menu";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
-import { getTodaySummary, type TodaySummary } from "./api";
+import { getTodaySummary, getTrackingState } from "./api";
 import {
 	LOCALE_STORAGE_KEY,
 	getStoredOrBrowserLocale,
@@ -57,12 +57,23 @@ import "./pet.css";
 const petWindow = getCurrentWindow();
 const EDGE_SNAP_THRESHOLD = 72;
 
+type PetTranslateFn = (zh: string, en: string) => string;
+
 function getLocale(): LocaleCode {
 	return getStoredOrBrowserLocale();
 }
 
 function tx(zh: string, en: string): string {
 	return translateForLocale(getLocale(), zh, en);
+}
+
+export function petTrackingMood(
+	autoCaptureEnabled: boolean,
+	translate: PetTranslateFn,
+): string {
+	return autoCaptureEnabled
+		? translate("自动记录中", "Auto tracking")
+		: translate("记录已暂停", "Tracking paused");
 }
 
 let petState: PetDockState = "free";
@@ -408,12 +419,15 @@ function scheduleSettleRetry(attempt = 0) {
 
 async function refreshSummary() {
 	try {
-		const summary: TodaySummary = await getTodaySummary();
+		const [summary, tracking] = await Promise.all([
+			getTodaySummary(),
+			getTrackingState(),
+		]);
 		renderPetSummary(
 			{ learn, rest, mood },
 			formatSeconds(summary.learn_seconds),
 			formatSeconds(summary.rest_seconds),
-			tx("自动记录中", "Auto tracking"),
+			petTrackingMood(tracking.auto_capture_enabled, tx),
 		);
 	} catch {
 		setMood(tx("状态同步失败，请打开设置查看详情", "Sync failed, open settings for details"));
@@ -563,5 +577,4 @@ window.addEventListener("beforeunload", () => {
 	clearMoodResetTimer();
 	closeContextMenu();
 });
-
 
