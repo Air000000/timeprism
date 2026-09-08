@@ -8,8 +8,8 @@ const sampler = useAutoCaptureSampler({
 });
 
 // Runtime policy belongs to useTrackingState/App, not to the sampler API.
-// @ts-expect-error autoCaptureEnabled must not be accepted by the sampler.
 useAutoCaptureSampler({
+  // @ts-expect-error autoCaptureEnabled must not be accepted by the sampler.
   autoCaptureEnabled: ref(true),
   autoCaptureFeedback: ref(""),
   tx: (_zh, en) => en,
