@@ -25,6 +25,50 @@ Cleanup:
 Remove-Item -LiteralPath .\dist-codex-check -Recurse -Force
 ```
 
+## S-050 Fresh Install And First-Run Tracking
+
+Use a clean or sandboxed TimePrism app-data directory so this path exercises a truly fresh database.
+
+1. Launch TimePrism with no existing app database.
+2. Confirm no `no such table: app_usage_logs` or other pre-initialization database error appears.
+3. Before activation, switch foreground apps for more than 10 seconds and confirm no usage rows are captured.
+4. Confirm onboarding explains:
+   - foreground application/window metadata is observed for duration tracking;
+   - core data is stored in local SQLite;
+   - browser titles receive privacy processing and private/incognito windows are skipped;
+   - TimePrism does not capture screenshots or keystroke contents;
+   - Insights shows observed application activity while pet `学 / 休` counters include only activity classified as `LEARN / REST`.
+5. Click `开始使用 TimePrism` and confirm tracking becomes active without restarting the app.
+6. Switch foreground apps and confirm Insights begins showing observed activity after the normal sampling interval.
+7. Confirm pet `学 / 休` remains classification-based and refreshes on the existing several-second cadence rather than synthetic per-second increments.
+8. Pause capture from Focus Guard, switch foreground apps for more than 10 seconds, and confirm no new samples are appended.
+9. Fully quit and reopen TimePrism; confirm the pause persists and onboarding does not reappear.
+10. Resume capture, fully quit and reopen again, and confirm automatic tracking resumes.
+11. While capture is paused, confirm the pet mood reports `记录已暂停` / `Tracking paused`.
+12. Confirm close-to-background, pet summon/hide, and `Quit TimePrism` behavior still works.
+
+Expected:
+
+- Database initialization completes before product WebViews query SQLite.
+- Fresh installs remain capture-off until explicit onboarding activation succeeds.
+- Pause/resume is persisted, not reset by restart.
+- Tracking, Home, and pet updates retain the existing approximately 5-second cadence.
+
+## S-060 Upgrade From A Pre-Tracking-State Database
+
+Use a backed-up database created by a TimePrism build from before the `onboarding_completed` and `auto_capture_enabled` keys existed.
+
+1. Launch the current build against the backed-up pre-change database.
+2. Confirm existing records remain present.
+3. Confirm onboarding does not appear.
+4. Confirm tracking starts enabled by default for this recognized legacy database.
+5. Pause capture, fully quit, and reopen; confirm the explicit pause is preserved.
+
+Expected:
+
+- Recognizable legacy databases migrate to onboarded + capture-enabled defaults without overwriting later explicit tracking choices.
+- Existing user data survives migration.
+
 ## S-100 Main Window
 
 1. Launch the app.
