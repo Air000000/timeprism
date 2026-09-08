@@ -1,344 +1,48 @@
 ﻿<script setup lang="ts">
-import { computed, ref } from "vue";
+import { useHomeReminderPanel } from "../composables/useHomeReminderPanel";
+import { useHomeRhythmTooltip } from "../composables/useHomeRhythmTooltip";
+import type { HomeViewContext } from "./viewContexts";
 
-const props = defineProps<{ ctx: any }>();
+const props = defineProps<{ ctx: HomeViewContext }>();
 
-type ReminderRepeatRule = "NONE" | "DAILY" | "WEEKLY";
+const {
+  closeScheduleSettings,
+  draggingReminderId,
+  dropTargetReminderId,
+  handleReminderDragEnd,
+  handleReminderDragEnter,
+  handleReminderDragStart,
+  handleReminderDrop,
+  openReminderComposer,
+  quickDeleteReminder,
+  quickDoneReminder,
+  quickSnoozeReminder,
+  reminderDraftAt,
+  reminderDraftContent,
+  reminderDraftDailyTime,
+  reminderDraftRepeat,
+  reminderDraftWeeklyDays,
+  reminderEditId,
+  reminderEnabled,
+  reminderFeedback,
+  reminderFeedbackType,
+  resetReminderDraft,
+  saveReminderFromModal,
+  scheduleModalOpen,
+  startEditReminder,
+  toggleWeeklyDay,
+  weekdayLabel,
+  weekdayOptions,
+} = useHomeReminderPanel(() => props.ctx);
 
-const scheduleModalOpen = ref(false);
-const reminderEditId = ref<number | null>(null);
-const reminderDraftContent = ref("");
-const reminderDraftRepeat = ref<ReminderRepeatRule>("NONE");
-const reminderEnabled = ref(true);
-const reminderDraftAt = ref("");
-const reminderDraftDailyTime = ref("09:00");
-const reminderDraftWeeklyDays = ref<number[]>([1, 2, 3, 4, 5]);
-const reminderFeedback = ref("");
-const reminderFeedbackType = ref<"info" | "ok" | "warn" | "error">("info");
-const draggingReminderId = ref<number | null>(null);
-const dropTargetReminderId = ref<number | null>(null);
-const rhythmTooltip = ref<{
-  visible: boolean;
-  x: number;
-  y: number;
-  bgColor: string;
-  borderColor: string;
-  accentColor: string;
-  dayLabel: string;
-  segmentLabel: string;
-  durationText: string;
-  shareText: string;
-  toneText: string;
-  contextText: string;
-} | null>(null);
-const weekdayOptions = [
-  { value: 0, zh: "日", en: "Sun" },
-  { value: 1, zh: "一", en: "Mon" },
-  { value: 2, zh: "二", en: "Tue" },
-  { value: 3, zh: "三", en: "Wed" },
-  { value: 4, zh: "四", en: "Thu" },
-  { value: 5, zh: "五", en: "Fri" },
-  { value: 6, zh: "六", en: "Sat" },
-];
-
-function compactRhythmDuration(seconds: number): string {
-  const safe = Math.max(0, Math.floor(seconds));
-  if (safe >= 3600) {
-    const hours = safe / 3600;
-    return `${hours >= 10 ? hours.toFixed(0) : hours.toFixed(1)}h`;
-  }
-  if (safe >= 60) {
-    return `${Math.round(safe / 60)}m`;
-  }
-  return `${safe}s`;
-}
-
-const homeRhythmSummary = computed(() => {
-  const bars = props.ctx.homeMonthRhythmBars ?? [];
-  const totalSeconds = bars.reduce((sum: number, bar: any) => sum + (bar.totalSeconds ?? 0), 0);
-  const activeDays = bars.filter((bar: any) => (bar.totalSeconds ?? 0) > 0).length;
-  const averageSeconds = bars.length > 0 ? Math.round(totalSeconds / bars.length) : 0;
-  const bestBar = bars.reduce((best: any, bar: any) => (
-    (bar.totalSeconds ?? 0) > (best?.totalSeconds ?? -1) ? bar : best
-  ), null);
-  return {
-    totalText: compactRhythmDuration(totalSeconds),
-    averageText: compactRhythmDuration(averageSeconds),
-    activeDays,
-    bestText: bestBar && (bestBar.totalSeconds ?? 0) > 0
-      ? props.ctx.tx(
-        `${bestBar.label}号 · ${compactRhythmDuration(bestBar.totalSeconds)}`,
-        `${bestBar.label} · ${compactRhythmDuration(bestBar.totalSeconds)}`,
-      )
-      : props.ctx.tx("暂无记录", "No data"),
-  };
-});
-
-function placeRhythmTooltip(event: MouseEvent) {
-  const width = 248;
-  const height = 126;
-  const gap = 16;
-  const maxX = Math.max(12, window.innerWidth - width - 12);
-  const maxY = Math.max(12, window.innerHeight - height - 12);
-  return {
-    x: Math.min(maxX, event.clientX + gap),
-    y: Math.min(maxY, event.clientY - 12),
-  };
-}
-
-function rhythmToneText(share: number, segment: "learn" | "rest"): string {
-  if (segment === "learn") {
-    if (share >= 60) {
-      return props.ctx.tx("这一天明显进入了学习主线。", "Learning clearly led this day.");
-    }
-    if (share >= 35) {
-      return props.ctx.tx("这一天有一段扎实的学习投入。", "There was a solid learning block here.");
-    }
-    return props.ctx.tx("这一天学习有推进，但还留着余量。", "Learning moved forward, but there was still room.");
-  }
-
-  if (share >= 60) {
-    return props.ctx.tx("这一天更偏向恢复和放松。", "This day leaned more toward recovery and rest.");
-  }
-  if (share >= 35) {
-    return props.ctx.tx("这一天有一段比较明确的休息时间。", "There was a clearly defined rest window here.");
-  }
-  return props.ctx.tx("这段休息比较轻，像一次短缓冲。", "This rest block was light, more like a short reset.");
-}
-
-function handleRhythmEnter(
-  event: MouseEvent,
-  bar: any,
-  segment: "learn" | "rest"
-) {
-  const segmentSeconds = segment === "learn" ? (bar.learnSeconds ?? 0) : (bar.restSeconds ?? 0);
-  const share = (bar.computerTotalSeconds ?? 0) > 0
-    ? Math.round((segmentSeconds / bar.computerTotalSeconds) * 100)
-    : 0;
-  const pos = placeRhythmTooltip(event);
-  const palette = segment === "learn"
-    ? {
-      bgColor: "rgba(233, 246, 236, 0.96)",
-      borderColor: "rgba(123, 181, 137, 0.42)",
-      accentColor: "#2f7a52",
-    }
-    : {
-      bgColor: "rgba(236, 242, 252, 0.96)",
-      borderColor: "rgba(150, 176, 223, 0.42)",
-      accentColor: "#476d9f",
-    };
-  rhythmTooltip.value = {
-    visible: true,
-    x: pos.x,
-    y: pos.y,
-    ...palette,
-    dayLabel: bar.label,
-    segmentLabel: segment === "learn" ? props.ctx.tx("学习", "Learn") : props.ctx.tx("休息", "Rest"),
-    durationText: compactRhythmDuration(segmentSeconds),
-    shareText: `${share}%`,
-    toneText: rhythmToneText(share, segment),
-    contextText: props.ctx.tx(
-      `第 ${bar.label} 天电脑总使用 ${compactRhythmDuration(bar.computerTotalSeconds ?? 0)}`,
-      `Day ${bar.label} total computer use ${compactRhythmDuration(bar.computerTotalSeconds ?? 0)}`,
-    ),
-  };
-}
-
-function handleRhythmMove(event: MouseEvent) {
-  if (!rhythmTooltip.value) {
-    return;
-  }
-  const pos = placeRhythmTooltip(event);
-  rhythmTooltip.value.x = pos.x;
-  rhythmTooltip.value.y = pos.y;
-}
-
-function handleRhythmLeave() {
-  rhythmTooltip.value = null;
-}
-
-function weekdayLabel(day: { zh: string; en: string }): string {
-  return props.ctx.tx(day.zh, day.en);
-}
-
-function toggleWeeklyDay(day: number) {
-  if (reminderDraftWeeklyDays.value.includes(day)) {
-    reminderDraftWeeklyDays.value = reminderDraftWeeklyDays.value.filter((item) => item !== day);
-    return;
-  }
-  reminderDraftWeeklyDays.value = [...reminderDraftWeeklyDays.value, day].sort((a, b) => a - b);
-}
-
-function resetReminderDraft() {
-  reminderEditId.value = null;
-  reminderDraftContent.value = "";
-  reminderDraftRepeat.value = "NONE";
-  reminderEnabled.value = true;
-  reminderDraftAt.value = "";
-  reminderDraftDailyTime.value = "09:00";
-  reminderDraftWeeklyDays.value = [1, 2, 3, 4, 5];
-}
-
-function openReminderComposer() {
-  scheduleModalOpen.value = true;
-  resetReminderDraft();
-  reminderFeedbackType.value = "info";
-  reminderFeedback.value = "";
-}
-
-function closeScheduleSettings() {
-  scheduleModalOpen.value = false;
-}
-
-function startEditReminder(item: any) {
-  scheduleModalOpen.value = true;
-  reminderEditId.value = item.id;
-  reminderDraftContent.value = item.content;
-  reminderDraftRepeat.value = item.repeat_rule;
-  if (item.repeat_rule === "DAILY" || item.repeat_rule === "WEEKLY") {
-    reminderEnabled.value = item.daily_time_minutes !== null;
-    reminderDraftDailyTime.value = props.ctx.timeMinutesLabel(item.daily_time_minutes ?? 9 * 60);
-    reminderDraftAt.value = "";
-    reminderDraftWeeklyDays.value = item.repeat_rule === "WEEKLY"
-      ? [...(item.weekly_days ?? [1, 2, 3, 4, 5])].sort((a: number, b: number) => a - b)
-      : [1, 2, 3, 4, 5];
-    return;
-  }
-
-  reminderEnabled.value = item.remind_at !== null;
-  reminderDraftAt.value = item.remind_at !== null
-    ? props.ctx.toDateTimeLocalValue(item.remind_at)
-    : "";
-  reminderDraftWeeklyDays.value = [1, 2, 3, 4, 5];
-}
-
-async function saveReminderFromModal() {
-  const content = reminderDraftContent.value.trim();
-  if (!content) {
-    reminderFeedbackType.value = "warn";
-    reminderFeedback.value = props.ctx.tx("提醒内容不能为空", "Reminder content cannot be empty");
-    return;
-  }
-
-  try {
-    await props.ctx.handleUpsertReminder({
-      id: reminderEditId.value ?? undefined,
-      content,
-      repeat_rule: reminderDraftRepeat.value,
-      remind_at_text: reminderDraftAt.value,
-      daily_time_text: reminderDraftDailyTime.value,
-      weekly_days: reminderDraftWeeklyDays.value,
-      reminder_enabled: reminderEnabled.value,
-    });
-    reminderFeedbackType.value = "ok";
-    reminderFeedback.value = reminderEditId.value === null
-      ? props.ctx.tx("提醒已创建", "Reminder created")
-      : props.ctx.tx("提醒已更新", "Reminder updated");
-    resetReminderDraft();
-  } catch (e) {
-    reminderFeedbackType.value = "error";
-    reminderFeedback.value = `${e}`;
-  }
-}
-
-async function quickDeleteReminder(id: number) {
-  try {
-    await props.ctx.handleDeleteReminder(id);
-    reminderFeedbackType.value = "warn";
-    reminderFeedback.value = props.ctx.tx("提醒已删除", "Reminder deleted");
-    if (reminderEditId.value === id) {
-      resetReminderDraft();
-    }
-  } catch (e) {
-    reminderFeedbackType.value = "error";
-    reminderFeedback.value = `${e}`;
-  }
-}
-
-async function quickDoneReminder(id: number, done: boolean) {
-  try {
-    await props.ctx.handleReminderDone(id, done);
-    reminderFeedbackType.value = "ok";
-    reminderFeedback.value = done
-      ? props.ctx.tx("提醒已完成", "Reminder marked done")
-      : props.ctx.tx("提醒已恢复", "Reminder restored");
-  } catch (e) {
-    reminderFeedbackType.value = "error";
-    reminderFeedback.value = `${e}`;
-  }
-}
-
-async function quickSnoozeReminder(id: number) {
-  try {
-    await props.ctx.handleReminderSnooze(id, 600);
-    reminderFeedbackType.value = "info";
-    reminderFeedback.value = props.ctx.tx("提醒已稍后10分钟", "Reminder snoozed 10m");
-  } catch (e) {
-    reminderFeedbackType.value = "error";
-    reminderFeedback.value = `${e}`;
-  }
-}
-
-function handleReminderDragStart(item: any, event?: DragEvent) {
-  draggingReminderId.value = item.id;
-  dropTargetReminderId.value = item.id;
-  if (event?.dataTransfer) {
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.dropEffect = "move";
-    event.dataTransfer.setData("text/plain", String(item.id));
-  }
-}
-
-function handleReminderDragEnter(item: any) {
-  if (draggingReminderId.value === null || draggingReminderId.value === item.id) {
-    return;
-  }
-  dropTargetReminderId.value = item.id;
-}
-
-function handleReminderDragEnd() {
-  draggingReminderId.value = null;
-  dropTargetReminderId.value = null;
-}
-
-async function handleReminderDrop(targetItem: any, event?: DragEvent) {
-  const draggedId = draggingReminderId.value
-    ?? Number.parseInt(event?.dataTransfer?.getData("text/plain") ?? "", 10);
-  draggingReminderId.value = null;
-  dropTargetReminderId.value = null;
-  if (!Number.isFinite(draggedId) || draggedId === targetItem.id) {
-    return;
-  }
-
-  const allItems = [...props.ctx.reminderListForPanel];
-  const dragged = allItems.find((item) => item.id === draggedId);
-  if (!dragged || dragged.done !== targetItem.done) {
-    return;
-  }
-
-  const ordered = allItems.filter((item) => item.done === dragged.done);
-  const fromIndex = ordered.findIndex((item) => item.id === draggedId);
-  const toIndex = ordered.findIndex((item) => item.id === targetItem.id);
-  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
-    return;
-  }
-
-  const [moved] = ordered.splice(fromIndex, 1);
-  ordered.splice(toIndex, 0, moved);
-
-  const doneGroup = allItems.filter((item: any) => item.done);
-  const undoneGroup = allItems.filter((item: any) => !item.done);
-  const orderedIds = dragged.done
-    ? [...undoneGroup.map((item: any) => item.id), ...ordered.map((item: any) => item.id)]
-    : [...ordered.map((item: any) => item.id), ...doneGroup.map((item: any) => item.id)];
-
-  try {
-    await props.ctx.handleReminderReorder(orderedIds);
-  } catch (e) {
-    reminderFeedbackType.value = "error";
-    reminderFeedback.value = `${e}`;
-  }
-}
+const {
+  compactRhythmDuration,
+  handleRhythmEnter,
+  handleRhythmLeave,
+  handleRhythmMove,
+  homeRhythmSummary,
+  rhythmTooltip,
+} = useHomeRhythmTooltip(() => props.ctx);
 </script>
 
 <template>

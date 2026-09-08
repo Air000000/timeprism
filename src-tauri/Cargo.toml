@@ -31,4 +31,5 @@ windows-sys = { version = "0.59", features = [
 	"Win32_UI_WindowsAndMessaging",
 	"Win32_System_Threading"
 ] }
+tauri-plugin-single-instance = "2"
 

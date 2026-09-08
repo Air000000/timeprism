@@ -1,10 +1,12 @@
 <script setup lang="ts">
-const props = defineProps<{ ctx: any }>();
+import type { InsightsViewContext } from "./viewContexts";
+
+const props = defineProps<{ ctx: InsightsViewContext }>();
 </script>
 
 <template>
   <section id="insights-stack-anchor" class="card insight-pane">
-    <h3 style="margin-top: 14px;">{{ props.ctx.tx("历史记录深度区", "History Deep View") }}</h3>
+    <h3 style="margin-top: 14px;">{{ props.ctx.tx("历史记录深度视图", "History Deep View") }}</h3>
 
     <div class="insight-pane-body">
       <div class="history-subnav" role="tablist" :aria-label="props.ctx.tx('历史分段导航', 'History segmented navigation')">
