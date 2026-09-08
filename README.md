@@ -14,6 +14,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Air000000/timeprism/releases"><strong>Windows Releases</strong></a> |
   <a href="#what-it-demonstrates">What It Demonstrates</a> |
   <a href="#architecture">Architecture</a> |
   <a href="#engineering-highlights">Engineering Highlights</a> |
@@ -30,6 +31,8 @@ TimePrism is a personal desktop tracker for understanding how computer time actu
 Rather than relying on manual start/stop timers, it samples the foreground application, applies privacy rules before persistence, maps activity through local classification rules, and stores the resulting facts in SQLite for review across the main window, Focus Guard, reminders, and a lightweight desktop pet.
 
 The project is intentionally scoped as a Windows-first, local-first desktop application. It does not depend on cloud accounts, remote sync, or external services for its core workflow.
+
+> **Release status:** the currently published `v0.1.0-preview` is an early portable build and predates the latest architecture/reliability work. The repository now includes a gated Windows release pipeline for NSIS `-setup.exe` and MSI installers; releases are created as drafts and smoke-tested before publication.
 
 ## What It Demonstrates
 
@@ -144,7 +147,7 @@ SQLite persistence
 | Backend | Rust |
 | Storage | SQLite / rusqlite |
 | Platform integration | Windows + Tauri window APIs |
-| Validation | GitHub Actions, `vue-tsc`, Vite build, `cargo check`, `cargo test` |
+| Validation | GitHub Actions, `vue-tsc`, Vite build, `cargo check --all-targets`, `cargo test` |
 
 ## Project Structure
 
@@ -178,18 +181,27 @@ timeprism/
 
 ## Validation
 
-Every push to `main` and `refactor/**`, plus pull requests, runs the repository CI workflow on Windows:
+Every push to `main` and `refactor/**`, plus pull requests, runs the repository CI workflow on Windows. Rust build output is cached between runs and all test targets are compiled before the test phase:
 
 ```text
 pnpm run typecheck
 pnpm run build:check
-cargo check
+cargo check --all-targets
 cargo test
 ```
 
 The current desktop flow has also been manually smoke-tested on Windows for startup behavior, main views, reminder workflows, pet interactions, and full-app quit behavior.
 
 CI and smoke tests are used as project-level regression evidence; they are not a claim of production-grade hardening.
+
+## Distribution
+
+`.github/workflows/release.yml` provides two release paths on `windows-latest`:
+
+- **Manual dry run:** builds NSIS and MSI installers and uploads them as workflow artifacts without creating a Release.
+- **Version tag:** requires the tag to exactly match the synchronized Cargo/Node/Tauri app version, then creates a **draft** GitHub Release with both installer formats.
+
+The project is currently unsigned, so Windows SmartScreen may warn about an unknown publisher. Release publication is deliberately separated from installer generation so the generated build can be smoke-tested first. See [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
 
 ## Privacy
 
@@ -242,7 +254,7 @@ pnpm dev
 pnpm run typecheck
 pnpm run build:check
 cd src-tauri
-cargo check
+cargo check --all-targets
 cargo test
 ```
 
@@ -277,7 +289,11 @@ Engineering notes and design rationale live under `docs/`, including:
 - database and privacy notes
 - smoke-test catalog
 - testing strategy
+- release checklist
+- product-media capture guide
 - ADRs and refactor traceability
+
+Real product screenshots/GIF are only added from sanitized current Windows builds; the capture/privacy requirements are documented in [`docs/media/README.md`](docs/media/README.md) so generated or mock UI is not presented as implementation evidence.
 
 ## License
 
