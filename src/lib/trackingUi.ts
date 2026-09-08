@@ -15,6 +15,10 @@ export function trackingUiMode(
 export function trackingUiMode(
   trackingReady: boolean,
   onboardingCompleted: boolean,
+): TrackingUiMode;
+export function trackingUiMode(
+  trackingReady: boolean,
+  onboardingCompleted: boolean,
 ): TrackingUiMode {
   if (!trackingReady) {
     return "loading";
