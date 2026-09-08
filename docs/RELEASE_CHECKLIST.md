@@ -20,24 +20,59 @@ Installer validation is deliberately split into two layers:
 
 A green packaging job is therefore necessary evidence, but it is not sufficient by itself to publish a Release.
 
+## Mandatory first-run and upgrade acceptance
+
+Before a public release, both tracking-state migration paths must pass on a real Windows machine using the exact release candidate build.
+
+### Fresh-install gate
+
+Use a clean or sandboxed TimePrism app-data directory and complete `S-050 Fresh Install And First-Run Tracking` in `docs/SMOKE_TESTS.md`.
+
+Release-blocking assertions include:
+
+- SQLite is initialized before product WebViews query it; no `no such table` startup failure appears.
+- No foreground capture occurs before the user accepts the first-run tracking disclosure.
+- The disclosure accurately describes foreground app/window metadata, local SQLite storage, browser privacy processing, no screenshot/keystroke-content capture, and the distinction between observed activity and classified `LEARN / REST` time.
+- Activation begins tracking without an application restart.
+- Pause persists across full quit/reopen; resume also persists and restores automatic tracking after restart.
+- The desktop pet reports active versus paused tracking while keeping `学 / 休` counters classification-based.
+
+### Upgrade gate
+
+Use a backed-up recognizable TimePrism database created before the tracking-state keys existed and complete `S-060 Upgrade From A Pre-Tracking-State Database`.
+
+Release-blocking assertions include:
+
+- existing rows survive migration;
+- onboarding does not unexpectedly reappear for an existing user;
+- the legacy database starts onboarded with capture enabled;
+- a later explicit pause is preserved across reinitialization and restart.
+
+Do not publish a release, mark a release candidate accepted, or promote a tracking-state PR solely from automated CI evidence if either interactive gate has not passed.
+
 ## Before tagging
 
 1. Confirm `main` CI is green.
 2. Confirm the latest relevant packaging PR produced both installer formats successfully.
-3. Update the same semantic version in:
+3. Confirm both mandatory acceptance paths above passed on the release candidate:
+   - fresh install (`S-050`);
+   - pre-tracking-state upgrade (`S-060`).
+4. Update the same semantic version in:
    - `package.json`
    - `src-tauri/Cargo.toml`
    - `src-tauri/tauri.conf.json`
-4. Run or verify:
+5. Run or verify:
 
    ```text
+   pnpm install --frozen-lockfile
    pnpm run typecheck
    pnpm run build:check
+   cargo check --manifest-path src-tauri/Cargo.toml --all-targets
    cargo test --manifest-path src-tauri/Cargo.toml
    ```
 
-5. Smoke-test the desktop flows listed in `docs/SMOKE_TESTS.md`.
-6. Commit the synchronized version bump to `main`.
+6. Smoke-test the remaining desktop flows listed in `docs/SMOKE_TESTS.md`.
+7. Commit the synchronized version bump to `main`.
 
 The release workflow rejects mismatched Node/Cargo/Tauri versions. Tag-triggered runs also reject a tag that does not equal `v<app-version>`.
 
@@ -68,10 +103,11 @@ Download the generated artifact and perform the interactive Windows smoke before
 At minimum, verify one generated installer end to end on Windows:
 
 - install from the NSIS `-setup.exe` or MSI artifact;
-- launch TimePrism and confirm the main window renders normally;
+- run the fresh-install tracking acceptance with a clean/sandboxed app-data directory;
+- separately run the upgrade acceptance against a backed-up pre-tracking-state database;
 - verify Home, Insights, Focus Guard, reminders, privacy settings, and desktop pet flows;
 - verify main-window close/background behavior and full-app quit behavior;
-- restart the app and confirm local data survives;
+- restart the app and confirm local data and tracking pause/resume state survive as expected;
 - uninstall the tested installer and confirm the uninstall flow completes normally;
 - retain the unsigned/SmartScreen note until Windows code signing exists.
 
@@ -94,6 +130,7 @@ Before publishing the draft Release:
 
 - confirm the expected NSIS and MSI assets are attached;
 - install at least one draft asset if it differs from the previously smoke-tested artifact;
+- confirm both fresh-install and upgrade acceptance evidence corresponds to the same code/release candidate;
 - confirm Release notes describe any known limitations;
 - explicitly retain the unsigned/SmartScreen note until Windows code signing exists.
 
