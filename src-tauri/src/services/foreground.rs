@@ -21,7 +21,9 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 
 use super::privacy::normalize_process_key;
 use super::rules::resolve_rule_mapping;
-use super::usage::{append_usage_log_record, persist_idle_prompt_decision};
+use super::usage::{
+    append_usage_log_record, persist_idle_prompt_app_decision, persist_idle_prompt_decision,
+};
 use crate::db::connection::open_connection;
 use crate::domain::idle::{IdleMemoryState, IdlePromptEntry, ResolveIdlePromptInput};
 use crate::domain::window::ForegroundCaptureDiagnostic;
@@ -35,6 +37,7 @@ struct ForegroundSampleState {
     last: Option<ForegroundSnapshot>,
     diagnostics: Vec<ForegroundCaptureDiagnostic>,
     idle_segment_start_ms: Option<i64>,
+    idle_attribution_process_name: Option<String>,
     pending_idle_prompts: Vec<IdlePromptEntry>,
     next_idle_prompt_id: i64,
     remembered_idle_decision: Option<String>,
@@ -45,6 +48,18 @@ struct ForegroundSnapshot {
     process_name: String,
     window_title: String,
     captured_at_ms: i64,
+}
+
+fn idle_attribution_candidate(snapshot: Option<&ForegroundSnapshot>) -> Option<String> {
+    let process_name = snapshot.map(|item| normalize_process_key(&item.process_name))?;
+    if process_name == "unknown.exe"
+        || process_name == "lockapp.exe"
+        || process_name == "logonui.exe"
+        || process_name.starts_with("pid-")
+    {
+        return None;
+    }
+    Some(process_name)
 }
 
 fn push_foreground_diagnostic(mut entry: ForegroundCaptureDiagnostic) -> Result<(), String> {
@@ -151,6 +166,9 @@ pub(crate) fn capture_foreground_once(
             let mut state = FOREGROUND_SAMPLE_STATE
                 .lock()
                 .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
+            if state.idle_segment_start_ms.is_none() {
+                state.idle_attribution_process_name = idle_attribution_candidate(state.last.as_ref());
+            }
             let seg_start = state.idle_segment_start_ms.get_or_insert(idle_start_ms);
             if idle_start_ms < *seg_start {
                 *seg_start = idle_start_ms;
@@ -177,6 +195,7 @@ pub(crate) fn capture_foreground_once(
             .lock()
             .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
         if let Some(idle_start_ms) = state.idle_segment_start_ms.take() {
+            let attribution_process_name = state.idle_attribution_process_name.take();
             let duration = (now_ms - idle_start_ms).max(0);
             if duration >= IDLE_PROMPT_THRESHOLD_MS {
                 let prompt_id = if state.next_idle_prompt_id <= 0 {
@@ -191,6 +210,7 @@ pub(crate) fn capture_foreground_once(
                     end_timestamp: (now_ms / 1000).max(0),
                     duration_ms: duration,
                     deferred_until_timestamp: None,
+                    attribution_process_name,
                 };
 
                 if let Some(remembered) = state.remembered_idle_decision.clone() {
@@ -214,6 +234,8 @@ pub(crate) fn capture_foreground_once(
                     }
                 }
             }
+        } else {
+            state.idle_attribution_process_name = None;
         }
     }
 
@@ -353,8 +375,8 @@ pub(crate) fn resolve_idle_prompt(
 ) -> Result<bool, String> {
     let decision = input.decision.trim().to_uppercase();
     let remember_this_session = input.remember_this_session.unwrap_or(false);
-    if !matches!(decision.as_str(), "LEARN" | "REST" | "IDLE" | "SKIP") {
-        return Err("decision must be LEARN, REST, IDLE, or SKIP".to_string());
+    if !matches!(decision.as_str(), "APP" | "LEARN" | "REST" | "IDLE" | "SKIP") {
+        return Err("decision must be APP, LEARN, REST, IDLE, or SKIP".to_string());
     }
 
     if decision == "SKIP" {
@@ -373,6 +395,21 @@ pub(crate) fn resolve_idle_prompt(
         return Ok(false);
     }
 
+    if decision == "APP" {
+        let state = FOREGROUND_SAMPLE_STATE
+            .lock()
+            .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
+        let has_candidate = state
+            .pending_idle_prompts
+            .iter()
+            .find(|item| item.id == input.prompt_id)
+            .and_then(|item| item.attribution_process_name.as_ref())
+            .is_some();
+        if !has_candidate {
+            return Err("idle prompt has no previous-app attribution candidate".to_string());
+        }
+    }
+
     let prompt = {
         let mut state = FOREGROUND_SAMPLE_STATE
             .lock()
@@ -388,9 +425,17 @@ pub(crate) fn resolve_idle_prompt(
         return Ok(false);
     };
     let conn = open_connection(app)?;
-    let stored = persist_idle_prompt_decision(&conn, &prompt, &decision)?;
+    let stored = if decision == "APP" {
+        let process_name = prompt
+            .attribution_process_name
+            .as_deref()
+            .ok_or_else(|| "idle prompt has no previous-app attribution candidate".to_string())?;
+        persist_idle_prompt_app_decision(&conn, &prompt, process_name)?
+    } else {
+        persist_idle_prompt_decision(&conn, &prompt, &decision)?
+    };
 
-    if remember_this_session {
+    if remember_this_session && matches!(decision.as_str(), "LEARN" | "REST" | "IDLE") {
         let mut state = FOREGROUND_SAMPLE_STATE
             .lock()
             .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
@@ -468,7 +513,8 @@ pub(crate) fn list_foreground_capture_diagnostics(
 #[cfg(test)]
 mod tests {
     use super::{
-        list_foreground_capture_diagnostics, push_foreground_diagnostic, FOREGROUND_SAMPLE_STATE,
+        idle_attribution_candidate, list_foreground_capture_diagnostics, push_foreground_diagnostic,
+        ForegroundSnapshot, FOREGROUND_SAMPLE_STATE,
     };
     use crate::domain::window::ForegroundCaptureDiagnostic;
 
@@ -477,6 +523,32 @@ mod tests {
             .lock()
             .expect("lock foreground sample state");
         state.diagnostics.clear();
+    }
+
+    #[test]
+    fn idle_attribution_uses_normalized_previous_app_without_title() {
+        let snapshot = ForegroundSnapshot {
+            process_name: r#"C:\Program Files\Microsoft VS Code\Code.exe"#.to_string(),
+            window_title: "Secret project title".to_string(),
+            captured_at_ms: 1,
+        };
+
+        assert_eq!(
+            idle_attribution_candidate(Some(&snapshot)),
+            Some("code.exe".to_string())
+        );
+    }
+
+    #[test]
+    fn idle_attribution_rejects_lock_and_unknown_processes() {
+        for process_name in ["LockApp.exe", "LogonUI.exe", "unknown.exe", "pid-42.exe"] {
+            let snapshot = ForegroundSnapshot {
+                process_name: process_name.to_string(),
+                window_title: "Hidden".to_string(),
+                captured_at_ms: 1,
+            };
+            assert_eq!(idle_attribution_candidate(Some(&snapshot)), None);
+        }
     }
 
     #[test]
