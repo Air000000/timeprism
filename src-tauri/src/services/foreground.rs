@@ -19,7 +19,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
 };
 
-use super::privacy::normalize_process_key;
+use super::privacy::{normalize_process_key, process_log_with_privacy};
 use super::rules::resolve_rule_mapping;
 use super::usage::{
     append_usage_log_record, persist_idle_prompt_app_decision, persist_idle_prompt_decision,
@@ -38,6 +38,8 @@ struct ForegroundSampleState {
     diagnostics: Vec<ForegroundCaptureDiagnostic>,
     idle_segment_start_ms: Option<i64>,
     idle_attribution_process_name: Option<String>,
+    last_input_at_ms: Option<i64>,
+    last_input_attribution_process_name: Option<String>,
     pending_idle_prompts: Vec<IdlePromptEntry>,
     next_idle_prompt_id: i64,
     remembered_idle_decision: Option<String>,
@@ -50,16 +52,40 @@ struct ForegroundSnapshot {
     captured_at_ms: i64,
 }
 
-fn idle_attribution_candidate(snapshot: Option<&ForegroundSnapshot>) -> Option<String> {
-    let process_name = snapshot.map(|item| normalize_process_key(&item.process_name))?;
+fn idle_attribution_candidate(process_name: &str) -> Option<String> {
+    let process_name = normalize_process_key(process_name);
     if process_name == "unknown.exe"
         || process_name == "lockapp.exe"
         || process_name == "logonui.exe"
+        || process_name == "desktop.shell.exe"
+        || process_name == "timeprism.exe"
         || process_name.starts_with("pid-")
+        || process_name.starts_with("__idle")
     {
         return None;
     }
     Some(process_name)
+}
+
+fn should_refresh_idle_attribution(
+    state: &ForegroundSampleState,
+    observed_input_at_ms: i64,
+) -> bool {
+    state
+        .last_input_at_ms
+        .map(|last_input_at_ms| observed_input_at_ms > last_input_at_ms)
+        .unwrap_or(true)
+}
+
+fn update_idle_attribution_on_input(
+    state: &mut ForegroundSampleState,
+    observed_input_at_ms: i64,
+    candidate: Option<String>,
+) {
+    if should_refresh_idle_attribution(state, observed_input_at_ms) {
+        state.last_input_at_ms = Some(observed_input_at_ms);
+        state.last_input_attribution_process_name = candidate;
+    }
 }
 
 fn push_foreground_diagnostic(mut entry: ForegroundCaptureDiagnostic) -> Result<(), String> {
@@ -159,6 +185,7 @@ pub(crate) fn capture_foreground_once(
 ) -> Result<bool, String> {
     let now_ms = Local::now().timestamp_millis();
     let idle_ms = current_idle_millis().unwrap_or(0).max(0);
+    let observed_input_at_ms = (now_ms - idle_ms).max(0);
 
     if idle_ms >= IDLE_PROMPT_THRESHOLD_MS {
         let idle_start_ms = now_ms - idle_ms;
@@ -167,7 +194,8 @@ pub(crate) fn capture_foreground_once(
                 .lock()
                 .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
             if state.idle_segment_start_ms.is_none() {
-                state.idle_attribution_process_name = idle_attribution_candidate(state.last.as_ref());
+                state.idle_attribution_process_name =
+                    state.last_input_attribution_process_name.clone();
             }
             let seg_start = state.idle_segment_start_ms.get_or_insert(idle_start_ms);
             if idle_start_ms < *seg_start {
@@ -244,6 +272,7 @@ pub(crate) fn capture_foreground_once(
             let mut state = FOREGROUND_SAMPLE_STATE
                 .lock()
                 .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
+            update_idle_attribution_on_input(&mut state, observed_input_at_ms, None);
             state.last = None;
         }
         let diag = ForegroundCaptureDiagnostic {
@@ -265,6 +294,25 @@ pub(crate) fn capture_foreground_once(
         window_title,
         captured_at_ms: now_ms,
     };
+
+    let should_refresh_candidate = {
+        let state = FOREGROUND_SAMPLE_STATE
+            .lock()
+            .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
+        should_refresh_idle_attribution(&state, observed_input_at_ms)
+    };
+    if should_refresh_candidate {
+        let conn = open_connection(app)?;
+        let (processed, _) =
+            process_log_with_privacy(&conn, &current.process_name, &current.window_title)?;
+        let candidate = processed
+            .as_ref()
+            .and_then(|(safe_process_name, _)| idle_attribution_candidate(safe_process_name));
+        let mut state = FOREGROUND_SAMPLE_STATE
+            .lock()
+            .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
+        update_idle_attribution_on_input(&mut state, observed_input_at_ms, candidate);
+    }
 
     let previous = {
         let mut state = FOREGROUND_SAMPLE_STATE
@@ -519,7 +567,8 @@ pub(crate) fn list_foreground_capture_diagnostics(
 mod tests {
     use super::{
         idle_attribution_candidate, list_foreground_capture_diagnostics, push_foreground_diagnostic,
-        ForegroundSnapshot, FOREGROUND_SAMPLE_STATE,
+        update_idle_attribution_on_input, ForegroundSampleState, ForegroundSnapshot,
+        FOREGROUND_SAMPLE_STATE,
     };
     use crate::domain::window::ForegroundCaptureDiagnostic;
 
@@ -531,29 +580,59 @@ mod tests {
     }
 
     #[test]
-    fn idle_attribution_uses_normalized_previous_app_without_title() {
-        let snapshot = ForegroundSnapshot {
-            process_name: r#"C:\Program Files\Microsoft VS Code\Code.exe"#.to_string(),
-            window_title: "Secret project title".to_string(),
-            captured_at_ms: 1,
-        };
-
+    fn idle_attribution_normalizes_safe_process_identity() {
         assert_eq!(
-            idle_attribution_candidate(Some(&snapshot)),
+            idle_attribution_candidate(r#"C:\Program Files\Microsoft VS Code\Code.exe"#),
             Some("code.exe".to_string())
         );
     }
 
     #[test]
-    fn idle_attribution_rejects_lock_and_unknown_processes() {
-        for process_name in ["LockApp.exe", "LogonUI.exe", "unknown.exe", "pid-42.exe"] {
-            let snapshot = ForegroundSnapshot {
-                process_name: process_name.to_string(),
-                window_title: "Hidden".to_string(),
-                captured_at_ms: 1,
-            };
-            assert_eq!(idle_attribution_candidate(Some(&snapshot)), None);
+    fn idle_attribution_rejects_system_self_and_virtual_processes() {
+        for process_name in [
+            "LockApp.exe",
+            "LogonUI.exe",
+            "unknown.exe",
+            "pid-42.exe",
+            "desktop.shell.exe",
+            "timeprism.exe",
+            "__idle_learn__.exe",
+        ] {
+            assert_eq!(idle_attribution_candidate(process_name), None);
         }
+    }
+
+    #[test]
+    fn idle_attribution_changes_only_when_last_input_timestamp_advances() {
+        let mut state = ForegroundSampleState::default();
+
+        update_idle_attribution_on_input(
+            &mut state,
+            1_000,
+            Some("code.exe".to_string()),
+        );
+        update_idle_attribution_on_input(
+            &mut state,
+            1_000,
+            Some("spotify.exe".to_string()),
+        );
+        assert_eq!(
+            state.last_input_attribution_process_name.as_deref(),
+            Some("code.exe")
+        );
+
+        update_idle_attribution_on_input(
+            &mut state,
+            2_000,
+            Some("msedge.exe".to_string()),
+        );
+        assert_eq!(
+            state.last_input_attribution_process_name.as_deref(),
+            Some("msedge.exe")
+        );
+
+        update_idle_attribution_on_input(&mut state, 3_000, None);
+        assert_eq!(state.last_input_attribution_process_name, None);
     }
 
     #[test]
