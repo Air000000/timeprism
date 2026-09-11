@@ -7,6 +7,7 @@ pub(crate) struct IdlePromptEntry {
     pub(crate) end_timestamp: i64,
     pub(crate) duration_ms: i64,
     pub(crate) deferred_until_timestamp: Option<i64>,
+    pub(crate) attribution_process_name: Option<String>,
 }
 
 #[derive(Deserialize)]
