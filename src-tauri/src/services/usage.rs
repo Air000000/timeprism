@@ -59,19 +59,18 @@ fn append_usage_log_direct(
     Ok(true)
 }
 
-pub(crate) fn persist_idle_prompt_decision(
+fn replace_idle_interval_with_usage(
     conn: &Connection,
     prompt: &IdlePromptEntry,
-    decision: &str,
+    process_name: &str,
+    title: &str,
+    mapped_type: Option<&str>,
 ) -> Result<bool, String> {
-    let (process_name, mapped_type, title) = match decision {
-        "LEARN" => ("__idle_learn__.exe", "LEARN", "Idle Segment · Learn"),
-        "REST" => ("__idle_rest__.exe", "REST", "Idle Segment · Rest"),
-        "IDLE" => ("__idle__.exe", "IGNORE", "Idle Segment · Unclassified"),
-        _ => return Err("invalid idle decision".to_string()),
-    };
-
     let process_key = normalize_process_key(process_name);
+    if process_key.trim().is_empty() {
+        return Err("idle app attribution requires a process name".to_string());
+    }
+
     let idle_start = prompt.start_timestamp.max(0);
     let idle_end = prompt.end_timestamp.max(idle_start);
     let tx = conn
@@ -80,7 +79,7 @@ pub(crate) fn persist_idle_prompt_decision(
 
     // Foreground samples can be persisted during the idle threshold window before the sampler
     // knows the interval is idle. Resolving the prompt commits the retroactive classification,
-    // so replace those provisional rows instead of adding an overlapping idle row on top.
+    // so replace those provisional rows instead of adding an overlapping row on top.
     tx.execute(
         "UPDATE app_usage_logs
          SET duration_ms = MAX(0, (?1 - start_timestamp) * 1000)
@@ -97,7 +96,10 @@ pub(crate) fn persist_idle_prompt_decision(
     )
     .map_err(|e| format!("failed to remove usage inside idle interval: {e}"))?;
 
-    upsert_app_rule_entry(&tx, &process_key, mapped_type, "NORMAL")?;
+    if let Some(mapped_type) = mapped_type {
+        upsert_app_rule_entry(&tx, &process_key, mapped_type, "NORMAL")?;
+    }
+
     let stored = append_usage_log_direct(
         &tx,
         &process_key,
@@ -109,6 +111,35 @@ pub(crate) fn persist_idle_prompt_decision(
     tx.commit()
         .map_err(|e| format!("failed to commit idle decision transaction: {e}"))?;
     Ok(stored)
+}
+
+pub(crate) fn persist_idle_prompt_decision(
+    conn: &Connection,
+    prompt: &IdlePromptEntry,
+    decision: &str,
+) -> Result<bool, String> {
+    let (process_name, mapped_type, title) = match decision {
+        "LEARN" => ("__idle_learn__.exe", "LEARN", "Idle Segment · Learn"),
+        "REST" => ("__idle_rest__.exe", "REST", "Idle Segment · Rest"),
+        "IDLE" => ("__idle__.exe", "IGNORE", "Idle Segment · Unclassified"),
+        _ => return Err("invalid idle decision".to_string()),
+    };
+
+    replace_idle_interval_with_usage(conn, prompt, process_name, title, Some(mapped_type))
+}
+
+pub(crate) fn persist_idle_prompt_app_decision(
+    conn: &Connection,
+    prompt: &IdlePromptEntry,
+    process_name: &str,
+) -> Result<bool, String> {
+    replace_idle_interval_with_usage(
+        conn,
+        prompt,
+        process_name,
+        "Idle Confirmed · Previous App",
+        None,
+    )
 }
 
 pub(crate) fn append_usage_log_record(
