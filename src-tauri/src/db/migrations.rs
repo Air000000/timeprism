@@ -52,6 +52,51 @@ fn ensure_app_rules_time_columns(conn: &Connection) -> Result<(), String> {
     Ok(())
 }
 
+fn ensure_app_usage_log_source(conn: &Connection) -> Result<(), String> {
+    let mut stmt = conn
+        .prepare("PRAGMA table_info(app_usage_logs)")
+        .map_err(|e| format!("failed to prepare app_usage_logs table info query: {e}"))?;
+    let rows = stmt
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|e| format!("failed to query app_usage_logs table info rows: {e}"))?;
+
+    let mut has_source = false;
+    for row in rows {
+        let column =
+            row.map_err(|e| format!("failed to parse app_usage_logs table info row: {e}"))?;
+        if column == "source" {
+            has_source = true;
+            break;
+        }
+    }
+
+    if has_source {
+        return Ok(());
+    }
+
+    conn.execute(
+        "ALTER TABLE app_usage_logs
+         ADD COLUMN source TEXT NOT NULL DEFAULT 'FOREGROUND'
+         CHECK(source IN ('FOREGROUND', 'IDLE_CONFIRMED'))",
+        [],
+    )
+    .map_err(|e| format!("failed to add source to app_usage_logs: {e}"))?;
+
+    conn.execute(
+        "UPDATE app_usage_logs
+         SET source = 'IDLE_CONFIRMED'
+         WHERE source = 'FOREGROUND'
+           AND (
+               process_name IN ('__idle_learn__.exe', '__idle_rest__.exe', '__idle__.exe')
+               OR window_title = 'Idle Confirmed · Previous App'
+           )",
+        [],
+    )
+    .map_err(|e| format!("failed to backfill idle-confirmed usage provenance: {e}"))?;
+
+    Ok(())
+}
+
 fn ensure_reminders_weekly_columns(conn: &Connection) -> Result<(), String> {
     let mut stmt = conn
         .prepare("PRAGMA table_info(reminders)")
@@ -217,7 +262,9 @@ pub(super) fn initialize_connection(conn: &Connection) -> Result<(), String> {
           process_name TEXT NOT NULL,
           window_title TEXT NOT NULL,
           start_timestamp INTEGER NOT NULL,
-          duration_ms INTEGER NOT NULL
+          duration_ms INTEGER NOT NULL,
+          source TEXT NOT NULL DEFAULT 'FOREGROUND'
+            CHECK(source IN ('FOREGROUND', 'IDLE_CONFIRMED'))
         );
 
         CREATE TABLE IF NOT EXISTS app_rules (
@@ -261,6 +308,7 @@ pub(super) fn initialize_connection(conn: &Connection) -> Result<(), String> {
     .map_err(|e| format!("failed to run schema init: {e}"))?;
 
     ensure_app_rules_time_columns(conn)?;
+    ensure_app_usage_log_source(conn)?;
     ensure_heatmap_snapshot_table(conn)?;
     ensure_reminders_weekly_columns(conn)?;
     ensure_reminders_sort_order(conn)?;
