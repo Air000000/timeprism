@@ -175,12 +175,21 @@ mod tests {
         let conn = Connection::open_in_memory().expect("open in-memory usage db");
         conn.execute_batch(
             r#"
+            CREATE TABLE app_config (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+
             CREATE TABLE app_rules (
                 process_name TEXT PRIMARY KEY,
                 mapped_type TEXT NOT NULL,
                 privacy_level TEXT NOT NULL,
                 created_at INTEGER NOT NULL DEFAULT 0,
                 updated_at INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE TABLE app_whitelist (
+                process_name TEXT PRIMARY KEY
             );
 
             CREATE TABLE app_usage_logs (
@@ -325,5 +334,32 @@ mod tests {
             )
             .expect("query app rule");
         assert_eq!(mapped_type, "REST");
+    }
+
+    #[test]
+    fn idle_app_decision_cannot_bypass_curtain_privacy() {
+        let conn = usage_test_conn();
+        conn.execute(
+            "INSERT INTO app_config (key, value) VALUES ('curtain_enabled', 'true')",
+            [],
+        )
+        .expect("enable curtain");
+
+        let prompt = IdlePromptEntry {
+            id: 3,
+            start_timestamp: 300,
+            end_timestamp: 600,
+            duration_ms: 300_000,
+            deferred_until_timestamp: None,
+            attribution_process_name: Some("code.exe".to_string()),
+        };
+
+        let result = persist_idle_prompt_app_decision(&conn, &prompt, "code.exe");
+        assert!(result.is_err(), "privacy curtain must block app attribution");
+
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM app_usage_logs", [], |row| row.get(0))
+            .expect("count usage rows");
+        assert_eq!(count, 0);
     }
 }
