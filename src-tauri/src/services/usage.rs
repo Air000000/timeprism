@@ -137,7 +137,7 @@ pub(crate) fn append_usage_log_record(
 mod tests {
     use rusqlite::{params, Connection};
 
-    use super::persist_idle_prompt_decision;
+    use super::{persist_idle_prompt_app_decision, persist_idle_prompt_decision};
     use crate::domain::idle::IdlePromptEntry;
 
     fn usage_test_conn() -> Connection {
@@ -217,5 +217,80 @@ mod tests {
                 ("__idle_rest__.exe".to_string(), 300, 300_000),
             ]
         );
+    }
+
+    #[test]
+    fn idle_app_decision_attributes_interval_without_overwriting_app_rule() {
+        let conn = usage_test_conn();
+        conn.execute(
+            "INSERT INTO app_rules (process_name, mapped_type, privacy_level, created_at, updated_at)
+             VALUES ('code.exe', 'REST', 'NORMAL', 1, 1)",
+            [],
+        )
+        .expect("seed app rule");
+        conn.execute(
+            "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
+             VALUES (?1, ?2, ?3, ?4)",
+            params!["code.exe", "Project", 100_i64, 400_000_i64],
+        )
+        .expect("insert foreground segment crossing idle start");
+        conn.execute(
+            "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
+             VALUES (?1, ?2, ?3, ?4)",
+            params!["lockapp.exe", "Lock Screen", 350_i64, 100_000_i64],
+        )
+        .expect("insert foreground segment inside idle interval");
+
+        let prompt = IdlePromptEntry {
+            id: 2,
+            start_timestamp: 300,
+            end_timestamp: 600,
+            duration_ms: 300_000,
+            deferred_until_timestamp: None,
+        };
+
+        persist_idle_prompt_app_decision(&conn, &prompt, "code.exe")
+            .expect("persist app-attributed idle decision");
+
+        let rows = conn
+            .prepare(
+                "SELECT process_name, window_title, start_timestamp, duration_ms
+                 FROM app_usage_logs
+                 ORDER BY start_timestamp, id",
+            )
+            .expect("prepare usage rows")
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, i64>(2)?,
+                    row.get::<_, i64>(3)?,
+                ))
+            })
+            .expect("query usage rows")
+            .collect::<Result<Vec<_>, _>>()
+            .expect("collect usage rows");
+
+        assert_eq!(
+            rows,
+            vec![
+                ("code.exe".to_string(), "Project".to_string(), 100, 200_000),
+                (
+                    "code.exe".to_string(),
+                    "Idle Confirmed · Previous App".to_string(),
+                    300,
+                    300_000,
+                ),
+            ]
+        );
+
+        let mapped_type: String = conn
+            .query_row(
+                "SELECT mapped_type FROM app_rules WHERE process_name = 'code.exe'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("query app rule");
+        assert_eq!(mapped_type, "REST");
     }
 }
