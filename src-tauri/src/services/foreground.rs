@@ -19,9 +19,11 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
 };
 
-use super::privacy::normalize_process_key;
+use super::privacy::{normalize_process_key, process_log_with_privacy};
 use super::rules::resolve_rule_mapping;
-use super::usage::{append_usage_log_record, persist_idle_prompt_decision};
+use super::usage::{
+    append_usage_log_record, persist_idle_prompt_app_decision, persist_idle_prompt_decision,
+};
 use crate::db::connection::open_connection;
 use crate::domain::idle::{IdleMemoryState, IdlePromptEntry, ResolveIdlePromptInput};
 use crate::domain::window::ForegroundCaptureDiagnostic;
@@ -35,6 +37,9 @@ struct ForegroundSampleState {
     last: Option<ForegroundSnapshot>,
     diagnostics: Vec<ForegroundCaptureDiagnostic>,
     idle_segment_start_ms: Option<i64>,
+    idle_attribution_process_name: Option<String>,
+    last_input_at_ms: Option<i64>,
+    last_input_attribution_process_name: Option<String>,
     pending_idle_prompts: Vec<IdlePromptEntry>,
     next_idle_prompt_id: i64,
     remembered_idle_decision: Option<String>,
@@ -45,6 +50,42 @@ struct ForegroundSnapshot {
     process_name: String,
     window_title: String,
     captured_at_ms: i64,
+}
+
+fn idle_attribution_candidate(process_name: &str) -> Option<String> {
+    let process_name = normalize_process_key(process_name);
+    if process_name == "unknown.exe"
+        || process_name == "lockapp.exe"
+        || process_name == "logonui.exe"
+        || process_name == "desktop.shell.exe"
+        || process_name == "timeprism.exe"
+        || process_name.starts_with("pid-")
+        || process_name.starts_with("__idle")
+    {
+        return None;
+    }
+    Some(process_name)
+}
+
+fn should_refresh_idle_attribution(
+    state: &ForegroundSampleState,
+    observed_input_at_ms: i64,
+) -> bool {
+    state
+        .last_input_at_ms
+        .map(|last_input_at_ms| observed_input_at_ms > last_input_at_ms)
+        .unwrap_or(true)
+}
+
+fn update_idle_attribution_on_input(
+    state: &mut ForegroundSampleState,
+    observed_input_at_ms: i64,
+    candidate: Option<String>,
+) {
+    if should_refresh_idle_attribution(state, observed_input_at_ms) {
+        state.last_input_at_ms = Some(observed_input_at_ms);
+        state.last_input_attribution_process_name = candidate;
+    }
 }
 
 fn push_foreground_diagnostic(mut entry: ForegroundCaptureDiagnostic) -> Result<(), String> {
@@ -144,6 +185,7 @@ pub(crate) fn capture_foreground_once(
 ) -> Result<bool, String> {
     let now_ms = Local::now().timestamp_millis();
     let idle_ms = current_idle_millis().unwrap_or(0).max(0);
+    let observed_input_at_ms = (now_ms - idle_ms).max(0);
 
     if idle_ms >= IDLE_PROMPT_THRESHOLD_MS {
         let idle_start_ms = now_ms - idle_ms;
@@ -151,6 +193,10 @@ pub(crate) fn capture_foreground_once(
             let mut state = FOREGROUND_SAMPLE_STATE
                 .lock()
                 .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
+            if state.idle_segment_start_ms.is_none() {
+                state.idle_attribution_process_name =
+                    state.last_input_attribution_process_name.clone();
+            }
             let seg_start = state.idle_segment_start_ms.get_or_insert(idle_start_ms);
             if idle_start_ms < *seg_start {
                 *seg_start = idle_start_ms;
@@ -177,6 +223,7 @@ pub(crate) fn capture_foreground_once(
             .lock()
             .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
         if let Some(idle_start_ms) = state.idle_segment_start_ms.take() {
+            let attribution_process_name = state.idle_attribution_process_name.take();
             let duration = (now_ms - idle_start_ms).max(0);
             if duration >= IDLE_PROMPT_THRESHOLD_MS {
                 let prompt_id = if state.next_idle_prompt_id <= 0 {
@@ -191,6 +238,7 @@ pub(crate) fn capture_foreground_once(
                     end_timestamp: (now_ms / 1000).max(0),
                     duration_ms: duration,
                     deferred_until_timestamp: None,
+                    attribution_process_name,
                 };
 
                 if let Some(remembered) = state.remembered_idle_decision.clone() {
@@ -214,6 +262,8 @@ pub(crate) fn capture_foreground_once(
                     }
                 }
             }
+        } else {
+            state.idle_attribution_process_name = None;
         }
     }
 
@@ -222,6 +272,7 @@ pub(crate) fn capture_foreground_once(
             let mut state = FOREGROUND_SAMPLE_STATE
                 .lock()
                 .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
+            update_idle_attribution_on_input(&mut state, observed_input_at_ms, None);
             state.last = None;
         }
         let diag = ForegroundCaptureDiagnostic {
@@ -243,6 +294,25 @@ pub(crate) fn capture_foreground_once(
         window_title,
         captured_at_ms: now_ms,
     };
+
+    let should_refresh_candidate = {
+        let state = FOREGROUND_SAMPLE_STATE
+            .lock()
+            .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
+        should_refresh_idle_attribution(&state, observed_input_at_ms)
+    };
+    if should_refresh_candidate {
+        let conn = open_connection(app)?;
+        let (processed, _) =
+            process_log_with_privacy(&conn, &current.process_name, &current.window_title)?;
+        let candidate = processed
+            .as_ref()
+            .and_then(|(safe_process_name, _)| idle_attribution_candidate(safe_process_name));
+        let mut state = FOREGROUND_SAMPLE_STATE
+            .lock()
+            .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
+        update_idle_attribution_on_input(&mut state, observed_input_at_ms, candidate);
+    }
 
     let previous = {
         let mut state = FOREGROUND_SAMPLE_STATE
@@ -353,8 +423,8 @@ pub(crate) fn resolve_idle_prompt(
 ) -> Result<bool, String> {
     let decision = input.decision.trim().to_uppercase();
     let remember_this_session = input.remember_this_session.unwrap_or(false);
-    if !matches!(decision.as_str(), "LEARN" | "REST" | "IDLE" | "SKIP") {
-        return Err("decision must be LEARN, REST, IDLE, or SKIP".to_string());
+    if !matches!(decision.as_str(), "APP" | "LEARN" | "REST" | "IDLE" | "SKIP") {
+        return Err("decision must be APP, LEARN, REST, IDLE, or SKIP".to_string());
     }
 
     if decision == "SKIP" {
@@ -387,10 +457,38 @@ pub(crate) fn resolve_idle_prompt(
     let Some(prompt) = prompt else {
         return Ok(false);
     };
-    let conn = open_connection(app)?;
-    let stored = persist_idle_prompt_decision(&conn, &prompt, &decision)?;
 
-    if remember_this_session {
+    let persist_result = (|| -> Result<bool, String> {
+        let conn = open_connection(app)?;
+        if decision == "APP" {
+            let process_name = prompt
+                .attribution_process_name
+                .as_deref()
+                .ok_or_else(|| "idle prompt has no previous-app attribution candidate".to_string())?;
+            persist_idle_prompt_app_decision(&conn, &prompt, process_name)
+        } else {
+            persist_idle_prompt_decision(&conn, &prompt, &decision)
+        }
+    })();
+
+    let stored = match persist_result {
+        Ok(stored) => stored,
+        Err(err) => {
+            let mut state = FOREGROUND_SAMPLE_STATE
+                .lock()
+                .map_err(|e| format!("failed to restore idle prompt after persistence failure: {e}"))?;
+            if !state.pending_idle_prompts.iter().any(|item| item.id == prompt.id) {
+                state.pending_idle_prompts.push(prompt);
+                if state.pending_idle_prompts.len() > 20 {
+                    let drop_count = state.pending_idle_prompts.len() - 20;
+                    state.pending_idle_prompts.drain(0..drop_count);
+                }
+            }
+            return Err(err);
+        }
+    };
+
+    if remember_this_session && matches!(decision.as_str(), "LEARN" | "REST" | "IDLE") {
         let mut state = FOREGROUND_SAMPLE_STATE
             .lock()
             .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
@@ -468,7 +566,9 @@ pub(crate) fn list_foreground_capture_diagnostics(
 #[cfg(test)]
 mod tests {
     use super::{
-        list_foreground_capture_diagnostics, push_foreground_diagnostic, FOREGROUND_SAMPLE_STATE,
+        idle_attribution_candidate, list_foreground_capture_diagnostics, push_foreground_diagnostic,
+        update_idle_attribution_on_input, ForegroundSampleState, ForegroundSnapshot,
+        FOREGROUND_SAMPLE_STATE,
     };
     use crate::domain::window::ForegroundCaptureDiagnostic;
 
@@ -477,6 +577,62 @@ mod tests {
             .lock()
             .expect("lock foreground sample state");
         state.diagnostics.clear();
+    }
+
+    #[test]
+    fn idle_attribution_normalizes_safe_process_identity() {
+        assert_eq!(
+            idle_attribution_candidate(r#"C:\Program Files\Microsoft VS Code\Code.exe"#),
+            Some("code.exe".to_string())
+        );
+    }
+
+    #[test]
+    fn idle_attribution_rejects_system_self_and_virtual_processes() {
+        for process_name in [
+            "LockApp.exe",
+            "LogonUI.exe",
+            "unknown.exe",
+            "pid-42.exe",
+            "desktop.shell.exe",
+            "timeprism.exe",
+            "__idle_learn__.exe",
+        ] {
+            assert_eq!(idle_attribution_candidate(process_name), None);
+        }
+    }
+
+    #[test]
+    fn idle_attribution_changes_only_when_last_input_timestamp_advances() {
+        let mut state = ForegroundSampleState::default();
+
+        update_idle_attribution_on_input(
+            &mut state,
+            1_000,
+            Some("code.exe".to_string()),
+        );
+        update_idle_attribution_on_input(
+            &mut state,
+            1_000,
+            Some("spotify.exe".to_string()),
+        );
+        assert_eq!(
+            state.last_input_attribution_process_name.as_deref(),
+            Some("code.exe")
+        );
+
+        update_idle_attribution_on_input(
+            &mut state,
+            2_000,
+            Some("msedge.exe".to_string()),
+        );
+        assert_eq!(
+            state.last_input_attribution_process_name.as_deref(),
+            Some("msedge.exe")
+        );
+
+        update_idle_attribution_on_input(&mut state, 3_000, None);
+        assert_eq!(state.last_input_attribution_process_name, None);
     }
 
     #[test]

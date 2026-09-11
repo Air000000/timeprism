@@ -64,6 +64,11 @@ export type PrivacySettings = {
   whitelist_only_enabled: boolean;
 };
 
+export type TrackingState = {
+  onboarding_completed: boolean;
+  auto_capture_enabled: boolean;
+};
+
 export type ForegroundCaptureDiagnostic = {
   id: number;
   captured_at_ms: number;
@@ -95,6 +100,7 @@ export type IdlePrompt = {
   end_timestamp: number;
   duration_ms: number;
   deferred_until_timestamp?: number | null;
+  attribution_process_name: string | null;
 };
 
 export type IdleMemoryState = {

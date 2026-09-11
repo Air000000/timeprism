@@ -10,5 +10,12 @@ pub mod rules;
 pub mod sessions;
 pub mod startup;
 pub mod time;
+pub mod tracking;
 pub mod usage;
 pub mod window;
+pub mod window_factory;
+
+#[cfg(test)]
+mod usage_provenance_tests;
+#[cfg(test)]
+mod window_config_tests;

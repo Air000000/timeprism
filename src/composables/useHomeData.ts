@@ -27,6 +27,7 @@ type UseHomeDataOptions = {
   getHeatmapFetchDays: () => number;
   getHeatmapGoalSeconds: () => number;
   setErrorMessage: (error: unknown) => void;
+  clearErrorMessage: (expected?: unknown) => void;
 };
 
 export function useHomeData({
@@ -40,10 +41,12 @@ export function useHomeData({
   getHeatmapFetchDays,
   getHeatmapGoalSeconds,
   setErrorMessage,
+  clearErrorMessage,
 }: UseHomeDataOptions) {
   const loadingHomeCore = ref(false);
   const loadingHomeAnalytics = ref(false);
   let initialHomeRefresh = true;
+  let lastHomeCoreError = "";
 
   async function refreshHomeCoreData() {
     if (loadingHomeCore.value) {
@@ -64,7 +67,12 @@ export function useHomeData({
       pendingRuleProcesses.value = pendingRules;
       idlePrompts.value = pendingIdle;
       reminders.value = reminderRows;
+      if (lastHomeCoreError) {
+        clearErrorMessage(lastHomeCoreError);
+        lastHomeCoreError = "";
+      }
     } catch (e) {
+      lastHomeCoreError = `${e}`;
       setErrorMessage(e);
     } finally {
       loadingHomeCore.value = false;

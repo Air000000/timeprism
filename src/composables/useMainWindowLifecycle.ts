@@ -3,13 +3,13 @@ import { onMounted, onUnmounted } from "vue";
 type MainWindowLifecycleOptions = {
   initLocale: () => void;
   initThemeModeSafely: () => void;
+  loadTrackingState: () => Promise<void>;
   loadHeatmapGoalSecondsSetting: () => Promise<void>;
   resetGuardFeedback: () => void;
   resetPrivacyFeedback: () => void;
   refreshHomeData: () => Promise<void> | void;
   startSettingsWarmup: () => void;
   startMainRefreshPolling: () => void;
-  startAutoCaptureSampler: () => void;
   startInsightsSectionNavigationListener: () => Promise<void>;
   stopMainRefreshPolling: () => void;
   stopAutoCaptureSampler: () => void;
@@ -21,13 +21,13 @@ type MainWindowLifecycleOptions = {
 export function useMainWindowLifecycle({
   initLocale,
   initThemeModeSafely,
+  loadTrackingState,
   loadHeatmapGoalSecondsSetting,
   resetGuardFeedback,
   resetPrivacyFeedback,
   refreshHomeData,
   startSettingsWarmup,
   startMainRefreshPolling,
-  startAutoCaptureSampler,
   startInsightsSectionNavigationListener,
   stopMainRefreshPolling,
   stopAutoCaptureSampler,
@@ -39,6 +39,7 @@ export function useMainWindowLifecycle({
     initLocale();
     initThemeModeSafely();
 
+    await loadTrackingState();
     await loadHeatmapGoalSecondsSetting();
 
     resetGuardFeedback();
@@ -46,8 +47,6 @@ export function useMainWindowLifecycle({
     void refreshHomeData();
     startSettingsWarmup();
     startMainRefreshPolling();
-
-    startAutoCaptureSampler();
 
     await startInsightsSectionNavigationListener();
   });

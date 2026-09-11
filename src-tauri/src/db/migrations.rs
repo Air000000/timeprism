@@ -52,6 +52,51 @@ fn ensure_app_rules_time_columns(conn: &Connection) -> Result<(), String> {
     Ok(())
 }
 
+fn ensure_app_usage_log_source(conn: &Connection) -> Result<(), String> {
+    let mut stmt = conn
+        .prepare("PRAGMA table_info(app_usage_logs)")
+        .map_err(|e| format!("failed to prepare app_usage_logs table info query: {e}"))?;
+    let rows = stmt
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|e| format!("failed to query app_usage_logs table info rows: {e}"))?;
+
+    let mut has_source = false;
+    for row in rows {
+        let column =
+            row.map_err(|e| format!("failed to parse app_usage_logs table info row: {e}"))?;
+        if column == "source" {
+            has_source = true;
+            break;
+        }
+    }
+
+    if has_source {
+        return Ok(());
+    }
+
+    conn.execute(
+        "ALTER TABLE app_usage_logs
+         ADD COLUMN source TEXT NOT NULL DEFAULT 'FOREGROUND'
+         CHECK(source IN ('FOREGROUND', 'IDLE_CONFIRMED'))",
+        [],
+    )
+    .map_err(|e| format!("failed to add source to app_usage_logs: {e}"))?;
+
+    conn.execute(
+        "UPDATE app_usage_logs
+         SET source = 'IDLE_CONFIRMED'
+         WHERE source = 'FOREGROUND'
+           AND (
+               process_name IN ('__idle_learn__.exe', '__idle_rest__.exe', '__idle__.exe')
+               OR window_title = 'Idle Confirmed · Previous App'
+           )",
+        [],
+    )
+    .map_err(|e| format!("failed to backfill idle-confirmed usage provenance: {e}"))?;
+
+    Ok(())
+}
+
 fn ensure_reminders_weekly_columns(conn: &Connection) -> Result<(), String> {
     let mut stmt = conn
         .prepare("PRAGMA table_info(reminders)")
@@ -174,8 +219,23 @@ pub fn ensure_heatmap_snapshot_table(conn: &Connection) -> Result<(), String> {
     Ok(())
 }
 
-pub fn init_database(app: &AppHandle) -> Result<(), String> {
-    let conn = open_connection(app)?;
+fn has_recognizable_timeprism_schema(conn: &Connection) -> Result<bool, String> {
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*)
+             FROM sqlite_master
+             WHERE type = 'table'
+               AND name IN ('categories', 'task_sessions', 'app_usage_logs', 'app_rules', 'app_config', 'reminders')",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("failed to inspect existing TimePrism schema: {e}"))?;
+    Ok(count > 0)
+}
+
+pub(super) fn initialize_connection(conn: &Connection) -> Result<(), String> {
+    let was_existing_timeprism_db = has_recognizable_timeprism_schema(conn)?;
+
     conn.pragma_update(None, "foreign_keys", "ON")
         .map_err(|e| format!("failed to enable foreign keys: {e}"))?;
 
@@ -202,7 +262,9 @@ pub fn init_database(app: &AppHandle) -> Result<(), String> {
           process_name TEXT NOT NULL,
           window_title TEXT NOT NULL,
           start_timestamp INTEGER NOT NULL,
-          duration_ms INTEGER NOT NULL
+          duration_ms INTEGER NOT NULL,
+          source TEXT NOT NULL DEFAULT 'FOREGROUND'
+            CHECK(source IN ('FOREGROUND', 'IDLE_CONFIRMED'))
         );
 
         CREATE TABLE IF NOT EXISTS app_rules (
@@ -211,44 +273,45 @@ pub fn init_database(app: &AppHandle) -> Result<(), String> {
           privacy_level TEXT NOT NULL CHECK(privacy_level IN ('NORMAL', 'BLUR_TITLE', 'WHITELIST_ONLY'))
         );
 
-                CREATE TABLE IF NOT EXISTS app_config (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL
-                );
+        CREATE TABLE IF NOT EXISTS app_config (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
 
-                CREATE TABLE IF NOT EXISTS app_whitelist (
-                    process_name TEXT PRIMARY KEY
-                );
+        CREATE TABLE IF NOT EXISTS app_whitelist (
+            process_name TEXT PRIMARY KEY
+        );
 
-                CREATE TABLE IF NOT EXISTS reminders (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    content TEXT NOT NULL,
-                    repeat_rule TEXT NOT NULL CHECK(repeat_rule IN ('NONE', 'DAILY', 'WEEKLY')),
-                    sort_order INTEGER NOT NULL DEFAULT 0,
-                    remind_at INTEGER NULL,
-                    daily_time_minutes INTEGER NULL,
-                    weekly_days TEXT NULL,
-                    is_completed INTEGER NOT NULL DEFAULT 0,
-                    completed_day_key TEXT NULL,
-                    completed_at INTEGER NULL,
-                    snooze_until INTEGER NULL,
-                    created_at INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL
-                );
+        CREATE TABLE IF NOT EXISTS reminders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT NOT NULL,
+            repeat_rule TEXT NOT NULL CHECK(repeat_rule IN ('NONE', 'DAILY', 'WEEKLY')),
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            remind_at INTEGER NULL,
+            daily_time_minutes INTEGER NULL,
+            weekly_days TEXT NULL,
+            is_completed INTEGER NOT NULL DEFAULT 0,
+            completed_day_key TEXT NULL,
+            completed_at INTEGER NULL,
+            snooze_until INTEGER NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        );
 
         CREATE INDEX IF NOT EXISTS idx_task_sessions_start_time ON task_sessions(start_time);
         CREATE INDEX IF NOT EXISTS idx_app_usage_logs_start ON app_usage_logs(start_timestamp);
         CREATE INDEX IF NOT EXISTS idx_app_usage_logs_process ON app_usage_logs(process_name);
-                CREATE INDEX IF NOT EXISTS idx_reminders_due_none ON reminders(repeat_rule, remind_at, is_completed);
-                CREATE INDEX IF NOT EXISTS idx_reminders_due_daily ON reminders(repeat_rule, daily_time_minutes, completed_day_key);
+        CREATE INDEX IF NOT EXISTS idx_reminders_due_none ON reminders(repeat_rule, remind_at, is_completed);
+        CREATE INDEX IF NOT EXISTS idx_reminders_due_daily ON reminders(repeat_rule, daily_time_minutes, completed_day_key);
         "#,
     )
     .map_err(|e| format!("failed to run schema init: {e}"))?;
 
-    ensure_app_rules_time_columns(&conn)?;
-    ensure_heatmap_snapshot_table(&conn)?;
-    ensure_reminders_weekly_columns(&conn)?;
-    ensure_reminders_sort_order(&conn)?;
+    ensure_app_rules_time_columns(conn)?;
+    ensure_app_usage_log_source(conn)?;
+    ensure_heatmap_snapshot_table(conn)?;
+    ensure_reminders_weekly_columns(conn)?;
+    ensure_reminders_sort_order(conn)?;
     conn.execute_batch(
         r#"
         CREATE INDEX IF NOT EXISTS idx_reminders_due_none ON reminders(repeat_rule, remind_at, is_completed);
@@ -259,16 +322,28 @@ pub fn init_database(app: &AppHandle) -> Result<(), String> {
     .map_err(|e| format!("failed to ensure reminder indexes: {e}"))?;
 
     conn.execute(
-        "INSERT OR IGNORE INTO categories (id, parent_id, name, color_hex, root_type) VALUES (1, NULL, '瀛︿範', '#22c55e', 'LEARN')",
+        "INSERT OR IGNORE INTO categories (id, parent_id, name, color_hex, root_type) VALUES (1, NULL, '学习', '#22c55e', 'LEARN')",
         [],
     )
     .map_err(|e| format!("failed to seed LEARN root: {e}"))?;
 
     conn.execute(
-        "INSERT OR IGNORE INTO categories (id, parent_id, name, color_hex, root_type) VALUES (2, NULL, '浼戞伅', '#f97316', 'REST')",
+        "INSERT OR IGNORE INTO categories (id, parent_id, name, color_hex, root_type) VALUES (2, NULL, '休息', '#f97316', 'REST')",
         [],
     )
     .map_err(|e| format!("failed to seed REST root: {e}"))?;
+
+    conn.execute(
+        "UPDATE categories SET name = '学习' WHERE id = 1 AND root_type = 'LEARN' AND name = '瀛︿範'",
+        [],
+    )
+    .map_err(|e| format!("failed to repair LEARN root name: {e}"))?;
+
+    conn.execute(
+        "UPDATE categories SET name = '休息' WHERE id = 2 AND root_type = 'REST' AND name = '浼戞伅'",
+        [],
+    )
+    .map_err(|e| format!("failed to repair REST root name: {e}"))?;
 
     let default_rules = [
         ("code.exe", "LEARN", "NORMAL"),
@@ -308,6 +383,25 @@ pub fn init_database(app: &AppHandle) -> Result<(), String> {
         .map_err(|e| format!("failed to seed app config {key}: {e}"))?;
     }
 
+    let tracking_defaults = if was_existing_timeprism_db {
+        [
+            ("onboarding_completed", "true"),
+            ("auto_capture_enabled", "true"),
+        ]
+    } else {
+        [
+            ("onboarding_completed", "false"),
+            ("auto_capture_enabled", "false"),
+        ]
+    };
+    for (key, value) in tracking_defaults {
+        conn.execute(
+            "INSERT OR IGNORE INTO app_config (key, value) VALUES (?1, ?2)",
+            params![key, value],
+        )
+        .map_err(|e| format!("failed to seed tracking config {key}: {e}"))?;
+    }
+
     let default_whitelist = [
         "code.exe",
         "pycharm64.exe",
@@ -324,4 +418,9 @@ pub fn init_database(app: &AppHandle) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+pub fn init_database(app: &AppHandle) -> Result<(), String> {
+    let conn = open_connection(app)?;
+    initialize_connection(&conn)
 }
