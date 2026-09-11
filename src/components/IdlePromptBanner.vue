@@ -47,6 +47,14 @@ watch(
           )
         }}
       </p>
+      <p class="hint" style="margin-top: 5px;">
+        {{
+          props.ctx.tx(
+            `选择“继续使用 ${attributionAppName}”会把整段归入该应用，并沿用它现有的学习 / 休息 / 未分类规则。`,
+            `Choosing “Continue ${attributionAppName}” attributes the whole segment to that app and keeps its existing Learn / Break / Unclassified rule.`,
+          )
+        }}
+      </p>
       <div class="diag-actions" style="margin-top: 8px;">
         <button type="button" :disabled="props.ctx.idleActionLoading" @click="props.ctx.handleResolveIdle('APP')">
           {{ props.ctx.tx(`继续使用 ${attributionAppName}`, `Continue ${attributionAppName}`) }}
