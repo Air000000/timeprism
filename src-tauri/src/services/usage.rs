@@ -218,6 +218,7 @@ mod tests {
             end_timestamp: 600,
             duration_ms: 300_000,
             deferred_until_timestamp: None,
+            attribution_process_name: None,
         };
 
         persist_idle_prompt_decision(&conn, &prompt, "REST").expect("persist idle decision");
@@ -278,6 +279,7 @@ mod tests {
             end_timestamp: 600,
             duration_ms: 300_000,
             deferred_until_timestamp: None,
+            attribution_process_name: Some("code.exe".to_string()),
         };
 
         persist_idle_prompt_app_decision(&conn, &prompt, "code.exe")
