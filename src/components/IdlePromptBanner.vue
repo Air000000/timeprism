@@ -83,10 +83,10 @@ watch(
           <button type="button" :disabled="props.ctx.idleActionLoading" @click="props.ctx.handleResolveIdle('REST')">
             {{ props.ctx.tx("休息", "Break") }}
           </button>
-          <button type="button" :disabled="props.ctx.idleActionLoading" @click="props.ctx.handleResolveIdle('SKIP')">
-            {{ props.ctx.tx("稍后处理", "Decide later") }}
-          </button>
         </div>
+        <button class="idle-defer-link" type="button" :disabled="props.ctx.idleActionLoading" @click="props.ctx.handleResolveIdle('SKIP')">
+          {{ props.ctx.tx("稍后处理", "Decide later") }}
+        </button>
         <div class="toggle-row" style="margin-top: 8px;">
           <input id="idle-remember-choice" type="checkbox" :checked="props.ctx.idleRememberChoice" @change="props.ctx.onIdleRememberChoiceChange" />
           <label for="idle-remember-choice">
@@ -107,10 +107,10 @@ watch(
         <button type="button" :disabled="props.ctx.idleActionLoading" @click="props.ctx.handleResolveIdle('IDLE')">
           {{ props.ctx.tx("离开电脑", "Away from computer") }}
         </button>
-        <button type="button" :disabled="props.ctx.idleActionLoading" @click="props.ctx.handleResolveIdle('SKIP')">
-          {{ props.ctx.tx("稍后处理", "Decide later") }}
-        </button>
       </div>
+      <button class="idle-defer-link" type="button" :disabled="props.ctx.idleActionLoading" @click="props.ctx.handleResolveIdle('SKIP')">
+        {{ props.ctx.tx("稍后处理", "Decide later") }}
+      </button>
       <div class="toggle-row" style="margin-top: 8px;">
         <input id="idle-remember-choice" type="checkbox" :checked="props.ctx.idleRememberChoice" @change="props.ctx.onIdleRememberChoiceChange" />
         <label for="idle-remember-choice">
@@ -120,3 +120,31 @@ watch(
     </template>
   </section>
 </template>
+
+<style scoped>
+.idle-defer-link {
+  display: inline-block;
+  margin-top: 8px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.idle-defer-link:hover:not(:disabled) {
+  color: var(--text);
+  background: transparent;
+}
+
+.idle-defer-link:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+</style>
