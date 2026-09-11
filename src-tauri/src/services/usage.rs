@@ -133,11 +133,20 @@ pub(crate) fn persist_idle_prompt_app_decision(
     prompt: &IdlePromptEntry,
     process_name: &str,
 ) -> Result<bool, String> {
+    let (processed, block_reason) =
+        process_log_with_privacy(conn, process_name, "Idle Confirmed · Previous App")?;
+    let Some((safe_process_name, safe_window_title)) = processed else {
+        let reason = block_reason.unwrap_or_else(|| "privacy_policy".to_string());
+        return Err(format!(
+            "idle app attribution blocked by privacy policy: {reason}"
+        ));
+    };
+
     replace_idle_interval_with_usage(
         conn,
         prompt,
-        process_name,
-        "Idle Confirmed · Previous App",
+        &safe_process_name,
+        &safe_window_title,
         None,
     )
 }
