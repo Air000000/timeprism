@@ -70,15 +70,17 @@ fn ensure_app_usage_log_source(conn: &Connection) -> Result<(), String> {
         }
     }
 
-    if !has_source {
-        conn.execute(
-            "ALTER TABLE app_usage_logs
-             ADD COLUMN source TEXT NOT NULL DEFAULT 'FOREGROUND'
-             CHECK(source IN ('FOREGROUND', 'IDLE_CONFIRMED'))",
-            [],
-        )
-        .map_err(|e| format!("failed to add source to app_usage_logs: {e}"))?;
+    if has_source {
+        return Ok(());
     }
+
+    conn.execute(
+        "ALTER TABLE app_usage_logs
+         ADD COLUMN source TEXT NOT NULL DEFAULT 'FOREGROUND'
+         CHECK(source IN ('FOREGROUND', 'IDLE_CONFIRMED'))",
+        [],
+    )
+    .map_err(|e| format!("failed to add source to app_usage_logs: {e}"))?;
 
     conn.execute(
         "UPDATE app_usage_logs
