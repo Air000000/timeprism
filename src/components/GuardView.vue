@@ -67,11 +67,38 @@ const props = defineProps<{ ctx: GuardViewContext }>();
               <div class="recent-sub">
                 <span>{{ props.ctx.formatIdlePromptSpan(item) }}</span>
               </div>
-              <div class="diag-actions">
+              <div v-if="item.attribution_process_name" class="recent-sub">
+                <span>
+                  {{ props.ctx.tx("无输入前：", "Before inactivity: ") }}
+                  <strong>{{ props.ctx.cleanProcessName(item.attribution_process_name) }}</strong>
+                </span>
+              </div>
+
+              <div v-if="item.attribution_process_name" class="diag-actions">
+                <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('APP', item.id)">
+                  {{ props.ctx.tx(`继续使用 ${props.ctx.cleanProcessName(item.attribution_process_name)}`, `Continue ${props.ctx.cleanProcessName(item.attribution_process_name)}`) }}
+                </button>
+                <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('IDLE', item.id)">{{ props.ctx.tx("离开电脑", "Away") }}</button>
+                <details>
+                  <summary>{{ props.ctx.tx("其他…", "Other…") }}</summary>
+                  <div class="diag-actions" style="margin-top: 6px;">
+                    <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('LEARN', item.id)">{{ props.ctx.tx("学习", "Learn") }}</button>
+                    <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('REST', item.id)">{{ props.ctx.tx("休息", "Break") }}</button>
+                    <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('SKIP', item.id)">{{ props.ctx.tx("稍后处理", "Decide later") }}</button>
+                  </div>
+                </details>
+              </div>
+
+              <div v-else class="diag-actions">
                 <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('LEARN', item.id)">{{ props.ctx.tx("学习", "Learn") }}</button>
                 <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('REST', item.id)">{{ props.ctx.tx("休息", "Break") }}</button>
-                <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('IDLE', item.id)">{{ props.ctx.tx("离开", "Away") }}</button>
-                <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('SKIP', item.id)">{{ props.ctx.tx("稍后提醒", "Remind later") }}</button>
+                <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('IDLE', item.id)">{{ props.ctx.tx("离开电脑", "Away") }}</button>
+                <details>
+                  <summary>{{ props.ctx.tx("其他…", "Other…") }}</summary>
+                  <div class="diag-actions" style="margin-top: 6px;">
+                    <button type="button" :disabled="props.ctx.idleActionLoading || !props.ctx.guardStep2Unlocked" @click="props.ctx.handleResolveIdle('SKIP', item.id)">{{ props.ctx.tx("稍后处理", "Decide later") }}</button>
+                  </div>
+                </details>
               </div>
             </li>
             <li v-if="props.ctx.idlePrompts.length === 0" class="muted">{{ props.ctx.tx("暂无待确认离开时段", "No idle segments pending") }}</li>
