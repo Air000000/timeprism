@@ -264,7 +264,9 @@ async function refreshPromptBubble() {
 					await invoke("resolve_idle_prompt", {
 						input: { prompt_id: idle.id, decision, remember_this_session: false },
 					});
-					if (decision === "LEARN") {
+					if (decision === "APP") {
+						setTransientMood(tx("已归入之前使用的应用", "Attributed to previous app"));
+					} else if (decision === "LEARN") {
 						setTransientMood(tx("已标记为学习", "Marked as Learn"));
 					} else if (decision === "REST") {
 						setTransientMood(tx("已标记为休息", "Marked as Break"));
@@ -273,6 +275,11 @@ async function refreshPromptBubble() {
 					} else {
 						promptSnoozeUntilByKey.set(promptKey, Date.now() + 60_000);
 					}
+					await refreshPromptBubble();
+				},
+				openIdleDetails: async (idle) => {
+					await invoke("show_main_window_section", { section: "guard" });
+					promptSnoozeUntilByKey.set(`idle-${idle.id}`, Date.now() + 60_000);
 					await refreshPromptBubble();
 				},
 				saveRule: async (processName, mappedType) => {
@@ -577,4 +584,3 @@ window.addEventListener("beforeunload", () => {
 	clearMoodResetTimer();
 	closeContextMenu();
 });
-
