@@ -4,18 +4,26 @@ use super::privacy::{normalize_process_key, process_log_with_privacy};
 use super::rules::upsert_app_rule_entry;
 use crate::domain::idle::IdlePromptEntry;
 
+const SOURCE_FOREGROUND: &str = "FOREGROUND";
+const SOURCE_IDLE_CONFIRMED: &str = "IDLE_CONFIRMED";
+
 fn append_usage_log_direct(
     conn: &Connection,
     process_name: &str,
     window_title: &str,
     start_timestamp: i64,
     duration_ms: i64,
+    source: &str,
 ) -> Result<bool, String> {
+    if !matches!(source, SOURCE_FOREGROUND | SOURCE_IDLE_CONFIRMED) {
+        return Err(format!("invalid app usage source: {source}"));
+    }
+
     let span = duration_ms.max(0);
 
     let last_row = conn
         .query_row(
-            "SELECT id, process_name, window_title, start_timestamp, duration_ms
+            "SELECT id, process_name, window_title, start_timestamp, duration_ms, source
              FROM app_usage_logs
              ORDER BY id DESC
              LIMIT 1",
@@ -27,14 +35,25 @@ fn append_usage_log_direct(
                     row.get::<_, String>(2)?,
                     row.get::<_, i64>(3)?,
                     row.get::<_, i64>(4)?,
+                    row.get::<_, String>(5)?,
                 ))
             },
         )
         .ok();
 
-    if let Some((last_id, last_process, last_title, last_start, last_duration_ms)) = last_row {
+    if let Some((
+        last_id,
+        last_process,
+        last_title,
+        last_start,
+        last_duration_ms,
+        last_source,
+    )) = last_row
+    {
         let last_end = last_start + (last_duration_ms.max(0) / 1000);
-        let is_same_signature = last_process == process_name && last_title == window_title;
+        let is_same_signature = last_process == process_name
+            && last_title == window_title
+            && last_source == source;
         let is_contiguous = start_timestamp >= last_start && start_timestamp <= last_end + 2;
 
         if is_same_signature && is_contiguous {
@@ -50,9 +69,10 @@ fn append_usage_log_direct(
     }
 
     conn.execute(
-        "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
-         VALUES (?1, ?2, ?3, ?4)",
-        params![process_name, window_title, start_timestamp, span],
+        "INSERT INTO app_usage_logs (
+            process_name, window_title, start_timestamp, duration_ms, source
+         ) VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![process_name, window_title, start_timestamp, span, source],
     )
     .map_err(|e| format!("failed to append app usage log: {e}"))?;
 
@@ -106,6 +126,7 @@ fn replace_idle_interval_with_usage(
         title,
         prompt.start_timestamp,
         prompt.duration_ms,
+        SOURCE_IDLE_CONFIRMED,
     )?;
 
     tx.commit()
@@ -169,6 +190,7 @@ pub(crate) fn append_usage_log_record(
         &safe_window_title,
         start_timestamp,
         duration_ms,
+        SOURCE_FOREGROUND,
     )?;
     Ok((stored, block_reason))
 }
@@ -206,7 +228,9 @@ mod tests {
                 process_name TEXT NOT NULL,
                 window_title TEXT NOT NULL,
                 start_timestamp INTEGER NOT NULL,
-                duration_ms INTEGER NOT NULL
+                duration_ms INTEGER NOT NULL,
+                source TEXT NOT NULL DEFAULT 'FOREGROUND'
+                    CHECK(source IN ('FOREGROUND', 'IDLE_CONFIRMED'))
             );
             "#,
         )
