@@ -395,21 +395,6 @@ pub(crate) fn resolve_idle_prompt(
         return Ok(false);
     }
 
-    if decision == "APP" {
-        let state = FOREGROUND_SAMPLE_STATE
-            .lock()
-            .map_err(|e| format!("failed to lock foreground sample state: {e}"))?;
-        let has_candidate = state
-            .pending_idle_prompts
-            .iter()
-            .find(|item| item.id == input.prompt_id)
-            .and_then(|item| item.attribution_process_name.as_ref())
-            .is_some();
-        if !has_candidate {
-            return Err("idle prompt has no previous-app attribution candidate".to_string());
-        }
-    }
-
     let prompt = {
         let mut state = FOREGROUND_SAMPLE_STATE
             .lock()
@@ -424,15 +409,35 @@ pub(crate) fn resolve_idle_prompt(
     let Some(prompt) = prompt else {
         return Ok(false);
     };
-    let conn = open_connection(app)?;
-    let stored = if decision == "APP" {
-        let process_name = prompt
-            .attribution_process_name
-            .as_deref()
-            .ok_or_else(|| "idle prompt has no previous-app attribution candidate".to_string())?;
-        persist_idle_prompt_app_decision(&conn, &prompt, process_name)?
-    } else {
-        persist_idle_prompt_decision(&conn, &prompt, &decision)?
+
+    let persist_result = (|| -> Result<bool, String> {
+        let conn = open_connection(app)?;
+        if decision == "APP" {
+            let process_name = prompt
+                .attribution_process_name
+                .as_deref()
+                .ok_or_else(|| "idle prompt has no previous-app attribution candidate".to_string())?;
+            persist_idle_prompt_app_decision(&conn, &prompt, process_name)
+        } else {
+            persist_idle_prompt_decision(&conn, &prompt, &decision)
+        }
+    })();
+
+    let stored = match persist_result {
+        Ok(stored) => stored,
+        Err(err) => {
+            let mut state = FOREGROUND_SAMPLE_STATE
+                .lock()
+                .map_err(|e| format!("failed to restore idle prompt after persistence failure: {e}"))?;
+            if !state.pending_idle_prompts.iter().any(|item| item.id == prompt.id) {
+                state.pending_idle_prompts.push(prompt);
+                if state.pending_idle_prompts.len() > 20 {
+                    let drop_count = state.pending_idle_prompts.len() - 20;
+                    state.pending_idle_prompts.drain(0..drop_count);
+                }
+            }
+            return Err(err);
+        }
     };
 
     if remember_this_session && matches!(decision.as_str(), "LEARN" | "REST" | "IDLE") {
