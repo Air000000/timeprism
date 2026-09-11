@@ -105,7 +105,6 @@ export type IdlePromptBannerContext = {
   tx: TranslateFn;
   currentIdlePrompt: IdlePrompt;
   formatIdlePromptSpan: (item: IdlePrompt) => string;
-  cleanProcessName: (name: string) => string;
   idleRememberChoice: boolean;
   onIdleRememberChoiceChange: (event: Event) => void;
   idleActionLoading: boolean;
