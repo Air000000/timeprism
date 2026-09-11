@@ -100,6 +100,7 @@ export type IdlePrompt = {
   end_timestamp: number;
   duration_ms: number;
   deferred_until_timestamp?: number | null;
+  attribution_process_name: string | null;
 };
 
 export type IdleMemoryState = {
