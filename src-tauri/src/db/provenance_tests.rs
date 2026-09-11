@@ -4,10 +4,12 @@ fn column_exists(conn: &Connection, table: &str, column: &str) -> bool {
     let mut stmt = conn
         .prepare(&format!("PRAGMA table_info({table})"))
         .expect("prepare table info");
-    stmt.query_map([], |row| row.get::<_, String>(1))
+    let has_column = stmt
+        .query_map([], |row| row.get::<_, String>(1))
         .expect("query table info")
         .map(|row| row.expect("read column name"))
-        .any(|name| name == column)
+        .any(|name| name == column);
+    has_column
 }
 
 #[test]
