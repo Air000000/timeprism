@@ -9,6 +9,7 @@ type IdlePromptBannerContextOptions = {
   tx: TranslateFn;
   currentIdlePrompt: Readonly<Ref<IdlePrompt | null>>;
   formatIdlePromptSpan: IdlePromptBannerContext["formatIdlePromptSpan"];
+  cleanProcessName: IdlePromptBannerContext["cleanProcessName"];
   idleRememberChoice: Readonly<Ref<boolean>>;
   onIdleRememberChoiceChange: IdlePromptBannerContext["onIdleRememberChoiceChange"];
   idleActionLoading: Readonly<Ref<boolean>>;
@@ -19,6 +20,7 @@ export function useIdlePromptBannerContext({
   tx,
   currentIdlePrompt,
   formatIdlePromptSpan,
+  cleanProcessName,
   idleRememberChoice,
   onIdleRememberChoiceChange,
   idleActionLoading,
@@ -33,6 +35,7 @@ export function useIdlePromptBannerContext({
       tx,
       currentIdlePrompt: currentIdlePrompt.value,
       formatIdlePromptSpan,
+      cleanProcessName,
       idleRememberChoice: idleRememberChoice.value,
       onIdleRememberChoiceChange,
       idleActionLoading: idleActionLoading.value,
