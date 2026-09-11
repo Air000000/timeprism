@@ -84,3 +84,38 @@ fn legacy_usage_rows_gain_source_and_known_idle_rows_are_backfilled() {
     assert_eq!(rows[1].2, "IDLE_CONFIRMED");
     assert_eq!(rows[2].2, "IDLE_CONFIRMED");
 }
+
+#[test]
+fn initialized_provenance_schema_is_not_reclassified_on_reopen() {
+    let conn = Connection::open_in_memory().expect("open in-memory db");
+    conn.execute_batch(
+        r#"
+        CREATE TABLE app_usage_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            process_name TEXT NOT NULL,
+            window_title TEXT NOT NULL,
+            start_timestamp INTEGER NOT NULL,
+            duration_ms INTEGER NOT NULL,
+            source TEXT NOT NULL DEFAULT 'FOREGROUND'
+                CHECK(source IN ('FOREGROUND', 'IDLE_CONFIRMED'))
+        );
+        INSERT INTO app_usage_logs (
+            process_name, window_title, start_timestamp, duration_ms, source
+        ) VALUES (
+            '__idle_learn__.exe', 'Imported Legacy Label', 400, 5000, 'FOREGROUND'
+        );
+        "#,
+    )
+    .expect("create already-migrated provenance schema");
+
+    super::migrations::initialize_connection(&conn).expect("reinitialize database");
+
+    let source: String = conn
+        .query_row(
+            "SELECT source FROM app_usage_logs WHERE start_timestamp = 400",
+            [],
+            |row| row.get(0),
+        )
+        .expect("read preserved source");
+    assert_eq!(source, "FOREGROUND");
+}
