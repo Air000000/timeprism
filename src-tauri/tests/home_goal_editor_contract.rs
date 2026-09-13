@@ -11,8 +11,9 @@ fn home_goal_editor_is_wired_to_the_persisted_goal_setting() {
         "goal setting composable must expose an explicit user-edit path"
     );
     assert!(
-        GOAL_SETTING_SOURCE.contains("schedulePersistHeatmapGoal();"),
-        "user goal edits must keep the existing debounced persistence path"
+        GOAL_SETTING_SOURCE.contains("learnGoalSliderMinutes.value = normalizeHeatmapGoalMinutes(minutes);")
+            && GOAL_SETTING_SOURCE.contains("schedulePersistHeatmapGoal();"),
+        "user goal edits must normalize through the existing bounds and use debounced persistence"
     );
     assert!(
         HOME_CONTEXT_SOURCE.contains("learnGoalMinutes: number;")
@@ -38,6 +39,11 @@ fn home_goal_editor_is_wired_to_the_persisted_goal_setting() {
             && HOME_VIEW_SOURCE.contains("step=\"15\"")
             && HOME_VIEW_SOURCE.contains("@input=\"handleGoalSliderInput\""),
         "Home must render an interactive 0-24h goal editor with the existing 15-minute step"
+    );
+    assert!(
+        HOME_VIEW_SOURCE.contains("@click=\"adjustGoalMinutes(-15)\"")
+            && HOME_VIEW_SOURCE.contains("@click=\"adjustGoalMinutes(15)\""),
+        "Home goal editor must preserve keyboard-friendly 15-minute decrement/increment controls"
     );
 }
 
