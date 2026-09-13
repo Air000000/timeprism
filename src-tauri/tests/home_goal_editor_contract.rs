@@ -49,18 +49,21 @@ fn home_goal_editor_is_wired_to_the_persisted_goal_setting() {
 
 #[test]
 fn reading_goal_seconds_does_not_schedule_a_write() {
-    let marker = "function getHeatmapGoalSeconds(): number {";
+    let read_marker = "function getHeatmapGoalSeconds(): number {";
+    let next_marker = "function setHeatmapGoalMinutes(minutes: number)";
     let start = GOAL_SETTING_SOURCE
-        .find(marker)
+        .find(read_marker)
         .expect("getHeatmapGoalSeconds function");
-    let function_source = &GOAL_SETTING_SOURCE[start..];
-    let end = function_source
-        .find("\n  }\n\n")
-        .expect("getHeatmapGoalSeconds function end");
-    let body = &function_source[..end];
+    let source_after_read = &GOAL_SETTING_SOURCE[start..];
+    let end = source_after_read
+        .find(next_marker)
+        .expect("setHeatmapGoalMinutes function after goal reader");
+    let body = &source_after_read[..end];
 
     assert!(
-        !body.contains("schedulePersistHeatmapGoal") && !body.contains("syncGoalFromSlider"),
-        "reading the goal for Home/Insights refreshes must not enqueue persistence writes"
+        body.contains("return heatmapGoalMinutesToSeconds(learnGoalSliderMinutes.value);")
+            && !body.contains("schedulePersistHeatmapGoal")
+            && !body.contains("syncGoalFromSlider"),
+        "reading the goal for Home/Insights refreshes must stay pure and must not enqueue persistence writes"
     );
 }
