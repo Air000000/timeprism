@@ -7,13 +7,14 @@ import type {
 } from "./petPrompts";
 
 type TranslateFn = (zh: string, en: string) => string;
-type IdleDecision = "LEARN" | "REST" | "IDLE" | "SKIP";
+type IdleDecision = "APP" | "LEARN" | "REST" | "IDLE" | "SKIP";
 type RuleMappedType = AppRuleMappedType;
 
 type PetPromptDescriptorActions = {
   completeReminder: (reminder: ReminderLite) => Promise<void>;
   snoozeReminder: (reminder: ReminderLite) => Promise<void>;
   resolveIdle: (idle: IdlePromptLite, decision: IdleDecision, promptKey: string) => Promise<void>;
+  openIdleDetails: (idle: IdlePromptLite) => Promise<void>;
   saveRule: (processName: string, mappedType: RuleMappedType) => Promise<void>;
   postponeRule: (promptKey: string) => Promise<void>;
 };
@@ -62,31 +63,50 @@ export function buildPetPromptDescriptors({
   for (const idle of idleItems) {
     const idleSeconds = Math.max(0, Math.floor(idle.duration_ms / 1000));
     const key = `idle-${idle.id}`;
+    const processName = idle.attribution_process_name ?? "";
+    const appName = processName ? cleanProcessName(processName) : "";
+
     descriptors.push({
       key,
       title: tx("离开时段待确认", "Idle Segment Confirmation"),
-      detail: tx(
-        `持续 ${formatSeconds(idleSeconds)}，请尽快归类`,
-        `${formatSeconds(idleSeconds)} idle time, please classify`,
-      ),
-      actions: [
-        {
-          label: tx("学习", "Learn"),
-          run: () => actions.resolveIdle(idle, "LEARN", key),
-        },
-        {
-          label: tx("休息", "Break"),
-          run: () => actions.resolveIdle(idle, "REST", key),
-        },
-        {
-          label: tx("离开", "Away"),
-          run: () => actions.resolveIdle(idle, "IDLE", key),
-        },
-        {
-          label: tx("稍后提醒", "Remind later"),
-          run: () => actions.resolveIdle(idle, "SKIP", key),
-        },
-      ],
+      detail: appName
+        ? tx(
+            `${formatSeconds(idleSeconds)} 无输入 · 之前在 ${appName}`,
+            `${formatSeconds(idleSeconds)} inactive · previously ${appName}`,
+          )
+        : tx(
+            `持续 ${formatSeconds(idleSeconds)}，请选择实际状态`,
+            `${formatSeconds(idleSeconds)} inactive, choose what happened`,
+          ),
+      actions: appName
+        ? [
+            {
+              label: tx(`继续 ${appName}`, `Continue ${appName}`),
+              run: () => actions.resolveIdle(idle, "APP", key),
+            },
+            {
+              label: tx("离开", "Away"),
+              run: () => actions.resolveIdle(idle, "IDLE", key),
+            },
+            {
+              label: tx("其他…", "Other…"),
+              run: () => actions.openIdleDetails(idle),
+            },
+          ]
+        : [
+            {
+              label: tx("学习", "Learn"),
+              run: () => actions.resolveIdle(idle, "LEARN", key),
+            },
+            {
+              label: tx("休息", "Break"),
+              run: () => actions.resolveIdle(idle, "REST", key),
+            },
+            {
+              label: tx("离开", "Away"),
+              run: () => actions.resolveIdle(idle, "IDLE", key),
+            },
+          ],
     });
   }
 

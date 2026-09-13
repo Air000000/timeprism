@@ -7,8 +7,15 @@ export function useErrorMessage() {
     error.value = `${e}`;
   }
 
+  function clearErrorMessage(expected?: unknown) {
+    if (expected === undefined || error.value === `${expected}`) {
+      error.value = "";
+    }
+  }
+
   return {
     error,
     setErrorMessage,
+    clearErrorMessage,
   };
 }

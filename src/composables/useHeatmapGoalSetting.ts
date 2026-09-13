@@ -25,14 +25,13 @@ export function useHeatmapGoalSetting({
     return total;
   }
 
-  function syncGoalFromSlider() {
-    normalizeGoalFromSlider();
-    schedulePersistHeatmapGoal();
+  function getHeatmapGoalSeconds(): number {
+    return heatmapGoalMinutesToSeconds(learnGoalSliderMinutes.value);
   }
 
-  function getHeatmapGoalSeconds(): number {
-    syncGoalFromSlider();
-    return heatmapGoalMinutesToSeconds(learnGoalSliderMinutes.value);
+  function setHeatmapGoalMinutes(minutes: number) {
+    learnGoalSliderMinutes.value = normalizeHeatmapGoalMinutes(minutes);
+    schedulePersistHeatmapGoal();
   }
 
   function schedulePersistHeatmapGoal() {
@@ -73,6 +72,7 @@ export function useHeatmapGoalSetting({
   return {
     learnGoalSliderMinutes,
     getHeatmapGoalSeconds,
+    setHeatmapGoalMinutes,
     loadHeatmapGoalSecondsSetting,
     cleanupHeatmapGoalSetting,
   };

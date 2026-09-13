@@ -18,7 +18,7 @@ export async function listPendingIdlePrompts(limit = 5): Promise<IdlePrompt[]> {
 
 export async function resolveIdlePrompt(input: {
   prompt_id: number;
-  decision: "LEARN" | "REST" | "IDLE" | "SKIP";
+  decision: "APP" | "LEARN" | "REST" | "IDLE" | "SKIP";
   remember_this_session?: boolean;
 }): Promise<boolean> {
   return invokeCommand("resolve_idle_prompt", { input });

@@ -3,7 +3,7 @@ import type { IdlePrompt } from "../api";
 type TranslateFn = (zh: string, en: string) => string;
 type GuardFeedbackTone = "info" | "ok" | "warn" | "error";
 
-export type GuardIdleDecision = "LEARN" | "REST" | "IDLE" | "SKIP";
+export type GuardIdleDecision = "APP" | "LEARN" | "REST" | "IDLE" | "SKIP";
 
 export type GuardIdleDecisionFeedback = {
   type: GuardFeedbackTone;
@@ -24,7 +24,7 @@ export function shouldRememberGuardIdleDecision(
   rememberChoice: boolean,
   decision: GuardIdleDecision,
 ): boolean {
-  return rememberChoice && decision !== "SKIP";
+  return rememberChoice && decision !== "SKIP" && decision !== "APP";
 }
 
 export function guardIdleDecisionFeedback(
@@ -32,6 +32,16 @@ export function guardIdleDecisionFeedback(
   rememberChoice: boolean,
   tx: TranslateFn,
 ): GuardIdleDecisionFeedback {
+  if (decision === "APP") {
+    return {
+      type: "ok",
+      text: tx(
+        "已将该时段归入无输入前使用的应用。",
+        "This segment is attributed to the app used before the idle period.",
+      ),
+    };
+  }
+
   if (decision === "LEARN") {
     return {
       type: "ok",

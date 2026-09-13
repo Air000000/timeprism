@@ -1,8 +1,8 @@
-﻿import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { Menu } from "@tauri-apps/api/menu";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
-import { getTodaySummary, type TodaySummary } from "./api";
+import { getTodaySummary, getTrackingState } from "./api";
 import {
 	LOCALE_STORAGE_KEY,
 	getStoredOrBrowserLocale,
@@ -57,12 +57,23 @@ import "./pet.css";
 const petWindow = getCurrentWindow();
 const EDGE_SNAP_THRESHOLD = 72;
 
+type PetTranslateFn = (zh: string, en: string) => string;
+
 function getLocale(): LocaleCode {
 	return getStoredOrBrowserLocale();
 }
 
 function tx(zh: string, en: string): string {
 	return translateForLocale(getLocale(), zh, en);
+}
+
+export function petTrackingMood(
+	autoCaptureEnabled: boolean,
+	translate: PetTranslateFn,
+): string {
+	return autoCaptureEnabled
+		? translate("自动记录中", "Auto tracking")
+		: translate("记录已暂停", "Tracking paused");
 }
 
 let petState: PetDockState = "free";
@@ -253,7 +264,9 @@ async function refreshPromptBubble() {
 					await invoke("resolve_idle_prompt", {
 						input: { prompt_id: idle.id, decision, remember_this_session: false },
 					});
-					if (decision === "LEARN") {
+					if (decision === "APP") {
+						setTransientMood(tx("已归入之前使用的应用", "Attributed to previous app"));
+					} else if (decision === "LEARN") {
 						setTransientMood(tx("已标记为学习", "Marked as Learn"));
 					} else if (decision === "REST") {
 						setTransientMood(tx("已标记为休息", "Marked as Break"));
@@ -262,6 +275,11 @@ async function refreshPromptBubble() {
 					} else {
 						promptSnoozeUntilByKey.set(promptKey, Date.now() + 60_000);
 					}
+					await refreshPromptBubble();
+				},
+				openIdleDetails: async (idle) => {
+					await invoke("show_main_window_section", { section: "guard" });
+					promptSnoozeUntilByKey.set(`idle-${idle.id}`, Date.now() + 60_000);
 					await refreshPromptBubble();
 				},
 				saveRule: async (processName, mappedType) => {
@@ -408,12 +426,15 @@ function scheduleSettleRetry(attempt = 0) {
 
 async function refreshSummary() {
 	try {
-		const summary: TodaySummary = await getTodaySummary();
+		const [summary, tracking] = await Promise.all([
+			getTodaySummary(),
+			getTrackingState(),
+		]);
 		renderPetSummary(
 			{ learn, rest, mood },
 			formatSeconds(summary.learn_seconds),
 			formatSeconds(summary.rest_seconds),
-			tx("自动记录中", "Auto tracking"),
+			petTrackingMood(tracking.auto_capture_enabled, tx),
 		);
 	} catch {
 		setMood(tx("状态同步失败，请打开设置查看详情", "Sync failed, open settings for details"));
@@ -563,5 +584,3 @@ window.addEventListener("beforeunload", () => {
 	clearMoodResetTimer();
 	closeContextMenu();
 });
-
-

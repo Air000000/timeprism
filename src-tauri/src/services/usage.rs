@@ -4,18 +4,26 @@ use super::privacy::{normalize_process_key, process_log_with_privacy};
 use super::rules::upsert_app_rule_entry;
 use crate::domain::idle::IdlePromptEntry;
 
+const SOURCE_FOREGROUND: &str = "FOREGROUND";
+const SOURCE_IDLE_CONFIRMED: &str = "IDLE_CONFIRMED";
+
 fn append_usage_log_direct(
     conn: &Connection,
     process_name: &str,
     window_title: &str,
     start_timestamp: i64,
     duration_ms: i64,
+    source: &str,
 ) -> Result<bool, String> {
+    if !matches!(source, SOURCE_FOREGROUND | SOURCE_IDLE_CONFIRMED) {
+        return Err(format!("invalid app usage source: {source}"));
+    }
+
     let span = duration_ms.max(0);
 
     let last_row = conn
         .query_row(
-            "SELECT id, process_name, window_title, start_timestamp, duration_ms
+            "SELECT id, process_name, window_title, start_timestamp, duration_ms, source
              FROM app_usage_logs
              ORDER BY id DESC
              LIMIT 1",
@@ -27,14 +35,25 @@ fn append_usage_log_direct(
                     row.get::<_, String>(2)?,
                     row.get::<_, i64>(3)?,
                     row.get::<_, i64>(4)?,
+                    row.get::<_, String>(5)?,
                 ))
             },
         )
         .ok();
 
-    if let Some((last_id, last_process, last_title, last_start, last_duration_ms)) = last_row {
+    if let Some((
+        last_id,
+        last_process,
+        last_title,
+        last_start,
+        last_duration_ms,
+        last_source,
+    )) = last_row
+    {
         let last_end = last_start + (last_duration_ms.max(0) / 1000);
-        let is_same_signature = last_process == process_name && last_title == window_title;
+        let is_same_signature = last_process == process_name
+            && last_title == window_title
+            && last_source == source;
         let is_contiguous = start_timestamp >= last_start && start_timestamp <= last_end + 2;
 
         if is_same_signature && is_contiguous {
@@ -50,28 +69,28 @@ fn append_usage_log_direct(
     }
 
     conn.execute(
-        "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
-         VALUES (?1, ?2, ?3, ?4)",
-        params![process_name, window_title, start_timestamp, span],
+        "INSERT INTO app_usage_logs (
+            process_name, window_title, start_timestamp, duration_ms, source
+         ) VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![process_name, window_title, start_timestamp, span, source],
     )
     .map_err(|e| format!("failed to append app usage log: {e}"))?;
 
     Ok(true)
 }
 
-pub(crate) fn persist_idle_prompt_decision(
+fn replace_idle_interval_with_usage(
     conn: &Connection,
     prompt: &IdlePromptEntry,
-    decision: &str,
+    process_name: &str,
+    title: &str,
+    mapped_type: Option<&str>,
 ) -> Result<bool, String> {
-    let (process_name, mapped_type, title) = match decision {
-        "LEARN" => ("__idle_learn__.exe", "LEARN", "Idle Segment · Learn"),
-        "REST" => ("__idle_rest__.exe", "REST", "Idle Segment · Rest"),
-        "IDLE" => ("__idle__.exe", "IGNORE", "Idle Segment · Unclassified"),
-        _ => return Err("invalid idle decision".to_string()),
-    };
-
     let process_key = normalize_process_key(process_name);
+    if process_key.trim().is_empty() {
+        return Err("idle app attribution requires a process name".to_string());
+    }
+
     let idle_start = prompt.start_timestamp.max(0);
     let idle_end = prompt.end_timestamp.max(idle_start);
     let tx = conn
@@ -80,7 +99,7 @@ pub(crate) fn persist_idle_prompt_decision(
 
     // Foreground samples can be persisted during the idle threshold window before the sampler
     // knows the interval is idle. Resolving the prompt commits the retroactive classification,
-    // so replace those provisional rows instead of adding an overlapping idle row on top.
+    // so replace those provisional rows instead of adding an overlapping row on top.
     tx.execute(
         "UPDATE app_usage_logs
          SET duration_ms = MAX(0, (?1 - start_timestamp) * 1000)
@@ -97,18 +116,60 @@ pub(crate) fn persist_idle_prompt_decision(
     )
     .map_err(|e| format!("failed to remove usage inside idle interval: {e}"))?;
 
-    upsert_app_rule_entry(&tx, &process_key, mapped_type, "NORMAL")?;
+    if let Some(mapped_type) = mapped_type {
+        upsert_app_rule_entry(&tx, &process_key, mapped_type, "NORMAL")?;
+    }
+
     let stored = append_usage_log_direct(
         &tx,
         &process_key,
         title,
         prompt.start_timestamp,
         prompt.duration_ms,
+        SOURCE_IDLE_CONFIRMED,
     )?;
 
     tx.commit()
         .map_err(|e| format!("failed to commit idle decision transaction: {e}"))?;
     Ok(stored)
+}
+
+pub(crate) fn persist_idle_prompt_decision(
+    conn: &Connection,
+    prompt: &IdlePromptEntry,
+    decision: &str,
+) -> Result<bool, String> {
+    let (process_name, mapped_type, title) = match decision {
+        "LEARN" => ("__idle_learn__.exe", "LEARN", "Idle Segment · Learn"),
+        "REST" => ("__idle_rest__.exe", "REST", "Idle Segment · Rest"),
+        "IDLE" => ("__idle__.exe", "IGNORE", "Idle Segment · Unclassified"),
+        _ => return Err("invalid idle decision".to_string()),
+    };
+
+    replace_idle_interval_with_usage(conn, prompt, process_name, title, Some(mapped_type))
+}
+
+pub(crate) fn persist_idle_prompt_app_decision(
+    conn: &Connection,
+    prompt: &IdlePromptEntry,
+    process_name: &str,
+) -> Result<bool, String> {
+    let (processed, block_reason) =
+        process_log_with_privacy(conn, process_name, "Idle Confirmed · Previous App")?;
+    let Some((safe_process_name, safe_window_title)) = processed else {
+        let reason = block_reason.unwrap_or_else(|| "privacy_policy".to_string());
+        return Err(format!(
+            "idle app attribution blocked by privacy policy: {reason}"
+        ));
+    };
+
+    replace_idle_interval_with_usage(
+        conn,
+        prompt,
+        &safe_process_name,
+        &safe_window_title,
+        None,
+    )
 }
 
 pub(crate) fn append_usage_log_record(
@@ -129,6 +190,7 @@ pub(crate) fn append_usage_log_record(
         &safe_window_title,
         start_timestamp,
         duration_ms,
+        SOURCE_FOREGROUND,
     )?;
     Ok((stored, block_reason))
 }
@@ -137,13 +199,18 @@ pub(crate) fn append_usage_log_record(
 mod tests {
     use rusqlite::{params, Connection};
 
-    use super::persist_idle_prompt_decision;
+    use super::{persist_idle_prompt_app_decision, persist_idle_prompt_decision};
     use crate::domain::idle::IdlePromptEntry;
 
     fn usage_test_conn() -> Connection {
         let conn = Connection::open_in_memory().expect("open in-memory usage db");
         conn.execute_batch(
             r#"
+            CREATE TABLE app_config (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+
             CREATE TABLE app_rules (
                 process_name TEXT PRIMARY KEY,
                 mapped_type TEXT NOT NULL,
@@ -152,12 +219,18 @@ mod tests {
                 updated_at INTEGER NOT NULL DEFAULT 0
             );
 
+            CREATE TABLE app_whitelist (
+                process_name TEXT PRIMARY KEY
+            );
+
             CREATE TABLE app_usage_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 process_name TEXT NOT NULL,
                 window_title TEXT NOT NULL,
                 start_timestamp INTEGER NOT NULL,
-                duration_ms INTEGER NOT NULL
+                duration_ms INTEGER NOT NULL,
+                source TEXT NOT NULL DEFAULT 'FOREGROUND'
+                    CHECK(source IN ('FOREGROUND', 'IDLE_CONFIRMED'))
             );
             "#,
         )
@@ -187,6 +260,7 @@ mod tests {
             end_timestamp: 600,
             duration_ms: 300_000,
             deferred_until_timestamp: None,
+            attribution_process_name: None,
         };
 
         persist_idle_prompt_decision(&conn, &prompt, "REST").expect("persist idle decision");
@@ -217,5 +291,108 @@ mod tests {
                 ("__idle_rest__.exe".to_string(), 300, 300_000),
             ]
         );
+    }
+
+    #[test]
+    fn idle_app_decision_attributes_interval_without_overwriting_app_rule() {
+        let conn = usage_test_conn();
+        conn.execute(
+            "INSERT INTO app_rules (process_name, mapped_type, privacy_level, created_at, updated_at)
+             VALUES ('code.exe', 'REST', 'NORMAL', 1, 1)",
+            [],
+        )
+        .expect("seed app rule");
+        conn.execute(
+            "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
+             VALUES (?1, ?2, ?3, ?4)",
+            params!["code.exe", "Project", 100_i64, 400_000_i64],
+        )
+        .expect("insert foreground segment crossing idle start");
+        conn.execute(
+            "INSERT INTO app_usage_logs (process_name, window_title, start_timestamp, duration_ms)
+             VALUES (?1, ?2, ?3, ?4)",
+            params!["lockapp.exe", "Lock Screen", 350_i64, 100_000_i64],
+        )
+        .expect("insert foreground segment inside idle interval");
+
+        let prompt = IdlePromptEntry {
+            id: 2,
+            start_timestamp: 300,
+            end_timestamp: 600,
+            duration_ms: 300_000,
+            deferred_until_timestamp: None,
+            attribution_process_name: Some("code.exe".to_string()),
+        };
+
+        persist_idle_prompt_app_decision(&conn, &prompt, "code.exe")
+            .expect("persist app-attributed idle decision");
+
+        let rows = conn
+            .prepare(
+                "SELECT process_name, window_title, start_timestamp, duration_ms
+                 FROM app_usage_logs
+                 ORDER BY start_timestamp, id",
+            )
+            .expect("prepare usage rows")
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, i64>(2)?,
+                    row.get::<_, i64>(3)?,
+                ))
+            })
+            .expect("query usage rows")
+            .collect::<Result<Vec<_>, _>>()
+            .expect("collect usage rows");
+
+        assert_eq!(
+            rows,
+            vec![
+                ("code.exe".to_string(), "Project".to_string(), 100, 200_000),
+                (
+                    "code.exe".to_string(),
+                    "Idle Confirmed · Previous App".to_string(),
+                    300,
+                    300_000,
+                ),
+            ]
+        );
+
+        let mapped_type: String = conn
+            .query_row(
+                "SELECT mapped_type FROM app_rules WHERE process_name = 'code.exe'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("query app rule");
+        assert_eq!(mapped_type, "REST");
+    }
+
+    #[test]
+    fn idle_app_decision_cannot_bypass_curtain_privacy() {
+        let conn = usage_test_conn();
+        conn.execute(
+            "INSERT INTO app_config (key, value) VALUES ('curtain_enabled', 'true')",
+            [],
+        )
+        .expect("enable curtain");
+
+        let prompt = IdlePromptEntry {
+            id: 3,
+            start_timestamp: 300,
+            end_timestamp: 600,
+            duration_ms: 300_000,
+            deferred_until_timestamp: None,
+            attribution_process_name: Some("code.exe".to_string()),
+        };
+
+        let result = persist_idle_prompt_app_decision(&conn, &prompt, "code.exe");
+        assert!(result.is_err(), "privacy curtain must block app attribution");
+
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM app_usage_logs", [], |row| row.get(0))
+            .expect("count usage rows");
+        assert_eq!(count, 0);
     }
 }

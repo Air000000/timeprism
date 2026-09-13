@@ -14,6 +14,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Air000000/timeprism/releases"><strong>Windows Releases</strong></a> |
   <a href="#what-it-demonstrates">What It Demonstrates</a> |
   <a href="#architecture">Architecture</a> |
   <a href="#engineering-highlights">Engineering Highlights</a> |
@@ -30,6 +31,8 @@ TimePrism is a personal desktop tracker for understanding how computer time actu
 Rather than relying on manual start/stop timers, it samples the foreground application, applies privacy rules before persistence, maps activity through local classification rules, and stores the resulting facts in SQLite for review across the main window, Focus Guard, reminders, and a lightweight desktop pet.
 
 The project is intentionally scoped as a Windows-first, local-first desktop application. It does not depend on cloud accounts, remote sync, or external services for its core workflow.
+
+> **Release status:** the currently published `v0.1.0-preview` is an early portable build and predates the latest architecture/reliability work. The repository now includes a gated Windows release pipeline for NSIS `-setup.exe` and MSI installers; packaging changes are validated on Windows before merge, while public releases remain draft-first and require an interactive installer smoke test before publication.
 
 ## What It Demonstrates
 
@@ -144,7 +147,7 @@ SQLite persistence
 | Backend | Rust |
 | Storage | SQLite / rusqlite |
 | Platform integration | Windows + Tauri window APIs |
-| Validation | GitHub Actions, `vue-tsc`, Vite build, `cargo check`, `cargo test` |
+| Validation | GitHub Actions, `vue-tsc`, Vite build, `cargo check --all-targets`, `cargo test` |
 
 ## Project Structure
 
@@ -178,18 +181,32 @@ timeprism/
 
 ## Validation
 
-Every push to `main` and `refactor/**`, plus pull requests, runs the repository CI workflow on Windows:
+Every push to `main` and `refactor/**`, plus pull requests, runs the repository CI workflow on Windows. Rust build output is cached between runs and all test targets are compiled before the test phase:
 
 ```text
 pnpm run typecheck
 pnpm run build:check
-cargo check
+cargo check --all-targets
 cargo test
 ```
 
+Release-related pull requests also run an independent Windows packaging gate that builds both NSIS and MSI installers and uploads them as workflow artifacts. This verifies that the current tree can reach real Tauri installer artifacts without publishing a Release.
+
 The current desktop flow has also been manually smoke-tested on Windows for startup behavior, main views, reminder workflows, pet interactions, and full-app quit behavior.
 
-CI and smoke tests are used as project-level regression evidence; they are not a claim of production-grade hardening.
+CI, packaging validation, and smoke tests are used as project-level regression evidence; they are not a claim of production-grade hardening.
+
+## Distribution
+
+`.github/workflows/release.yml` separates installer generation from publication on `windows-latest`:
+
+- **Packaging PR:** release-related pull requests validate synchronized versions, run frontend/Rust checks, build both NSIS and MSI installers, and upload the real installer artifacts without publishing anything.
+- **Manual dry run:** `workflow_dispatch` performs the same installer build on demand after merge and uploads the installers as workflow artifacts without creating a Release.
+- **Version tag:** requires the tag to exactly match the synchronized Cargo/Node/Tauri app version, then creates a **draft** GitHub Release with both installer formats.
+
+Automated packaging proves that the installers can be generated; it does not replace the interactive Windows gate. At least one generated installer must still be downloaded, installed, launched, and smoke-tested before the draft Release is made public.
+
+The project is currently unsigned, so Windows SmartScreen may warn about an unknown publisher. See [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) for the full publication gate.
 
 ## Privacy
 
@@ -210,7 +227,7 @@ Because active-window data can be sensitive, privacy is treated as part of the d
 
 Recommended local development environment:
 
-- Node.js 20
+- Node.js 24 LTS
 - pnpm 9
 - Rust toolchain
 - Tauri v2 system prerequisites
@@ -242,7 +259,7 @@ pnpm dev
 pnpm run typecheck
 pnpm run build:check
 cd src-tauri
-cargo check
+cargo check --all-targets
 cargo test
 ```
 
@@ -277,7 +294,11 @@ Engineering notes and design rationale live under `docs/`, including:
 - database and privacy notes
 - smoke-test catalog
 - testing strategy
+- release checklist
+- product-media capture guide
 - ADRs and refactor traceability
+
+Real product screenshots/GIF are only added from sanitized current Windows builds; the capture/privacy requirements are documented in [`docs/media/README.md`](docs/media/README.md) so generated or mock UI is not presented as implementation evidence.
 
 ## License
 

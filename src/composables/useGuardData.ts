@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref, type Ref } from "vue";
 import {
   getIdleMemoryState,
   listAppRules,
@@ -56,6 +56,8 @@ type UseGuardDataOptions = {
   mappedTypeText: (mappedType: RuleMappedType) => string;
   refreshData: () => Promise<void>;
   setErrorMessage: (error: unknown) => void;
+  autoCaptureEnabled: Readonly<Ref<boolean>>;
+  persistAutoCaptureEnabled: (enabled: boolean) => Promise<void>;
 };
 
 export function useGuardData({
@@ -63,9 +65,10 @@ export function useGuardData({
   mappedTypeText,
   refreshData,
   setErrorMessage,
+  autoCaptureEnabled,
+  persistAutoCaptureEnabled,
 }: UseGuardDataOptions) {
   const loadingGuard = ref(false);
-  const autoCaptureEnabled = ref(true);
   const autoCaptureFeedback = ref(defaultGuardAutoCaptureFeedback(tx));
   const guardFeedback = ref(defaultGuardCheckFeedback(tx));
   const guardFeedbackType = ref<FeedbackTone>("info");
@@ -215,8 +218,20 @@ export function useGuardData({
     );
   }
 
-  function onAutoCaptureToggle(event: Event) {
-    autoCaptureEnabled.value = guardCheckedFromEvent(event);
+  async function onAutoCaptureToggle(event: Event): Promise<void> {
+    const enabled = guardCheckedFromEvent(event);
+    try {
+      await persistAutoCaptureEnabled(enabled);
+      autoCaptureFeedback.value = enabled
+        ? tx("自动采样已恢复。", "Auto capture resumed.")
+        : tx("自动采样已暂停。", "Auto capture paused.");
+    } catch (e) {
+      setErrorMessage(e);
+      autoCaptureFeedback.value = tx(
+        `切换自动采样失败：${e}`,
+        `Failed to change auto capture: ${e}`,
+      );
+    }
   }
 
   function onIdleRememberChoiceChange(event: Event) {
