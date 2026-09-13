@@ -4,12 +4,83 @@ use crate::domain::window::{PetWindowSettleResult, SettlePetWindowInput};
 
 const PET_WINDOW_WIDTH: f64 = 220.0;
 const PET_WINDOW_HEIGHT: f64 = 262.0;
+const PET_MIN_MONITOR_SCALE: f64 = 0.75;
 
-fn pet_window_target_size() -> tauri::Size {
+fn pet_window_target_size(scale: f64) -> tauri::Size {
     tauri::Size::Logical(tauri::LogicalSize {
-        width: PET_WINDOW_WIDTH,
-        height: PET_WINDOW_HEIGHT,
+        width: PET_WINDOW_WIDTH * scale,
+        height: PET_WINDOW_HEIGHT * scale,
     })
+}
+
+fn monitor_logical_work_area(monitor: &tauri::window::Monitor) -> (f64, f64) {
+    let work_area = monitor.work_area();
+    let scale_factor = monitor.scale_factor();
+    if !scale_factor.is_finite() || scale_factor <= 0.0 {
+        return (work_area.size.width as f64, work_area.size.height as f64);
+    }
+
+    (
+        work_area.size.width as f64 / scale_factor,
+        work_area.size.height as f64 / scale_factor,
+    )
+}
+
+fn pet_scale_for_logical_work_areas(
+    current_width: f64,
+    current_height: f64,
+    baseline_width: f64,
+    baseline_height: f64,
+) -> f64 {
+    if current_width <= 0.0
+        || current_height <= 0.0
+        || baseline_width <= 0.0
+        || baseline_height <= 0.0
+    {
+        return 1.0;
+    }
+
+    (current_width / baseline_width)
+        .min(current_height / baseline_height)
+        .clamp(PET_MIN_MONITOR_SCALE, 1.0)
+}
+
+fn pet_monitor_scale(
+    app: &AppHandle,
+    pet_window: &tauri::WebviewWindow,
+) -> Result<f64, String> {
+    let primary = app
+        .primary_monitor()
+        .map_err(|e| format!("failed to get primary monitor for pet sizing: {e}"))?;
+    let current = pet_window
+        .current_monitor()
+        .map_err(|e| format!("failed to get current pet monitor for sizing: {e}"))?
+        .or_else(|| primary.clone())
+        .ok_or_else(|| "pet monitor unavailable for sizing".to_string())?;
+    let baseline = primary.unwrap_or_else(|| current.clone());
+
+    let (current_width, current_height) = monitor_logical_work_area(&current);
+    let (baseline_width, baseline_height) = monitor_logical_work_area(&baseline);
+    Ok(pet_scale_for_logical_work_areas(
+        current_width,
+        current_height,
+        baseline_width,
+        baseline_height,
+    ))
+}
+
+fn apply_pet_window_scale(
+    app: &AppHandle,
+    pet_window: &tauri::WebviewWindow,
+) -> Result<f64, String> {
+    let scale = pet_monitor_scale(app, pet_window)?;
+    pet_window
+        .set_size(pet_window_target_size(scale))
+        .map_err(|e| format!("failed to resize pet window for monitor: {e}"))?;
+    pet_window
+        .set_zoom(scale)
+        .map_err(|e| format!("failed to scale pet content for monitor: {e}"))?;
+    Ok(scale)
 }
 
 pub(crate) fn set_main_close_behavior(main_window: &tauri::WebviewWindow) {
@@ -129,9 +200,7 @@ fn settle_pet_window_internal(
         .ok_or_else(|| "pet window not found".to_string())?;
     let normalized_mode = normalize_pet_settle_mode(mode)?;
 
-    pet_window
-        .set_size(pet_window_target_size())
-        .map_err(|e| format!("failed to resize pet window during settle: {e}"))?;
+    apply_pet_window_scale(app, &pet_window)?;
 
     let pet_size = pet_window
         .outer_size()
@@ -248,9 +317,7 @@ pub(crate) fn summon_pet_window(app: &AppHandle) -> Result<(), String> {
             .map_err(|e| format!("failed to recreate pet window: {e}"))?
     };
 
-    pet_window
-        .set_size(pet_window_target_size())
-        .map_err(|e| format!("failed to resize pet window: {e}"))?;
+    apply_pet_window_scale(app, &pet_window)?;
 
     ensure_pet_window_position(app, true)?;
 
@@ -442,7 +509,9 @@ pub(crate) fn show_main_window_section(app: &AppHandle, section: String) -> Resu
 
 #[cfg(test)]
 mod tests {
-    use super::{clamp_pet_window_position, normalize_pet_settle_mode};
+    use super::{
+        clamp_pet_window_position, normalize_pet_settle_mode, pet_scale_for_logical_work_areas,
+    };
 
     #[test]
     fn normalizes_pet_settle_modes() {
@@ -462,5 +531,23 @@ mod tests {
             clamp_pet_window_position(760, 590, 100, 100, 0, 0, 800, 600),
             (700, 500)
         );
+    }
+
+    #[test]
+    fn shrinks_pet_on_smaller_logical_monitor() {
+        let scale = pet_scale_for_logical_work_areas(1536.0, 864.0, 1920.0, 1080.0);
+        assert!((scale - 0.8).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn never_enlarges_pet_beyond_primary_baseline() {
+        let scale = pet_scale_for_logical_work_areas(2560.0, 1440.0, 1920.0, 1080.0);
+        assert!((scale - 1.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn clamps_pet_to_minimum_monitor_scale() {
+        let scale = pet_scale_for_logical_work_areas(1024.0, 576.0, 1920.0, 1080.0);
+        assert!((scale - 0.75).abs() < f64::EPSILON);
     }
 }
