@@ -17,6 +17,8 @@ type HomeViewContextOptions = {
   goalProgressPct: Readonly<Ref<string>>;
   goalProgressFillNum: Readonly<Ref<number>>;
   goalOverflowTier: Readonly<Ref<HomeViewContext["goalOverflowTier"]>>;
+  learnGoalMinutes: Readonly<Ref<number>>;
+  setLearnGoalMinutes: HomeViewContext["setLearnGoalMinutes"];
   recentSummary: Readonly<Ref<string>>;
   homeScheduleItems: Readonly<Ref<HomeViewContext["homeScheduleItems"]>>;
   reminderListForPanel: Readonly<Ref<HomeViewContext["reminderListForPanel"]>>;
@@ -50,6 +52,8 @@ export function useHomeViewContext({
   goalProgressPct,
   goalProgressFillNum,
   goalOverflowTier,
+  learnGoalMinutes,
+  setLearnGoalMinutes,
   recentSummary,
   homeScheduleItems,
   reminderListForPanel,
@@ -82,6 +86,8 @@ export function useHomeViewContext({
     goalProgressPct: goalProgressPct.value,
     goalProgressFillNum: goalProgressFillNum.value,
     goalOverflowTier: goalOverflowTier.value,
+    learnGoalMinutes: learnGoalMinutes.value,
+    setLearnGoalMinutes,
     recentSummary: recentSummary.value,
     homeScheduleItems: homeScheduleItems.value,
     reminderListForPanel: reminderListForPanel.value,

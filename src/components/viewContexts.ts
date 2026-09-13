@@ -58,6 +58,8 @@ export type HomeViewContext = {
   goalProgressPct: string;
   goalProgressFillNum: number;
   goalOverflowTier: "none" | "active";
+  learnGoalMinutes: number;
+  setLearnGoalMinutes: (minutes: number) => void;
   recentSummary: string;
   homeScheduleItems: Reminder[];
   reminderListForPanel: Reminder[];

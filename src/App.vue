@@ -143,6 +143,7 @@ const {
 const {
   learnGoalSliderMinutes,
   getHeatmapGoalSeconds,
+  setHeatmapGoalMinutes,
   loadHeatmapGoalSecondsSetting,
   cleanupHeatmapGoalSetting,
 } = useHeatmapGoalSetting({ setErrorMessage });
@@ -374,6 +375,8 @@ const homeCtx = useHomeViewContext({
   goalProgressPct,
   goalProgressFillNum,
   goalOverflowTier,
+  learnGoalMinutes: learnGoalSliderMinutes,
+  setLearnGoalMinutes: setHeatmapGoalMinutes,
   recentSummary,
   homeScheduleItems,
   reminderListForPanel,

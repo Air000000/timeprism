@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { useHomeReminderPanel } from "../composables/useHomeReminderPanel";
 import { useHomeRhythmTooltip } from "../composables/useHomeRhythmTooltip";
 import type { HomeViewContext } from "./viewContexts";
@@ -43,6 +43,15 @@ const {
   homeRhythmSummary,
   rhythmTooltip,
 } = useHomeRhythmTooltip(() => props.ctx);
+
+function handleGoalSliderInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  props.ctx.setLearnGoalMinutes(Number(input.value));
+}
+
+function adjustGoalMinutes(delta: number) {
+  props.ctx.setLearnGoalMinutes(props.ctx.learnGoalMinutes + delta);
+}
 </script>
 
 <template>
@@ -101,6 +110,40 @@ const {
             </div>
             <div class="overview-goal-readout">
               <strong class="overview-goal-readout-value">{{ props.ctx.formatSeconds(props.ctx.todayLearnSeconds) }}</strong>
+              <span class="overview-goal-target">
+                {{ props.ctx.tx("目标", "Target") }} {{ props.ctx.timeMinutesLabel(props.ctx.learnGoalMinutes) }}
+              </span>
+            </div>
+            <div class="overview-goal-editor">
+              <button
+                type="button"
+                class="overview-goal-step"
+                :disabled="props.ctx.learnGoalMinutes <= 0"
+                :aria-label="props.ctx.tx('减少15分钟', 'Decrease goal by 15 minutes')"
+                @click="adjustGoalMinutes(-15)"
+              >
+                −
+              </button>
+              <input
+                id="home-goal-minutes"
+                class="overview-goal-slider"
+                type="range"
+                min="0"
+                max="1440"
+                step="15"
+                :value="props.ctx.learnGoalMinutes"
+                :aria-label="props.ctx.tx('今日目标时长', 'Today goal duration')"
+                @input="handleGoalSliderInput"
+              />
+              <button
+                type="button"
+                class="overview-goal-step"
+                :disabled="props.ctx.learnGoalMinutes >= 1440"
+                :aria-label="props.ctx.tx('增加15分钟', 'Increase goal by 15 minutes')"
+                @click="adjustGoalMinutes(15)"
+              >
+                +
+              </button>
             </div>
           </div>
         </div>
@@ -379,3 +422,72 @@ const {
   </Teleport>
 
 </template>
+
+<style scoped>
+.overview-goal-hero .overview-goal-main-compact,
+.overview-goal-hero .overview-goal-visual {
+  gap: 6px;
+}
+
+.overview-goal-hero .overview-goal-pie {
+  width: 112px;
+  height: 112px;
+}
+
+.overview-goal-hero .overview-goal-pie::before {
+  inset: 17px;
+}
+
+.overview-goal-hero .overview-goal-pie strong {
+  font-size: 22px;
+}
+
+.overview-goal-hero .overview-goal-readout {
+  gap: 3px;
+}
+
+.overview-goal-hero .overview-goal-readout-value {
+  font-size: 18px;
+}
+
+.overview-goal-target {
+  font-size: 11px;
+  line-height: 1.2;
+  color: #7e6f61;
+  font-variant-numeric: tabular-nums;
+}
+
+.overview-goal-editor {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 7px;
+}
+
+.overview-goal-step {
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.overview-goal-slider {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: #56a883;
+  cursor: pointer;
+}
+
+.overview-goal-slider:focus-visible,
+.overview-goal-step:focus-visible {
+  outline: 2px solid #4f8f73;
+  outline-offset: 2px;
+}
+</style>
