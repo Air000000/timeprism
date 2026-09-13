@@ -2,6 +2,16 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use crate::domain::window::{PetWindowSettleResult, SettlePetWindowInput};
 
+const PET_WINDOW_WIDTH: f64 = 220.0;
+const PET_WINDOW_HEIGHT: f64 = 262.0;
+
+fn pet_window_target_size() -> tauri::Size {
+    tauri::Size::Logical(tauri::LogicalSize {
+        width: PET_WINDOW_WIDTH,
+        height: PET_WINDOW_HEIGHT,
+    })
+}
+
 pub(crate) fn set_main_close_behavior(main_window: &tauri::WebviewWindow) {
     let main_clone = main_window.clone();
     main_window.on_window_event(move |event| {
@@ -118,13 +128,9 @@ fn settle_pet_window_internal(
         .get_webview_window("pet")
         .ok_or_else(|| "pet window not found".to_string())?;
     let normalized_mode = normalize_pet_settle_mode(mode)?;
-    let (target_width, target_height) = (220_u32, 262_u32);
 
     pet_window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-            width: target_width,
-            height: target_height,
-        }))
+        .set_size(pet_window_target_size())
         .map_err(|e| format!("failed to resize pet window during settle: {e}"))?;
 
     let pet_size = pet_window
@@ -231,7 +237,7 @@ pub(crate) fn summon_pet_window(app: &AppHandle) -> Result<(), String> {
     } else {
         tauri::WebviewWindowBuilder::new(app, "pet", tauri::WebviewUrl::App("pet.html".into()))
             .title("TimePrism Pet")
-            .inner_size(220.0, 262.0)
+            .inner_size(PET_WINDOW_WIDTH, PET_WINDOW_HEIGHT)
             .decorations(false)
             .transparent(true)
             .resizable(false)
@@ -243,10 +249,7 @@ pub(crate) fn summon_pet_window(app: &AppHandle) -> Result<(), String> {
     };
 
     pet_window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-            width: 220,
-            height: 262,
-        }))
+        .set_size(pet_window_target_size())
         .map_err(|e| format!("failed to resize pet window: {e}"))?;
 
     ensure_pet_window_position(app, true)?;
