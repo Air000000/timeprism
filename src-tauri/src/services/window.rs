@@ -26,7 +26,7 @@ fn monitor_logical_work_area(monitor: &tauri::window::Monitor) -> (f64, f64) {
     )
 }
 
-fn pet_scale_for_logical_work_areas(
+fn relative_monitor_scale(
     current_width: f64,
     current_height: f64,
     baseline_width: f64,
@@ -40,8 +40,30 @@ fn pet_scale_for_logical_work_areas(
         return 1.0;
     }
 
-    (current_width / baseline_width)
-        .min(current_height / baseline_height)
+    (current_width / baseline_width).min(current_height / baseline_height)
+}
+
+fn pet_scale_for_monitor_areas(
+    current_physical: (f64, f64),
+    current_logical: (f64, f64),
+    baseline_physical: (f64, f64),
+    baseline_logical: (f64, f64),
+) -> f64 {
+    let physical_scale = relative_monitor_scale(
+        current_physical.0,
+        current_physical.1,
+        baseline_physical.0,
+        baseline_physical.1,
+    );
+    let logical_scale = relative_monitor_scale(
+        current_logical.0,
+        current_logical.1,
+        baseline_logical.0,
+        baseline_logical.1,
+    );
+
+    physical_scale
+        .min(logical_scale)
         .clamp(PET_MIN_MONITOR_SCALE, 1.0)
 }
 
@@ -59,13 +81,24 @@ fn pet_monitor_scale(
         .ok_or_else(|| "pet monitor unavailable for sizing".to_string())?;
     let baseline = primary.unwrap_or_else(|| current.clone());
 
-    let (current_width, current_height) = monitor_logical_work_area(&current);
-    let (baseline_width, baseline_height) = monitor_logical_work_area(&baseline);
-    Ok(pet_scale_for_logical_work_areas(
-        current_width,
-        current_height,
-        baseline_width,
-        baseline_height,
+    let current_work_area = current.work_area();
+    let baseline_work_area = baseline.work_area();
+    let current_physical = (
+        current_work_area.size.width as f64,
+        current_work_area.size.height as f64,
+    );
+    let baseline_physical = (
+        baseline_work_area.size.width as f64,
+        baseline_work_area.size.height as f64,
+    );
+    let current_logical = monitor_logical_work_area(&current);
+    let baseline_logical = monitor_logical_work_area(&baseline);
+
+    Ok(pet_scale_for_monitor_areas(
+        current_physical,
+        current_logical,
+        baseline_physical,
+        baseline_logical,
     ))
 }
 
@@ -509,9 +542,7 @@ pub(crate) fn show_main_window_section(app: &AppHandle, section: String) -> Resu
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        clamp_pet_window_position, normalize_pet_settle_mode, pet_scale_for_logical_work_areas,
-    };
+    use super::{clamp_pet_window_position, normalize_pet_settle_mode, pet_scale_for_monitor_areas};
 
     #[test]
     fn normalizes_pet_settle_modes() {
@@ -534,20 +565,35 @@ mod tests {
     }
 
     #[test]
-    fn shrinks_pet_on_smaller_logical_monitor() {
-        let scale = pet_scale_for_logical_work_areas(1536.0, 864.0, 1920.0, 1080.0);
-        assert!((scale - 0.8).abs() < f64::EPSILON);
+    fn shrinks_pet_when_smaller_monitor_has_less_logical_space() {
+        let scale = pet_scale_for_monitor_areas(
+            (1920.0, 1080.0),
+            (1536.0, 864.0),
+            (2560.0, 1440.0),
+            (2048.0, 1152.0),
+        );
+        assert!((scale - 0.75).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn shrinks_pet_when_physical_resolution_is_smaller_even_if_logical_space_matches() {
+        let scale = pet_scale_for_monitor_areas(
+            (1920.0, 1080.0),
+            (1920.0, 1080.0),
+            (3840.0, 2160.0),
+            (1920.0, 1080.0),
+        );
+        assert!((scale - 0.75).abs() < f64::EPSILON);
     }
 
     #[test]
     fn never_enlarges_pet_beyond_primary_baseline() {
-        let scale = pet_scale_for_logical_work_areas(2560.0, 1440.0, 1920.0, 1080.0);
+        let scale = pet_scale_for_monitor_areas(
+            (3840.0, 2160.0),
+            (2560.0, 1440.0),
+            (2560.0, 1440.0),
+            (1920.0, 1080.0),
+        );
         assert!((scale - 1.0).abs() < f64::EPSILON);
-    }
-
-    #[test]
-    fn clamps_pet_to_minimum_monitor_scale() {
-        let scale = pet_scale_for_logical_work_areas(1024.0, 576.0, 1920.0, 1080.0);
-        assert!((scale - 0.75).abs() < f64::EPSILON);
     }
 }

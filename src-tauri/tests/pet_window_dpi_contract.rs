@@ -16,9 +16,9 @@ fn pet_window_uses_monitor_adaptive_logical_size_and_zoom() {
         "pet sizing should use the monitor that contains the pet after a cross-display drag"
     );
     assert!(
-        WINDOW_SERVICE_SOURCE.contains("monitor.work_area()")
+        WINDOW_SERVICE_SOURCE.contains("current_work_area.size.width")
             && WINDOW_SERVICE_SOURCE.contains("monitor.scale_factor()"),
-        "pet sizing should compare effective logical monitor work areas"
+        "pet sizing should compare both physical and effective logical monitor work areas"
     );
     assert!(
         WINDOW_SERVICE_SOURCE.contains(".set_zoom(scale)"),
