@@ -250,13 +250,13 @@ body {
 
 .pet-shell.edge-hidden.dock-left .pet-sprite {
   justify-self: start;
-  background-position: 0 -208px;
+  background-position: -768px -1872px;
   transform: translateX(-42px);
 }
 
 .pet-shell.edge-hidden.dock-right .pet-sprite {
   justify-self: end;
-  background-position: 0 -416px;
+  background-position: -768px -2080px;
   transform: translateX(42px);
 }
 
