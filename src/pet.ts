@@ -78,6 +78,9 @@ export function petTrackingMood(
 
 let petState: PetDockState = "free";
 let isDragging = false;
+let dragDirection: "left" | "right" | null = null;
+let lastDragX: number | null = null;
+let stopWatchingPetMoves: (() => void) | null = null;
 let expanded = false;
 let hideTimer: number | null = null;
 let moodResetTimer: number | null = null;
@@ -121,7 +124,14 @@ function applyPetCharacter() {
 	if (src === PET_CHARACTER_PRIMARY_SRC) {
 		characterImage.hidden = true;
 		characterSprite.hidden = false;
-		characterSprite.className = "pet-sprite";
+		const spriteState = isDragging && dragDirection
+			? ` running-${dragDirection}`
+			: petState === "docked_left"
+				? " dock-facing-left"
+				: petState === "docked_right"
+					? " dock-facing-right"
+					: "";
+		characterSprite.className = `pet-sprite${spriteState}`;
 		return;
 	}
 
@@ -147,9 +157,7 @@ function applyDockedAppearance() {
 		return;
 	}
 	if (getPetCharacterSrc() === PET_CHARACTER_PRIMARY_SRC) {
-		characterImage.hidden = true;
-		characterSprite.hidden = false;
-		characterSprite.className = `pet-sprite dock-facing-${dockEdge}`;
+		applyPetCharacter();
 		return;
 	}
 
@@ -479,6 +487,10 @@ dragArea.addEventListener("pointerdown", (event) => {
 	closeContextMenu();
 	dragPointerId = event.pointerId;
 	isDragging = true;
+	dragDirection = null;
+	lastDragX = null;
+	petState = "free";
+	applyDockedAppearance();
 	dragArea.setPointerCapture?.(event.pointerId);
 	void (async () => {
 		try {
@@ -496,12 +508,33 @@ window.addEventListener("pointermove", (event) => {
 	}
 });
 
+void petWindow.onMoved(({ payload: position }) => {
+	if (!isDragging) {
+		lastDragX = null;
+		return;
+	}
+	if (lastDragX !== null) {
+		const deltaX = position.x - lastDragX;
+		const nextDirection = Math.abs(deltaX) < 2 ? null : deltaX > 0 ? "right" : "left";
+		if (nextDirection && nextDirection !== dragDirection) {
+			dragDirection = nextDirection;
+			applyDockedAppearance();
+		}
+	}
+	lastDragX = position.x;
+}).then((unlisten) => {
+	stopWatchingPetMoves = unlisten;
+}).catch((e) => console.error("[pet] window move listener failed", e));
+
 async function finishDrag() {
 	if (!isDragging) {
 		return;
 	}
 
 	isDragging = false;
+	dragDirection = null;
+	lastDragX = null;
+	applyDockedAppearance();
 	if (dragPointerId !== null) {
 		dragArea.releasePointerCapture?.(dragPointerId);
 	}
@@ -599,6 +632,7 @@ window.addEventListener("storage", (event) => {
 
 window.addEventListener("beforeunload", () => {
 	window.clearInterval(timer);
+	stopWatchingPetMoves?.();
 	clearHideTimer();
 	clearMoodResetTimer();
 	closeContextMenu();
