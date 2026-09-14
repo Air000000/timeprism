@@ -73,8 +73,9 @@ body {
   transform: none;
   margin: 0;
   width: max-content;
-  min-width: 64px;
-  max-width: 84px;
+  min-width: 70px;
+  max-width: 78px;
+  box-sizing: border-box;
   z-index: 3;
 }
 
@@ -83,13 +84,13 @@ body {
 }
 
 .pet-shell.edge-hidden.dock-right .today-lines {
-  left: 0;
-  right: auto;
+  left: auto;
+  right: 0;
 }
 
 .pet-shell.edge-hidden.dock-left .today-lines {
-  left: auto;
-  right: 0;
+  left: 0;
+  right: auto;
 }
 
 .pet-shell.edge-hidden.dock-right .today-lines {
@@ -132,6 +133,7 @@ body {
   user-select: none;
   min-height: 0;
   pointer-events: auto;
+  touch-action: none;
 }
 
 .pet-portrait-wrap:active {
@@ -262,7 +264,7 @@ body {
   background-image: url("/pets/yin-yue/dock-left.webp");
   background-size: 768px 208px;
   background-position: 0 0;
-  transform: translateX(-42px);
+  transform: none;
   animation: yinYueDock 2.4s steps(1, end) infinite;
 }
 

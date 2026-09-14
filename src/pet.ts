@@ -80,7 +80,11 @@ let petState: PetDockState = "free";
 let isDragging = false;
 let dragDirection: "left" | "right" | null = null;
 let lastDragX: number | null = null;
-let stopWatchingPetMoves: (() => void) | null = null;
+let dragPointerOrigin: { x: number; y: number } | null = null;
+let dragWindowOrigin: { x: number; y: number } | null = null;
+let dragScaleFactor = 1;
+let queuedPetMove: { x: number; y: number } | null = null;
+let petMoveTask: Promise<void> | null = null;
 let expanded = false;
 let hideTimer: number | null = null;
 let moodResetTimer: number | null = null;
@@ -384,6 +388,26 @@ function clearSnapRetryTimer() {
 	}
 }
 
+function queuePetMove(x: number, y: number) {
+	queuedPetMove = { x, y };
+	if (petMoveTask) {
+		return;
+	}
+
+	petMoveTask = (async () => {
+		while (queuedPetMove) {
+			const next = queuedPetMove;
+			queuedPetMove = null;
+			await invoke("move_pet_window", next);
+		}
+	})().catch((e) => {
+		queuedPetMove = null;
+		reportActionError(tx("拖拽移动失败", "Pet move failed"), e);
+	}).finally(() => {
+		petMoveTask = null;
+	});
+}
+
 async function setExpanded(next: boolean) {
 	if (expanded === next) {
 		return;
@@ -488,43 +512,49 @@ dragArea.addEventListener("pointerdown", (event) => {
 	dragPointerId = event.pointerId;
 	isDragging = true;
 	dragDirection = null;
-	lastDragX = null;
+	lastDragX = event.screenX;
+	dragPointerOrigin = { x: event.screenX, y: event.screenY };
+	dragWindowOrigin = null;
+	dragScaleFactor = 1;
 	petState = "free";
 	applyDockedAppearance();
 	dragArea.setPointerCapture?.(event.pointerId);
-	void (async () => {
-		try {
-			await invoke("begin_pet_drag");
-		} catch (e) {
-			reportActionError(tx("拖拽启动失败", "Drag start failed"), e);
-			await finishDrag();
+	const pointerId = event.pointerId;
+	void Promise.all([petWindow.outerPosition(), petWindow.scaleFactor()]).then(([position, scaleFactor]) => {
+		if (!isDragging || dragPointerId !== pointerId) {
+			return;
 		}
-	})();
+		dragWindowOrigin = position;
+		dragScaleFactor = scaleFactor;
+	}).catch((e) => {
+		reportActionError(tx("拖拽启动失败", "Drag start failed"), e);
+		void finishDrag();
+	});
 });
 
 window.addEventListener("pointermove", (event) => {
 	if (!isDragging || dragPointerId === null || event.pointerId !== dragPointerId) {
 		return;
 	}
-});
-
-void petWindow.onMoved(({ payload: position }) => {
-	if (!isDragging) {
-		lastDragX = null;
-		return;
-	}
+	event.preventDefault();
 	if (lastDragX !== null) {
-		const deltaX = position.x - lastDragX;
+		const deltaX = event.screenX - lastDragX;
 		const nextDirection = Math.abs(deltaX) < 2 ? null : deltaX > 0 ? "right" : "left";
 		if (nextDirection && nextDirection !== dragDirection) {
 			dragDirection = nextDirection;
 			applyDockedAppearance();
 		}
 	}
-	lastDragX = position.x;
-}).then((unlisten) => {
-	stopWatchingPetMoves = unlisten;
-}).catch((e) => console.error("[pet] window move listener failed", e));
+	lastDragX = event.screenX;
+
+	if (!dragPointerOrigin || !dragWindowOrigin) {
+		return;
+	}
+	queuePetMove(
+		dragWindowOrigin.x + Math.round((event.screenX - dragPointerOrigin.x) * dragScaleFactor),
+		dragWindowOrigin.y + Math.round((event.screenY - dragPointerOrigin.y) * dragScaleFactor),
+	);
+});
 
 async function finishDrag() {
 	if (!isDragging) {
@@ -534,11 +564,18 @@ async function finishDrag() {
 	isDragging = false;
 	dragDirection = null;
 	lastDragX = null;
-	applyDockedAppearance();
-	if (dragPointerId !== null) {
-		dragArea.releasePointerCapture?.(dragPointerId);
-	}
+	const finishingPointerId = dragPointerId;
 	dragPointerId = null;
+	if (finishingPointerId !== null) {
+		dragArea.releasePointerCapture?.(finishingPointerId);
+	}
+	await petMoveTask;
+	if (isDragging) {
+		return;
+	}
+	dragPointerOrigin = null;
+	dragWindowOrigin = null;
+	applyDockedAppearance();
 
 	hideTimer = window.setTimeout(() => {
 		void settleAfterDrag();
@@ -632,7 +669,6 @@ window.addEventListener("storage", (event) => {
 
 window.addEventListener("beforeunload", () => {
 	window.clearInterval(timer);
-	stopWatchingPetMoves?.();
 	clearHideTimer();
 	clearMoodResetTimer();
 	closeContextMenu();
