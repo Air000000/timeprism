@@ -1,7 +1,7 @@
 const PET_CHARACTER_STORAGE_KEY = "timeprism.pet.character";
 const PET_CHARACTER_LEGACY_PRIMARY_SRC = "/pet-character.png";
 
-export const PET_CHARACTER_PRIMARY_SRC = "/慕沛灵Q版桌宠形象.png";
+export const PET_CHARACTER_PRIMARY_SRC = "/pets/yin-yue/spritesheet.webp";
 export const PET_CHARACTER_DEFAULT_SRC = "/pet-character-default.svg";
 export const PET_CHARACTER_DOCKED_LEFT_SRC = "/左侧.png";
 export const PET_CHARACTER_DOCKED_RIGHT_SRC = "/右侧.png";

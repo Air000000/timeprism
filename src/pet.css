@@ -143,6 +143,23 @@ body {
   cursor: grabbing !important;
 }
 
+.pet-sprite {
+  width: 192px;
+  height: 208px;
+  margin: 0;
+  justify-self: center;
+  align-self: end;
+  background: url("/pets/yin-yue/spritesheet.webp") 0 0 / 1536px 2288px no-repeat;
+  filter: drop-shadow(0 7px 10px rgba(75, 82, 115, 0.24));
+  transform-origin: 50% 88%;
+  animation: yinYueIdle 1.8s steps(1, end) infinite, petIdleFloat 3.6s ease-in-out infinite;
+}
+
+.pet-sprite[hidden],
+.pet-portrait[hidden] {
+  display: none;
+}
+
 .pet-portrait {
   width: 85%;
   height: 85%;
@@ -161,6 +178,10 @@ body {
 
 .pet-shell:hover .pet-portrait {
   animation-duration: 2.8s;
+}
+
+.pet-shell:hover .pet-sprite {
+  animation-duration: 1.4s, 2.8s;
 }
 
 .today-lines {
@@ -221,6 +242,22 @@ body {
   animation: none;
   transform: none;
   transform-origin: 50% 92%;
+}
+
+.pet-shell.edge-hidden .pet-sprite {
+  animation: none;
+}
+
+.pet-shell.edge-hidden.dock-left .pet-sprite {
+  justify-self: start;
+  background-position: 0 -208px;
+  transform: translateX(-42px);
+}
+
+.pet-shell.edge-hidden.dock-right .pet-sprite {
+  justify-self: end;
+  background-position: 0 -416px;
+  transform: translateX(42px);
 }
 
 .pet-shell.edge-hidden.dock-left .pet-portrait {
@@ -441,5 +478,15 @@ button:disabled {
   100% {
     transform: translateY(0) scale(1);
   }
+}
+
+@keyframes yinYueIdle {
+  0% { background-position: 0 0; }
+  16.667% { background-position: -192px 0; }
+  33.333% { background-position: -384px 0; }
+  50% { background-position: -576px 0; }
+  66.667% { background-position: -768px 0; }
+  83.333% { background-position: -960px 0; }
+  100% { background-position: 0 0; }
 }
 

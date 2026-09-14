@@ -97,6 +97,7 @@ const {
 	rest,
 	learnToken,
 	restToken,
+	characterSprite,
 	characterImage,
 	dragArea,
 	shell,
@@ -116,7 +117,17 @@ function applyLocalizedStaticText() {
 }
 
 function applyPetCharacter() {
-	characterImage.src = getPetCharacterSrc();
+	const src = getPetCharacterSrc();
+	if (src === PET_CHARACTER_PRIMARY_SRC) {
+		characterImage.hidden = true;
+		characterSprite.hidden = false;
+		characterSprite.className = "pet-sprite";
+		return;
+	}
+
+	characterSprite.hidden = true;
+	characterImage.hidden = false;
+	characterImage.src = src;
 	characterImage.onerror = () => {
 		if (characterImage.src.endsWith(PET_CHARACTER_DEFAULT_SRC)) {
 			return;
@@ -135,7 +146,15 @@ function applyDockedAppearance() {
 		applyPetCharacter();
 		return;
 	}
+	if (getPetCharacterSrc() === PET_CHARACTER_PRIMARY_SRC) {
+		characterImage.hidden = true;
+		characterSprite.hidden = false;
+		characterSprite.className = `pet-sprite dock-facing-${dockEdge}`;
+		return;
+	}
 
+	characterSprite.hidden = true;
+	characterImage.hidden = false;
 	characterImage.src = dockEdge === "left" ? PET_CHARACTER_DOCKED_LEFT_SRC : PET_CHARACTER_DOCKED_RIGHT_SRC;
 	characterImage.onerror = () => {
 		characterImage.onerror = null;
