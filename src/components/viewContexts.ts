@@ -19,7 +19,7 @@ import type { ThemeMode } from "../composables/useThemeMode";
 export type TranslateFn = (zh: string, en: string) => string;
 export type AllTimeFilter = UsageRootFilter;
 export type RuleMappedType = AppRuleMappedType;
-export type IdleDecision = "LEARN" | "REST" | "IDLE" | "SKIP";
+export type IdleDecision = "APP" | "LEARN" | "REST" | "IDLE" | "SKIP";
 export type RuleSortKey = "alpha_asc" | "alpha_desc" | "time_desc" | "time_asc";
 export type FeedbackTone = "info" | "ok" | "warn" | "error";
 
@@ -58,6 +58,8 @@ export type HomeViewContext = {
   goalProgressPct: string;
   goalProgressFillNum: number;
   goalOverflowTier: "none" | "active";
+  learnGoalMinutes: number;
+  setLearnGoalMinutes: (minutes: number) => void;
   recentSummary: string;
   homeScheduleItems: Reminder[];
   reminderListForPanel: Reminder[];

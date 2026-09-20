@@ -1,0 +1,69 @@
+const APP_SOURCE: &str = include_str!("../../src/App.vue");
+const HOME_VIEW_SOURCE: &str = include_str!("../../src/components/HomeView.vue");
+const HOME_CONTEXT_SOURCE: &str = include_str!("../../src/components/viewContexts.ts");
+const HOME_CONTEXT_BUILDER_SOURCE: &str = include_str!("../../src/composables/useHomeViewContext.ts");
+const GOAL_SETTING_SOURCE: &str = include_str!("../../src/composables/useHeatmapGoalSetting.ts");
+
+#[test]
+fn home_goal_editor_is_wired_to_the_persisted_goal_setting() {
+    assert!(
+        GOAL_SETTING_SOURCE.contains("function setHeatmapGoalMinutes(minutes: number)"),
+        "goal setting composable must expose an explicit user-edit path"
+    );
+    assert!(
+        GOAL_SETTING_SOURCE.contains("learnGoalSliderMinutes.value = normalizeHeatmapGoalMinutes(minutes);")
+            && GOAL_SETTING_SOURCE.contains("schedulePersistHeatmapGoal();"),
+        "user goal edits must normalize through the existing bounds and use debounced persistence"
+    );
+    assert!(
+        HOME_CONTEXT_SOURCE.contains("learnGoalMinutes: number;")
+            && HOME_CONTEXT_SOURCE.contains("setLearnGoalMinutes: (minutes: number) => void;"),
+        "Home context must expose both the current goal and its mutation handler"
+    );
+    assert!(
+        HOME_CONTEXT_BUILDER_SOURCE.contains("learnGoalMinutes: learnGoalMinutes.value")
+            && HOME_CONTEXT_BUILDER_SOURCE.contains("setLearnGoalMinutes,"),
+        "Home context builder must pass the editable goal through"
+    );
+    assert!(
+        APP_SOURCE.contains("setHeatmapGoalMinutes,")
+            && APP_SOURCE.contains("learnGoalMinutes: learnGoalSliderMinutes")
+            && APP_SOURCE.contains("setLearnGoalMinutes: setHeatmapGoalMinutes"),
+        "App wiring must connect the persisted setting composable to Home"
+    );
+    assert!(
+        HOME_VIEW_SOURCE.contains("id=\"home-goal-minutes\"")
+            && HOME_VIEW_SOURCE.contains("type=\"range\"")
+            && HOME_VIEW_SOURCE.contains("min=\"0\"")
+            && HOME_VIEW_SOURCE.contains("max=\"1440\"")
+            && HOME_VIEW_SOURCE.contains("step=\"15\"")
+            && HOME_VIEW_SOURCE.contains("@input=\"handleGoalSliderInput\""),
+        "Home must render an interactive 0-24h goal editor with the existing 15-minute step"
+    );
+    assert!(
+        HOME_VIEW_SOURCE.contains("@click=\"adjustGoalMinutes(-15)\"")
+            && HOME_VIEW_SOURCE.contains("@click=\"adjustGoalMinutes(15)\""),
+        "Home goal editor must preserve keyboard-friendly 15-minute decrement/increment controls"
+    );
+}
+
+#[test]
+fn reading_goal_seconds_does_not_schedule_a_write() {
+    let read_marker = "function getHeatmapGoalSeconds(): number {";
+    let next_marker = "function setHeatmapGoalMinutes(minutes: number)";
+    let start = GOAL_SETTING_SOURCE
+        .find(read_marker)
+        .expect("getHeatmapGoalSeconds function");
+    let source_after_read = &GOAL_SETTING_SOURCE[start..];
+    let end = source_after_read
+        .find(next_marker)
+        .expect("setHeatmapGoalMinutes function after goal reader");
+    let body = &source_after_read[..end];
+
+    assert!(
+        body.contains("return heatmapGoalMinutesToSeconds(learnGoalSliderMinutes.value);")
+            && !body.contains("schedulePersistHeatmapGoal")
+            && !body.contains("syncGoalFromSlider"),
+        "reading the goal for Home/Insights refreshes must stay pure and must not enqueue persistence writes"
+    );
+}

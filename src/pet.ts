@@ -1,8 +1,8 @@
-﻿import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { Menu } from "@tauri-apps/api/menu";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
-import { getTodaySummary, type TodaySummary } from "./api";
+import { getTodaySummary, getTrackingState } from "./api";
 import {
 	LOCALE_STORAGE_KEY,
 	getStoredOrBrowserLocale,
@@ -57,6 +57,8 @@ import "./pet.css";
 const petWindow = getCurrentWindow();
 const EDGE_SNAP_THRESHOLD = 72;
 
+type PetTranslateFn = (zh: string, en: string) => string;
+
 function getLocale(): LocaleCode {
 	return getStoredOrBrowserLocale();
 }
@@ -65,8 +67,24 @@ function tx(zh: string, en: string): string {
 	return translateForLocale(getLocale(), zh, en);
 }
 
+export function petTrackingMood(
+	autoCaptureEnabled: boolean,
+	translate: PetTranslateFn,
+): string {
+	return autoCaptureEnabled
+		? translate("自动记录中", "Auto tracking")
+		: translate("记录已暂停", "Tracking paused");
+}
+
 let petState: PetDockState = "free";
 let isDragging = false;
+let dragDirection: "left" | "right" | null = null;
+let lastDragX: number | null = null;
+let dragPointerOrigin: { x: number; y: number } | null = null;
+let dragWindowOrigin: { x: number; y: number } | null = null;
+let dragScaleFactor = 1;
+let queuedPetMove: { x: number; y: number } | null = null;
+let petMoveTask: Promise<void> | null = null;
 let expanded = false;
 let hideTimer: number | null = null;
 let moodResetTimer: number | null = null;
@@ -86,6 +104,7 @@ const {
 	rest,
 	learnToken,
 	restToken,
+	characterSprite,
 	characterImage,
 	dragArea,
 	shell,
@@ -105,7 +124,24 @@ function applyLocalizedStaticText() {
 }
 
 function applyPetCharacter() {
-	characterImage.src = getPetCharacterSrc();
+	const src = getPetCharacterSrc();
+	if (src === PET_CHARACTER_PRIMARY_SRC) {
+		characterImage.hidden = true;
+		characterSprite.hidden = false;
+		const spriteState = isDragging && dragDirection
+			? ` running-${dragDirection}`
+			: petState === "docked_left"
+				? " dock-facing-left"
+				: petState === "docked_right"
+					? " dock-facing-right"
+					: "";
+		characterSprite.className = `pet-sprite${spriteState}`;
+		return;
+	}
+
+	characterSprite.hidden = true;
+	characterImage.hidden = false;
+	characterImage.src = src;
 	characterImage.onerror = () => {
 		if (characterImage.src.endsWith(PET_CHARACTER_DEFAULT_SRC)) {
 			return;
@@ -124,7 +160,13 @@ function applyDockedAppearance() {
 		applyPetCharacter();
 		return;
 	}
+	if (getPetCharacterSrc() === PET_CHARACTER_PRIMARY_SRC) {
+		applyPetCharacter();
+		return;
+	}
 
+	characterSprite.hidden = true;
+	characterImage.hidden = false;
 	characterImage.src = dockEdge === "left" ? PET_CHARACTER_DOCKED_LEFT_SRC : PET_CHARACTER_DOCKED_RIGHT_SRC;
 	characterImage.onerror = () => {
 		characterImage.onerror = null;
@@ -253,7 +295,9 @@ async function refreshPromptBubble() {
 					await invoke("resolve_idle_prompt", {
 						input: { prompt_id: idle.id, decision, remember_this_session: false },
 					});
-					if (decision === "LEARN") {
+					if (decision === "APP") {
+						setTransientMood(tx("已归入之前使用的应用", "Attributed to previous app"));
+					} else if (decision === "LEARN") {
 						setTransientMood(tx("已标记为学习", "Marked as Learn"));
 					} else if (decision === "REST") {
 						setTransientMood(tx("已标记为休息", "Marked as Break"));
@@ -262,6 +306,11 @@ async function refreshPromptBubble() {
 					} else {
 						promptSnoozeUntilByKey.set(promptKey, Date.now() + 60_000);
 					}
+					await refreshPromptBubble();
+				},
+				openIdleDetails: async (idle) => {
+					await invoke("show_main_window_section", { section: "guard" });
+					promptSnoozeUntilByKey.set(`idle-${idle.id}`, Date.now() + 60_000);
 					await refreshPromptBubble();
 				},
 				saveRule: async (processName, mappedType) => {
@@ -339,6 +388,26 @@ function clearSnapRetryTimer() {
 	}
 }
 
+function queuePetMove(x: number, y: number) {
+	queuedPetMove = { x, y };
+	if (petMoveTask) {
+		return;
+	}
+
+	petMoveTask = (async () => {
+		while (queuedPetMove) {
+			const next = queuedPetMove;
+			queuedPetMove = null;
+			await invoke("move_pet_window", next);
+		}
+	})().catch((e) => {
+		queuedPetMove = null;
+		reportActionError(tx("拖拽移动失败", "Pet move failed"), e);
+	}).finally(() => {
+		petMoveTask = null;
+	});
+}
+
 async function setExpanded(next: boolean) {
 	if (expanded === next) {
 		return;
@@ -408,12 +477,15 @@ function scheduleSettleRetry(attempt = 0) {
 
 async function refreshSummary() {
 	try {
-		const summary: TodaySummary = await getTodaySummary();
+		const [summary, tracking] = await Promise.all([
+			getTodaySummary(),
+			getTrackingState(),
+		]);
 		renderPetSummary(
 			{ learn, rest, mood },
 			formatSeconds(summary.learn_seconds),
 			formatSeconds(summary.rest_seconds),
-			tx("自动记录中", "Auto tracking"),
+			petTrackingMood(tracking.auto_capture_enabled, tx),
 		);
 	} catch {
 		setMood(tx("状态同步失败，请打开设置查看详情", "Sync failed, open settings for details"));
@@ -439,21 +511,49 @@ dragArea.addEventListener("pointerdown", (event) => {
 	closeContextMenu();
 	dragPointerId = event.pointerId;
 	isDragging = true;
+	dragDirection = null;
+	lastDragX = event.screenX;
+	dragPointerOrigin = { x: event.screenX, y: event.screenY };
+	dragWindowOrigin = null;
+	dragScaleFactor = 1;
+	petState = "free";
+	applyDockedAppearance();
 	dragArea.setPointerCapture?.(event.pointerId);
-	void (async () => {
-		try {
-			await invoke("begin_pet_drag");
-		} catch (e) {
-			reportActionError(tx("拖拽启动失败", "Drag start failed"), e);
-			await finishDrag();
+	const pointerId = event.pointerId;
+	void Promise.all([petWindow.outerPosition(), petWindow.scaleFactor()]).then(([position, scaleFactor]) => {
+		if (!isDragging || dragPointerId !== pointerId) {
+			return;
 		}
-	})();
+		dragWindowOrigin = position;
+		dragScaleFactor = scaleFactor;
+	}).catch((e) => {
+		reportActionError(tx("拖拽启动失败", "Drag start failed"), e);
+		void finishDrag();
+	});
 });
 
 window.addEventListener("pointermove", (event) => {
 	if (!isDragging || dragPointerId === null || event.pointerId !== dragPointerId) {
 		return;
 	}
+	event.preventDefault();
+	if (lastDragX !== null) {
+		const deltaX = event.screenX - lastDragX;
+		const nextDirection = Math.abs(deltaX) < 2 ? null : deltaX > 0 ? "right" : "left";
+		if (nextDirection && nextDirection !== dragDirection) {
+			dragDirection = nextDirection;
+			applyDockedAppearance();
+		}
+	}
+	lastDragX = event.screenX;
+
+	if (!dragPointerOrigin || !dragWindowOrigin) {
+		return;
+	}
+	queuePetMove(
+		dragWindowOrigin.x + Math.round((event.screenX - dragPointerOrigin.x) * dragScaleFactor),
+		dragWindowOrigin.y + Math.round((event.screenY - dragPointerOrigin.y) * dragScaleFactor),
+	);
 });
 
 async function finishDrag() {
@@ -462,10 +562,20 @@ async function finishDrag() {
 	}
 
 	isDragging = false;
-	if (dragPointerId !== null) {
-		dragArea.releasePointerCapture?.(dragPointerId);
-	}
+	dragDirection = null;
+	lastDragX = null;
+	const finishingPointerId = dragPointerId;
 	dragPointerId = null;
+	if (finishingPointerId !== null) {
+		dragArea.releasePointerCapture?.(finishingPointerId);
+	}
+	await petMoveTask;
+	if (isDragging) {
+		return;
+	}
+	dragPointerOrigin = null;
+	dragWindowOrigin = null;
+	applyDockedAppearance();
 
 	hideTimer = window.setTimeout(() => {
 		void settleAfterDrag();
@@ -563,5 +673,3 @@ window.addEventListener("beforeunload", () => {
 	clearMoodResetTimer();
 	closeContextMenu();
 });
-
-

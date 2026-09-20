@@ -3,6 +3,7 @@ export type IdlePromptLite = {
   start_timestamp: number;
   end_timestamp: number;
   duration_ms: number;
+  attribution_process_name?: string | null;
 };
 
 export type PendingRuleProcessLite = {

@@ -1,0 +1,111 @@
+name: Windows Release
+
+# Packaging PRs build real Windows installers without publishing a Release.
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release.yml"
+      - "src-tauri/tauri.conf.json"
+      - "src-tauri/Cargo.toml"
+      - "src-tauri/Cargo.lock"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Build Windows installers
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.9 --activate
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build output
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate synchronized versions
+        shell: pwsh
+        run: |
+          $tauriVersion = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
+          $cargoMetadata = cargo metadata --manifest-path src-tauri/Cargo.toml --no-deps --format-version 1 | ConvertFrom-Json
+          $cargoVersion = ($cargoMetadata.packages | Where-Object { $_.name -eq 'timeprism' } | Select-Object -First 1).version
+
+          if ($tauriVersion -ne $packageVersion -or $tauriVersion -ne $cargoVersion) {
+            throw "Version mismatch: tauri=$tauriVersion package=$packageVersion cargo=$cargoVersion"
+          }
+
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $expectedTag = "v$tauriVersion"
+            if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+              throw "Tag/version mismatch: pushed=$env:GITHUB_REF_NAME expected=$expectedTag"
+            }
+          }
+
+          "TIMEPRISM_VERSION=$tauriVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Typecheck frontend
+        run: pnpm run typecheck
+
+      - name: Test Rust backend
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Build installers for validation
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+        run: pnpm tauri build --bundles nsis msi
+
+      - name: Upload validation installers
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: TimePrism-${{ env.TIMEPRISM_VERSION }}-windows-installers-${{ github.event_name }}
+          if-no-files-found: error
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/msi/*.msi
+
+      - name: Build and create draft GitHub Release
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: TimePrism v__VERSION__
+          releaseBody: |
+            Windows-first, local-first TimePrism desktop release.
+
+            Download either the NSIS setup executable or MSI installer from the release assets.
+            This project is currently unsigned, so Windows SmartScreen may warn about an unknown publisher.
+          releaseDraft: true
+          prerelease: false
+          generateReleaseNotes: true
+          args: --bundles nsis msi

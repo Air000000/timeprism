@@ -59,13 +59,13 @@ body {
 }
 
 .pet-shell.edge-hidden .today-lines {
-  border-radius: 9px;
-  padding: 3px 4px;
-  border-color: rgba(160, 140, 118, 0.62);
-  background: rgba(255, 247, 236, 0.94);
+  border-radius: 10px;
+  padding: 3px 5px;
+  border-color: rgba(167, 183, 226, 0.74);
+  background: linear-gradient(135deg, rgba(249, 252, 255, 0.95), rgba(224, 232, 255, 0.91));
   box-shadow:
-    0 8px 16px rgba(47, 38, 29, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    0 8px 18px rgba(69, 79, 124, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
   position: absolute;
   bottom: 10px;
   left: 0;
@@ -73,8 +73,9 @@ body {
   transform: none;
   margin: 0;
   width: max-content;
-  min-width: 64px;
-  max-width: 84px;
+  min-width: 70px;
+  max-width: 78px;
+  box-sizing: border-box;
   z-index: 3;
 }
 
@@ -88,17 +89,12 @@ body {
 }
 
 .pet-shell.edge-hidden.dock-left .today-lines {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  padding-left: 3px;
-  padding-right: 5px;
+  left: 0;
+  right: auto;
 }
 
 .pet-shell.edge-hidden.dock-right .today-lines {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  padding-left: 5px;
-  padding-right: 3px;
+  border-radius: 10px;
 }
 
 .pet-hidden-mood {
@@ -137,10 +133,28 @@ body {
   user-select: none;
   min-height: 0;
   pointer-events: auto;
+  touch-action: none;
 }
 
 .pet-portrait-wrap:active {
   cursor: grabbing !important;
+}
+
+.pet-sprite {
+  width: 192px;
+  height: 208px;
+  margin: 0;
+  justify-self: center;
+  align-self: end;
+  background: url("/pets/yin-yue/spritesheet.webp") 0 0 / 1536px 2288px no-repeat;
+  filter: drop-shadow(0 7px 10px rgba(75, 82, 115, 0.24));
+  transform-origin: 50% 88%;
+  animation: yinYueIdle 1.8s steps(1, end) infinite, petIdleFloat 3.6s ease-in-out infinite;
+}
+
+.pet-sprite[hidden],
+.pet-portrait[hidden] {
+  display: none;
 }
 
 .pet-portrait {
@@ -163,12 +177,30 @@ body {
   animation-duration: 2.8s;
 }
 
+.pet-shell:hover .pet-sprite {
+  animation-duration: 1.4s, 2.8s;
+}
+
+.pet-sprite.running-right {
+  background-position-y: -208px;
+  animation: yinYueRun 0.72s steps(1, end) infinite;
+}
+
+.pet-sprite.running-left {
+  background-position-y: -416px;
+  animation: yinYueRun 0.72s steps(1, end) infinite;
+}
+
 .today-lines {
-  border: 1px solid rgba(169, 148, 124, 0.65);
-  border-radius: 10px;
-  padding: 1px 4px;
-  background: rgba(255, 247, 236, 0.9);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  border: 1px solid rgba(167, 183, 226, 0.72);
+  border-radius: 12px;
+  padding: 2px 7px;
+  background: linear-gradient(135deg, rgba(249, 252, 255, 0.94), rgba(226, 233, 255, 0.88));
+  box-shadow:
+    0 6px 16px rgba(69, 79, 124, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   flex-shrink: 0;
   position: relative;
   left: auto;
@@ -221,6 +253,28 @@ body {
   animation: none;
   transform: none;
   transform-origin: 50% 92%;
+}
+
+.pet-shell.edge-hidden .pet-sprite {
+  animation: none;
+}
+
+.pet-shell.edge-hidden.dock-left .pet-sprite {
+  justify-self: start;
+  background-image: url("/pets/yin-yue/dock-left.webp");
+  background-size: 768px 208px;
+  background-position: 0 0;
+  transform: none;
+  animation: yinYueDock 2.4s steps(1, end) infinite;
+}
+
+.pet-shell.edge-hidden.dock-right .pet-sprite {
+  justify-self: end;
+  background-image: url("/pets/yin-yue/dock-right.webp");
+  background-size: 768px 208px;
+  background-position: 0 0;
+  transform: translateX(42px);
+  animation: yinYueDock 2.4s steps(1, end) infinite;
 }
 
 .pet-shell.edge-hidden.dock-left .pet-portrait {
@@ -301,12 +355,12 @@ body {
 .line-label {
   font-size: 11px;
   font-weight: 700;
-  color: var(--pet-soft-text);
+  color: #727da8;
 }
 
 .line-value {
   font-size: 12px;
-  color: var(--pet-text);
+  color: #3f486b;
   font-weight: 700;
   justify-self: start;
 }
@@ -441,5 +495,35 @@ button:disabled {
   100% {
     transform: translateY(0) scale(1);
   }
+}
+
+@keyframes yinYueIdle {
+  0% { background-position: 0 0; }
+  16.667% { background-position: -192px 0; }
+  33.333% { background-position: -384px 0; }
+  50% { background-position: -576px 0; }
+  66.667% { background-position: -768px 0; }
+  83.333% { background-position: -960px 0; }
+  100% { background-position: 0 0; }
+}
+
+@keyframes yinYueRun {
+  0% { background-position-x: 0; }
+  12.5% { background-position-x: -192px; }
+  25% { background-position-x: -384px; }
+  37.5% { background-position-x: -576px; }
+  50% { background-position-x: -768px; }
+  62.5% { background-position-x: -960px; }
+  75% { background-position-x: -1152px; }
+  87.5% { background-position-x: -1344px; }
+  100% { background-position-x: 0; }
+}
+
+@keyframes yinYueDock {
+  0% { background-position-x: 0; }
+  25% { background-position-x: -192px; }
+  50% { background-position-x: -384px; }
+  75% { background-position-x: -576px; }
+  100% { background-position-x: 0; }
 }
 

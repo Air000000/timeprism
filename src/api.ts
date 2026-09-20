@@ -14,6 +14,7 @@ export type {
   Reminder,
   TodaySummary,
   TopApp,
+  TrackingState,
   UsageRootFilter,
   UsageStackDay,
   UsageStackSegment,

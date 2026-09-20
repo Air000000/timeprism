@@ -6,6 +6,7 @@ export type PetElements = {
   rest: HTMLDivElement;
   learnToken: HTMLSpanElement;
   restToken: HTMLSpanElement;
+  characterSprite: HTMLDivElement;
   characterImage: HTMLImageElement;
   dragArea: HTMLElement;
   shell: HTMLElement;
@@ -20,7 +21,8 @@ export function renderPetShell(app: HTMLElement, tx: TranslateFn, primaryCharact
 		<div class="pet-body">
 			<div class="pet-main">
 				<div id="petDragArea" class="pet-portrait-wrap">
-					<img id="petCharacterImage" class="pet-portrait" src="${primaryCharacterSrc}" alt="${tx("TimePrism 桌宠角色", "TimePrism Pet Character")}" />
+					<div id="petCharacterSprite" class="pet-sprite" role="img" aria-label="${tx("银月桌宠角色", "Yin Yue Pet Character")}"></div>
+					<img id="petCharacterImage" class="pet-portrait" src="${primaryCharacterSrc}" alt="${tx("TimePrism 桌宠角色", "TimePrism Pet Character")}" hidden />
 				</div>
 				<div class="today-lines">
 					<div class="line-row single-row">
@@ -44,6 +46,7 @@ export function queryPetElements(root: ParentNode = document): PetElements {
   const rest = root.querySelector<HTMLDivElement>("#restValue");
   const learnToken = root.querySelector<HTMLSpanElement>("#learnToken");
   const restToken = root.querySelector<HTMLSpanElement>("#restToken");
+  const characterSprite = root.querySelector<HTMLDivElement>("#petCharacterSprite");
   const characterImage = root.querySelector<HTMLImageElement>("#petCharacterImage");
   const dragArea = root.querySelector<HTMLElement>("#petDragArea");
   const shell = root.querySelector<HTMLElement>(".pet-shell");
@@ -55,6 +58,7 @@ export function queryPetElements(root: ParentNode = document): PetElements {
     || !rest
     || !learnToken
     || !restToken
+    || !characterSprite
     || !characterImage
     || !dragArea
     || !shell
@@ -69,6 +73,7 @@ export function queryPetElements(root: ParentNode = document): PetElements {
     rest,
     learnToken,
     restToken,
+    characterSprite,
     characterImage,
     dragArea,
     shell,
