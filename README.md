@@ -1,57 +1,131 @@
 <h1 align="center">TimePrism</h1>
 
 <p align="center">
-  Windows-first, local-first desktop time/rhythm tracker built with Vue 3 + Tauri 2 + Rust + SQLite.
+  <strong>See where your computer time actually goes — without living inside a timer.</strong>
 </p>
 
 <p align="center">
+  Windows-first, local-first focus and activity tracking with privacy-aware capture, idle correction, reminders, and the Yin Yue desktop pet.
+</p>
+
+<p align="center">
+  <img alt="Release" src="https://img.shields.io/github/v/release/Air000000/timeprism?style=for-the-badge&sort=semver">
   <img alt="CI" src="https://github.com/Air000000/timeprism/actions/workflows/ci.yml/badge.svg?branch=main">
   <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white">
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-42B883?style=for-the-badge&logo=vuedotjs&logoColor=white">
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
   <img alt="Rust" src="https://img.shields.io/badge/Rust-backend-B7410E?style=for-the-badge&logo=rust&logoColor=white">
   <img alt="License" src="https://img.shields.io/github/license/Air000000/timeprism?style=for-the-badge">
 </p>
 
 <p align="center">
-  <a href="https://github.com/Air000000/timeprism/releases"><strong>Windows Releases</strong></a> |
-  <a href="#what-it-demonstrates">What It Demonstrates</a> |
-  <a href="#architecture">Architecture</a> |
-  <a href="#engineering-highlights">Engineering Highlights</a> |
-  <a href="#features">Features</a> |
-  <a href="#getting-started">Getting Started</a>
+  <a href="https://github.com/Air000000/timeprism/releases/tag/v0.1.0"><strong>Download v0.1.0</strong></a> ·
+  <a href="#product">Product</a> ·
+  <a href="#engineering-highlights">Engineering</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#privacy">Privacy</a> ·
+  <a href="#development">Development</a>
 </p>
 
 ---
 
-## Overview
+## Why TimePrism
 
-TimePrism is a personal desktop tracker for understanding how computer time actually flows across learning, rest, reminders, idle periods, and app usage.
+Traditional timers only work when you remember to start and stop them. TimePrism takes a different approach: it observes the foreground application, applies privacy rules before storage, classifies activity through local rules, and turns the result into a view of learning, rest, idle gaps, reminders, and app usage.
 
-Rather than relying on manual start/stop timers, it samples the foreground application, applies privacy rules before persistence, maps activity through local classification rules, and stores the resulting facts in SQLite for review across the main window, Focus Guard, reminders, and a lightweight desktop pet.
+The core workflow runs locally on Windows. No account or cloud service is required.
 
-The project is intentionally scoped as a Windows-first, local-first desktop application. It does not depend on cloud accounts, remote sync, or external services for its core workflow.
+| Automatic | Local-first | Correctable |
+| --- | --- | --- |
+| Foreground activity is sampled in the background instead of relying on manual timers. | Core data is stored in local SQLite and privacy rules are applied before normal persistence. | Idle periods are explicitly confirmed so time can be attributed to the previous app, marked Learn/Break/Away, or deferred. |
 
-> **Release status:** the currently published `v0.1.0-preview` is an early portable build and predates the latest architecture/reliability work. The repository now includes a gated Windows release pipeline for NSIS `-setup.exe` and MSI installers; packaging changes are validated on Windows before merge, while public releases remain draft-first and require an interactive installer smoke test before publication.
+> **Current release:** <strong>v0.1.0</strong> is available as both an NSIS setup executable and MSI installer. TimePrism is currently unsigned, so Windows SmartScreen may show an unknown-publisher warning.
 
-## What It Demonstrates
+<!--
+SHOWCASE MEDIA SLOT
+After sanitized v0.1.0 captures exist, insert docs/media/timeprism-demo.gif here,
+then add the two-row screenshot grid described in docs/media/README.md.
+Do not reference missing media files before they are committed.
+-->
 
-TimePrism is primarily a desktop full-stack engineering project. The repository demonstrates:
+## Product
 
-- **Tauri desktop application architecture** across a main window, desktop pet, and pet side panel.
-- **Vue 3 + TypeScript frontend modularization** using views, composables, typed command wrappers, and reusable domain helpers.
-- **Rust backend structure** split into command boundaries, services, domain models, database access, and platform-specific window/foreground behavior.
-- **Local data correctness** around foreground sampling, idle reclassification, reminders, and SQLite persistence.
-- **Privacy-at-ingestion** rather than post-hoc masking of already stored sensitive data.
-- **Runtime reliability** including startup sequencing, UI-thread protection, full-app exit behavior, CI, and Windows smoke validation.
+| Area | What it does |
+| --- | --- |
+| **Home** | Shows today's learning/rest rhythm, editable focus goal, reminders, pending signals, and recent activity. |
+| **Insights** | Reviews top apps, recent logs, historical usage, heatmaps, and day composition. |
+| **Focus Guard** | Classifies unknown apps, resolves idle segments, edits rules, and exposes capture diagnostics. |
+| **Reminders** | Supports one-time, daily, and weekly reminders with completion, restore, and snooze flows. |
+| **Privacy Controls** | Configures browser-title handling, whitelist-only capture, and local persistence behavior. |
+| **Yin Yue Desktop Pet** | Surfaces lightweight reminders, idle decisions, quick actions, learning/rest totals, and compact analytics. |
+
+### Yin Yue desktop pet
+
+The desktop pet is a separate always-on-top Tauri window rather than a decorative element inside the main UI.
+
+It supports drag animation, left/right edge docking, compact prompt flows, a native context menu, and a small companion panel. Its window sizing adapts to mixed-resolution / mixed-DPI monitor setups so moving the pet between displays does not force a fixed physical-pixel size.
+
+## How it works
+
+~~~text
+Foreground window
+      |
+      v
+Privacy processing
+      |
+      v
+Local app-rule classification
+      |
+      v
+SQLite persistence
+      |
+      +------> Home / Insights
+      +------> Focus Guard
+      +------> Reminders
+      `------> Yin Yue pet / panels
+~~~
+
+Foreground activity and classification are deliberately separate. A confirmed idle interval can be attributed back to an application without rewriting that application's Learn / Break / Unclassified rule.
+
+## Engineering Highlights
+
+### Privacy at ingestion
+
+Foreground data can contain sensitive window titles. TimePrism applies privacy decisions before normal persistence rather than storing raw data first and masking it later.
+
+- Browser title handling supports <code>FULL</code>, <code>BLUR</code>, and <code>NONE</code>.
+- Whitelist-only mode can prevent non-whitelisted application usage from being stored.
+- Private/incognito browser windows are handled explicitly.
+- Diagnostic paths do not retain raw titles after the privacy boundary.
+
+### Idle correction without double counting
+
+Samples recorded immediately before an idle threshold are provisional. When the user resolves an idle prompt, TimePrism transactionally replaces the overlapping usage interval instead of appending a second row.
+
+Confirmed corrections carry explicit provenance such as <code>FOREGROUND</code> and <code>IDLE_CONFIRMED</code>, while attribution and classification remain separate concepts.
+
+### Persisted tracking state and startup ordering
+
+First-run tracking consent, Pause / Resume state, and legacy-database migration are persisted in SQLite.
+
+Product WebViews are created only after database initialization succeeds, avoiding a startup race where the frontend could query tables before schema initialization finished.
+
+### Desktop runtime across displays
+
+The pet uses logical sizing plus monitor-aware scaling rather than a fixed physical-pixel window. Regression tests cover high-DPI sizing and the case where a lower-resolution display has similar logical desktop space.
+
+### Release as an engineering gate
+
+The Windows release workflow validates synchronized Node/Cargo/Tauri versions, frontend type safety, Rust tests, and real installer generation.
+
+Release-related pull requests build NSIS and MSI packages as validation artifacts. Version tags create a draft GitHub Release, and publication remains gated on an interactive Windows installer smoke test.
 
 ## Architecture
 
-```text
+~~~text
                      TimePrism desktop surfaces
 
        +----------------+  +---------------+  +----------------+
-       |  Main WebView  |  |  Desktop Pet  |  |   Pet Panel    |
+       |  Main WebView  |  |  Yin Yue Pet  |  |   Pet Panel    |
        +--------+-------+  +-------+-------+  +--------+-------+
                 |                  |                   |
                 +------------------+-------------------+
@@ -69,236 +143,139 @@ TimePrism is primarily a desktop full-stack engineering project. The repository 
              |      |                                        |
              |      +------ Windows / Tauri APIs             |
              +-----------------------------------------------+
-```
+~~~
 
-The frontend keeps business-facing state and interaction logic in focused Vue components and composables, while `src/api/commands/*` provides typed access to Tauri commands. The Rust side keeps command functions thin and pushes behavior into `services/*`, with domain data structures in `domain/*` and database concerns in `db/*`.
+The frontend keeps interaction state in focused Vue components and composables, while <code>src/api/commands/*</code> provides typed access to Tauri commands.
 
-Foreground capture, privacy processing, reminder scheduling, idle handling, analytics, startup behavior, and window management are separated into dedicated service modules rather than accumulated inside `src-tauri/src/lib.rs`.
-
-## Engineering Highlights
-
-### 1. Privacy-at-ingestion
-
-Foreground usage may contain sensitive window titles, so privacy decisions are applied before persistence.
-
-- Browser title handling supports `FULL`, `BLUR`, and `NONE` modes.
-- Whitelist-only capture blocks unlisted processes from normal usage persistence instead of storing a generic replacement row.
-- Diagnostic sampling state redacts raw window titles before they enter the diagnostic path, so observability does not bypass the storage policy.
-
-### 2. Idle reclassification without double counting
-
-Foreground samples recorded before the idle threshold are provisional. Once an idle prompt is resolved, TimePrism transactionally rewrites the overlapping usage interval instead of simply appending an idle row.
-
-This avoids counting the same interval once as foreground activity and again as idle/rest/away time.
-
-### 3. Reminder wall-clock semantics
-
-Analytics uses a 04:00 business-day boundary, but recurring reminders are user-facing wall-clock events. Their time bases are deliberately separated.
-
-Daily and weekly reminders are scheduled from local calendar midnight and local weekday semantics, preventing a reminder such as `09:17` from being shifted by the analytics business-day anchor.
-
-### 4. Startup and desktop runtime reliability
-
-The main WebView remains hidden until Vue has mounted, avoiding a visible blank window during startup. Non-critical frontend work is deferred, and heavier read commands are moved away from the Tauri UI thread.
-
-Desktop lifecycle semantics are also explicit:
-
-- Main-window close hides the application to the background.
-- Pet hide only hides the pet window.
-- `Quit TimePrism` exits the full Tauri application.
-
-## Features
-
-| Area | What it does |
-| --- | --- |
-| **Home** | Shows today's learn/rest totals, progress, reminders, and pending signals. |
-| **Insights** | Reviews top apps, recent logs, historical usage, heatmaps, and day composition. |
-| **Focus Guard** | Classifies unknown apps, resolves idle segments, reviews rules, and exposes sampling diagnostics. |
-| **Reminders** | Supports one-time, daily, and weekly reminders with done/restore and snooze flows. |
-| **Privacy Controls** | Configures title handling, whitelist-only capture, and local persistence behavior. |
-| **Desktop Pet** | Provides lightweight prompts, reminders, quick actions, and compact analytics panels. |
-
-## Data Flow
-
-```text
-Foreground window
-      |
-      v
-Privacy processing
-      |
-      v
-Local app-rule classification
-      |
-      v
-SQLite persistence
-      |
-      +------> Home / Insights
-      +------> Focus Guard
-      +------> Reminders
-      `------> Desktop pet / panels
-```
-
-## Tech Stack
-
-| Layer | Technology |
-| --- | --- |
-| Desktop shell | Tauri v2 |
-| Frontend | Vue 3, TypeScript, Vite |
-| Backend | Rust |
-| Storage | SQLite / rusqlite |
-| Platform integration | Windows + Tauri window APIs |
-| Validation | GitHub Actions, `vue-tsc`, Vite build, `cargo check --all-targets`, `cargo test` |
-
-## Project Structure
-
-```text
-timeprism/
-|- src/
-|  |- components/          # Main desktop views and UI surfaces
-|  |- composables/         # Feature state, orchestration, and view workflows
-|  |- api/
-|  |  `- commands/         # Typed Tauri command wrappers
-|  |- lib/                 # Reusable domain/UI helpers
-|  |- App.vue              # Main desktop shell
-|  |- main.ts              # Main window entry
-|  |- pet.ts               # Desktop pet entry
-|  `- pet-panel.ts         # Pet panel entry
-|- src-tauri/
-|  |- src/
-|  |  |- db/               # SQLite connection and migrations
-|  |  |- domain/           # Backend data models and command payload types
-|  |  |- services/         # Analytics, privacy, idle, reminders, windows, etc.
-|  |  |- lib.rs            # Thin Tauri command registration / app bootstrap
-|  |  `- main.rs           # Native executable entry
-|  |- capabilities/        # Tauri permissions
-|  `- tauri.conf.json      # Desktop window/application configuration
-|- docs/                   # Architecture, contracts, privacy, tests, ADRs
-|- index.html              # Main WebView page
-|- pet.html                # Pet WebView page
-|- pet-panel.html          # Pet panel WebView page
-`- README.md
-```
+The Rust side keeps command registration thin and pushes behavior into <code>services/*</code>, with domain structures in <code>domain/*</code> and database lifecycle/migrations in <code>db/*</code>.
 
 ## Validation
 
-Every push to `main` and `refactor/**`, plus pull requests, runs the repository CI workflow on Windows. Rust build output is cached between runs and all test targets are compiled before the test phase:
+The main CI workflow runs on Windows for pull requests and pushes to <code>main</code>:
 
-```text
+~~~text
 pnpm run typecheck
 pnpm run build:check
 cargo check --all-targets
 cargo test
-```
+~~~
 
-Release-related pull requests also run an independent Windows packaging gate that builds both NSIS and MSI installers and uploads them as workflow artifacts. This verifies that the current tree can reach real Tauri installer artifacts without publishing a Release.
+The test suite covers database initialization and migration, persisted tracking state, privacy rules, idle attribution/provenance, reminder recurrence, analytics boundaries, pet window sizing, and Home goal wiring.
 
-The current desktop flow has also been manually smoke-tested on Windows for startup behavior, main views, reminder workflows, pet interactions, and full-app quit behavior.
+For v0.1.0, the final Windows installer was also installed and smoke-tested before the draft Release was published.
 
-CI, packaging validation, and smoke tests are used as project-level regression evidence; they are not a claim of production-grade hardening.
-
-## Distribution
-
-`.github/workflows/release.yml` separates installer generation from publication on `windows-latest`:
-
-- **Packaging PR:** release-related pull requests validate synchronized versions, run frontend/Rust checks, build both NSIS and MSI installers, and upload the real installer artifacts without publishing anything.
-- **Manual dry run:** `workflow_dispatch` performs the same installer build on demand after merge and uploads the installers as workflow artifacts without creating a Release.
-- **Version tag:** requires the tag to exactly match the synchronized Cargo/Node/Tauri app version, then creates a **draft** GitHub Release with both installer formats.
-
-Automated packaging proves that the installers can be generated; it does not replace the interactive Windows gate. At least one generated installer must still be downloaded, installed, launched, and smoke-tested before the draft Release is made public.
-
-The project is currently unsigned, so Windows SmartScreen may warn about an unknown publisher. See [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) for the full publication gate.
+CI and smoke tests are regression evidence for this project; they are not a claim of production-grade hardening.
 
 ## Privacy
 
-TimePrism is designed around local storage and explicit privacy boundaries.
+TimePrism is intentionally local-first:
 
-- Usage records are stored locally in SQLite.
-- There is no cloud sync in the current version.
-- Browser title handling can be configured as `FULL`, `BLUR`, or `NONE`.
-- Whitelist-only mode can prevent non-whitelisted application usage from being stored.
-- Privacy processing happens before normal usage persistence.
-- Diagnostic paths do not retain raw titles after the privacy boundary.
+- core usage records are stored locally in SQLite;
+- there is no cloud sync or account requirement in v0.1.0;
+- privacy processing happens before normal usage persistence;
+- browser title handling is configurable;
+- whitelist-only capture can restrict what is stored;
+- TimePrism does not capture screenshots or keystroke contents.
 
-Because active-window data can be sensitive, privacy is treated as part of the data model and ingestion pipeline rather than only as a UI setting.
+Because active-window data can be sensitive, privacy is treated as part of the ingestion/data model rather than only as a presentation setting.
 
-## Getting Started
+See [Database & Privacy](docs/DATABASE_AND_PRIVACY.md) for implementation details.
+
+## Download
+
+The current Windows release is [TimePrism v0.1.0](https://github.com/Air000000/timeprism/releases/tag/v0.1.0).
+
+Release assets include:
+
+- <code>TimePrism_0.1.0_x64-setup.exe</code> — NSIS installer
+- <code>TimePrism_0.1.0_x64_en-US.msi</code> — MSI installer
+
+The project is currently unsigned, so Windows SmartScreen may warn about an unknown publisher.
+
+## Development
 
 ### Prerequisites
 
-Recommended local development environment:
-
-- Node.js 24 LTS
-- pnpm 9
-- Rust toolchain
+- Node.js 24
+- pnpm 9.15.9
+- Rust stable toolchain
 - Tauri v2 system prerequisites
 - Windows for the full foreground-capture/runtime path
 
-### Install
+### Run locally
 
-```bash
+~~~bash
 git clone https://github.com/Air000000/timeprism.git
 cd timeprism
 pnpm install
-```
-
-### Run in development
-
-```bash
 pnpm tauri dev
-```
+~~~
 
-### Frontend only
+### Validate
 
-```bash
-pnpm dev
-```
-
-### Validation
-
-```bash
+~~~bash
 pnpm run typecheck
 pnpm run build:check
 cd src-tauri
 cargo check --all-targets
 cargo test
-```
+~~~
 
-### Build desktop application
+### Build installers
 
-```bash
+~~~bash
 pnpm tauri build
-```
+~~~
 
-## Current Scope
+## Tech Stack
 
-Implemented core scope:
+| Layer | Technology |
+| --- | --- |
+| Desktop shell | Tauri 2 |
+| Frontend | Vue 3, TypeScript, Vite |
+| Backend | Rust |
+| Storage | SQLite / rusqlite |
+| Platform integration | Windows + Tauri window APIs |
+| Validation | GitHub Actions, vue-tsc, Vite, Cargo |
 
-- Automatic foreground sampling
-- Learn/rest/ignore app rules
-- Daily overview and usage insights
-- Focus Guard and idle confirmation workflow
-- Local one-time/daily/weekly reminders
-- Desktop pet and lightweight analytics panel
-- Local privacy controls
-- Windows startup/window lifecycle handling
-- CI-backed frontend and Rust validation
+## Repository Map
 
-Current limitations are explicit rather than hidden behind roadmap claims: foreground capture is Windows-first, cloud/account features are intentionally absent, cross-platform capture is incomplete, and export/backup/restore flows are not yet part of the finished MVP.
+~~~text
+timeprism/
+|- src/
+|  |- components/          # Main views and desktop UI surfaces
+|  |- composables/         # Feature state and view workflows
+|  |- api/commands/        # Typed Tauri command wrappers
+|  |- lib/                 # Reusable UI/domain helpers
+|  |- App.vue              # Main desktop shell
+|  |- pet.ts               # Yin Yue desktop pet entry
+|  `- pet-panel.ts         # Pet companion panel
+|- src-tauri/
+|  `- src/
+|     |- db/               # SQLite connection, migrations, lifecycle
+|     |- domain/           # Backend data models and command payloads
+|     |- services/         # Tracking, privacy, idle, analytics, windows, etc.
+|     `- lib.rs            # Tauri bootstrap / command registration
+|- docs/                   # Architecture, privacy, tests, decisions, release evidence
+`- .github/workflows/      # CI and Windows release pipelines
+~~~
 
 ## Documentation
 
-Engineering notes and design rationale live under `docs/`, including:
+Start with [docs/README.md](docs/README.md). Key references include:
 
-- current system map
-- API contracts
-- database and privacy notes
-- smoke-test catalog
-- testing strategy
-- release checklist
-- product-media capture guide
-- ADRs and refactor traceability
+- [Current System Map](docs/CURRENT_SYSTEM_MAP.md)
+- [API Contracts](docs/API_CONTRACTS.md)
+- [Database & Privacy](docs/DATABASE_AND_PRIVACY.md)
+- [Testing Strategy](docs/TESTING_STRATEGY.md)
+- [Smoke Tests](docs/SMOKE_TESTS.md)
+- [Release Checklist](docs/RELEASE_CHECKLIST.md)
+- [Product Media Capture Guide](docs/media/README.md)
+- [Architecture Decisions](docs/DECISIONS.md)
 
-Real product screenshots/GIF are only added from sanitized current Windows builds; the capture/privacy requirements are documented in [`docs/media/README.md`](docs/media/README.md) so generated or mock UI is not presented as implementation evidence.
+## Current Scope
+
+v0.1.0 is intentionally Windows-first. Cloud sync/accounts, complete cross-platform foreground capture, and export/backup/restore workflows are outside the finished scope of this release.
 
 ## License
 
