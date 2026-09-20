@@ -1,82 +1,77 @@
-# TimePrism Refactor Documentation
+# TimePrism Engineering Documentation
 
-This directory is the active refactor guidance set for the `timeprism` codebase.
+This directory contains the engineering reference for the current TimePrism codebase. The v0.1.0 release is complete; documents created during the refactor are retained as engineering history, while current architecture, data, testing, and release documents should be treated as the primary reference.
+
+## Start Here
+
+| Document | Use it for |
+| --- | --- |
+| [CURRENT_SYSTEM_MAP.md](CURRENT_SYSTEM_MAP.md) | Current application surfaces, backend modules, data flow, commands, and known boundaries |
+| [API_CONTRACTS.md](API_CONTRACTS.md) | Tauri command payload/return contracts and frontend callers |
+| [DATABASE_AND_PRIVACY.md](DATABASE_AND_PRIVACY.md) | SQLite schema/lifecycle, migrations, capture policy, and privacy behavior |
+| [DECISIONS.md](DECISIONS.md) | Accepted/open architecture and product decisions |
+
+## Quality and Release Evidence
+
+| Document | Purpose |
+| --- | --- |
+| [TESTING_STRATEGY.md](TESTING_STRATEGY.md) | Static, unit, integration/contract, DB, and manual validation strategy |
+| [SMOKE_TESTS.md](SMOKE_TESTS.md) | Manual Windows smoke catalog for product/runtime changes |
+| [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) | Draft-first Windows release gate and installer acceptance |
+| [media/README.md](media/README.md) | Privacy-safe capture guide for README/Release screenshots and GIFs |
+
+### Current automation
+
+<code>.github/workflows/ci.yml</code> runs the main Windows CI path:
+
+~~~text
+pnpm run typecheck
+pnpm run build:check
+cargo check --all-targets
+cargo test
+~~~
+
+<code>.github/workflows/release.yml</code> validates synchronized versions and Windows packaging. Release-related pull requests can build NSIS/MSI validation artifacts without publishing; a matching version tag creates a draft GitHub Release for interactive installer smoke before publication.
+
+## Architecture Decisions
+
+Detailed ADRs live in [adr/](adr/). Use [ADR_TEMPLATE.md](ADR_TEMPLATE.md) when a new decision needs durable context, alternatives, and consequences.
+
+A decision belongs in an ADR when it changes a durable boundary such as persistence semantics, privacy policy, window/runtime behavior, or release architecture. Routine implementation details do not need an ADR.
+
+## Engineering History
+
+The following documents describe the staged hardening/refactor that led to v0.1.0. They are useful for traceability, but they are not the first place to learn the current system.
+
+| Document | Historical role |
+| --- | --- |
+| [REFACTOR_MASTER_PLAN.md](REFACTOR_MASTER_PLAN.md) | Overall staged refactor plan |
+| [REFACTOR_PLAYBOOK.md](REFACTOR_PLAYBOOK.md) | Operating procedure, validation, rollback, and stop rules |
+| [FIRST_REFACTOR_BATCHES.md](FIRST_REFACTOR_BATCHES.md) | Initial implementation batches |
+| [PHASE_GATES.md](PHASE_GATES.md) | Refactor phase acceptance gates |
+| [TRACEABILITY.md](TRACEABILITY.md) | Batch/process traceability rules |
+| [ACCEPTANCE_CHECKLIST.md](ACCEPTANCE_CHECKLIST.md) | Historical phase acceptance checklist |
+| [REFACTOR_LOG.md](REFACTOR_LOG.md) | Detailed chronological work log |
+
+These files are retained because they show how risky desktop/runtime changes were decomposed, validated, and promoted rather than rewritten in one step.
 
 ## Document Precedence
 
-When documents disagree, use this order:
+For the current repository, use this order when documents disagree:
 
-1. `../AGENTS.md`
-2. `docs/README.md`
-3. `docs/DECISIONS.md`
-4. `docs/REFACTOR_MASTER_PLAN.md`
-5. Task-specific documents in this directory
-6. Older workspace documents under `../Time_Prism` or `../未上传文件`
+1. <code>../AGENTS.md</code>
+2. current source code and automated tests on <code>main</code>
+3. this index
+4. <code>CURRENT_SYSTEM_MAP.md</code>, <code>API_CONTRACTS.md</code>, <code>DATABASE_AND_PRIVACY.md</code>, and <code>DECISIONS.md</code>
+5. task-specific quality/release documents
+6. historical refactor documents
 
-Older documents are reference material. They do not override this repository's active guidance unless a decision is copied into `docs/DECISIONS.md`.
-
-## Active Documents
-
-| File | Purpose | Update when |
-| --- | --- | --- |
-| `REFACTOR_MASTER_PLAN.md` | Overall staged refactor plan | Phase order or strategy changes |
-| `REFACTOR_PLAYBOOK.md` | Step-by-step operating procedure | Workflow, validation, rollback, or stop rules change |
-| `FIRST_REFACTOR_BATCHES.md` | Concrete first implementation batches | The next batch changes or finishes |
-| `PHASE_GATES.md` | Per-phase evaluation and test gates | Phase acceptance criteria or validation scope changes |
-| `TRACEABILITY.md` | Process records and audit trail rules | Batch IDs, logging, or trace requirements change |
-| `CURRENT_SYSTEM_MAP.md` | Current architecture and debt map | Entries, windows, tables, commands, or debt change |
-| `API_CONTRACTS.md` | Existing Tauri command contracts | Any command payload/return/caller changes |
-| `DATABASE_AND_PRIVACY.md` | Schema, data path, migration, privacy rules | Schema or privacy behavior changes |
-| `TESTING_STRATEGY.md` | Automated and manual safety net strategy | Test categories or commands change |
-| `SMOKE_TESTS.md` | Manual smoke test checklist | User flows or expected behavior changes |
-| `ACCEPTANCE_CHECKLIST.md` | Phase-level acceptance gates | Refactor stage gates change |
-| `DECISIONS.md` | Accepted and open architecture/product decisions | Any important decision is made |
-| `ADR_TEMPLATE.md` | Template for new decisions | ADR format changes |
-| `adr/` | Proposed/accepted detailed decision records | A significant architecture/product decision needs traceable rationale |
-| `REFACTOR_LOG.md` | Short work log | Every meaningful refactor batch |
-
-## Automation
-
-GitHub CI lives in `.github/workflows/ci.yml`.
-
-It currently runs on Windows:
-
-- `pnpm run typecheck`
-- `pnpm run build:check`
-- `cargo check` from `src-tauri`
-
-The CI job is intentionally source-oriented. Full Tauri packaging can be added later when release automation is ready.
-
-## Professional Sources Behind This Set
-
-These docs adapt several established practices:
-
-- Martin Fowler's refactoring guidance: small behavior-preserving transformations.
-- Martin Fowler's Branch by Abstraction: gradual large changes through abstraction while the system keeps running.
-- Strangler Fig modernization pattern: gradually replace parts of a legacy system instead of a big-bang rewrite.
-- Michael Feathers's legacy-code approach: put code under feedback before changing risky areas.
-- Architecture Decision Records: record context, decision, and consequences for important choices.
-- C4-style architecture documentation: keep a lightweight system/container/component map.
-- GitHub branch protection practices: keep important branches protected by checks/review when available.
-
-## Minimum Before Refactor Work
-
-Before starting a code batch:
-
-1. Read `../AGENTS.md`.
-2. Read `REFACTOR_PLAYBOOK.md`.
-3. Read `PHASE_GATES.md`.
-4. Read `TRACEABILITY.md`.
-5. Read the relevant section of `FIRST_REFACTOR_BATCHES.md`.
-6. Confirm `git status --short --branch`.
-7. Identify the validation commands for the batch.
-
-If GitHub checks are enabled for the branch, treat a failing CI run as a phase-gate failure unless the failure is documented as unrelated infrastructure breakage.
+Historical plans should not override current implementation evidence.
 
 ## Documentation Hygiene
 
-- Keep docs factual and executable.
-- Do not duplicate large code blocks in docs.
-- Prefer links to local files and command names.
-- Update docs in the same batch as behavior, command, schema, or workflow changes.
-- Move obsolete guidance to an "Archived" section instead of silently deleting rationale.
+- Keep current-state docs factual and executable.
+- Update behavior, contract, schema, privacy, test, and release docs in the same change that modifies those boundaries.
+- Prefer links to source files and command names over copied implementation blocks.
+- Keep synthetic/test data separate from real user data.
+- Treat screenshots and GIFs as product evidence: capture the real application and pass the media privacy gate before committing them.
