@@ -1,4 +1,8 @@
-<h1 align="center">TimePrism</h1>
+<p align="center">
+  <img src="../../public/brand/timeprism-logo.png"
+       alt="TimePrism"
+       width="520">
+</p>
 
 <p align="center">
   <strong>See where your computer time actually goes — without living inside a timer.</strong>
@@ -130,29 +134,11 @@ Release-related pull requests build NSIS and MSI packages as validation artifact
 <a id="architecture"></a>
 ## Architecture
 
-~~~text
-                     TimePrism desktop surfaces
-
-       +----------------+  +---------------+  +----------------+
-       |  Main WebView  |  |  Yin Yue Pet  |  |   Pet Panel    |
-       +--------+-------+  +-------+-------+  +--------+-------+
-                |                  |                   |
-                +------------------+-------------------+
-                                   |
-                                   v
-                  Vue views / composables / src/lib
-                                   |
-                                   v
-                        typed Tauri command layer
-                                   |
-                                   v
-             +---------------- Rust backend ----------------+
-             |                                               |
-             |   services   ->   domain   ->   db/SQLite     |
-             |      |                                        |
-             |      +------ Windows / Tauri APIs             |
-             +-----------------------------------------------+
-~~~
+<p align="center">
+  <img src="../media/timeprism-architecture-en.png"
+       alt="TimePrism Runtime Architecture"
+       width="100%">
+</p>
 
 The frontend keeps interaction state in focused Vue components and composables, while <code>src/api/commands/*</code> provides typed access to Tauri commands.
 

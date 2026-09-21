@@ -119,16 +119,15 @@ body,
 .brand-logo {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
   display: grid;
   place-items: center;
-  font-family: "Inter", "Segoe UI", sans-serif;
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: #f2fbff;
-  background: linear-gradient(145deg, #2ab6a8 0%, #3b74d2 100%);
-  box-shadow: 0 8px 18px rgba(41, 126, 173, 0.24);
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .brand-copy {
@@ -2708,4 +2707,11 @@ button:disabled {
   .guard-panel-wide {
     grid-column: auto;
   }
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }

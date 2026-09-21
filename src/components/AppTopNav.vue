@@ -16,7 +16,9 @@ const emit = defineEmits<{
 <template>
   <section class="card top-shell fixed-top-nav">
     <div class="top-brand" :aria-label="tx('品牌区', 'Brand section')">
-      <div class="brand-logo" aria-hidden="true">TP</div>
+      <div class="brand-logo" aria-hidden="true">
+        <img src="/brand/timeprism-icon.png" alt="" />
+      </div>
       <div class="brand-copy">
         <strong>Time Prism</strong>
         <span>{{ tx("Focus OS", "Focus OS") }}</span>

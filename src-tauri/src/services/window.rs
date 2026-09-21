@@ -477,6 +477,30 @@ pub(crate) fn hide_pet_window(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+pub(crate) fn toggle_pet_window(app: &AppHandle) -> Result<(), String> {
+    let Some(pet_window) = app.get_webview_window("pet") else {
+        reveal_main_window(app);
+        return Ok(());
+    };
+
+    let visible = pet_window
+        .is_visible()
+        .map_err(|e| format!("failed to read pet window visibility: {e}"))?;
+
+    if visible {
+        hide_pet_window(app)?;
+        return Ok(());
+    }
+
+    ensure_pet_window_position(app, false)?;
+
+    pet_window
+        .show()
+        .map_err(|e| format!("failed to show pet window: {e}"))?;
+
+    Ok(())
+}
+
 pub(crate) fn begin_pet_drag(app: &AppHandle) -> Result<(), String> {
     let pet_window = app
         .get_webview_window("pet")

@@ -1,4 +1,8 @@
-use tauri::{AppHandle, Manager};
+use tauri::{
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle,
+};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 mod db;
@@ -345,7 +349,7 @@ fn settle_pet_window(
     window_service::settle_pet_window(&app, input)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn show_pet_panel(app: AppHandle, mode: String) -> Result<(), String> {
     window_service::show_pet_panel(&app, mode)
 }
@@ -441,6 +445,62 @@ pub fn run() {
             let conn = open_connection(app.handle()).map_err(std::io::Error::other)?;
             let tracking = get_tracking_state_entry(&conn).map_err(std::io::Error::other)?;
             drop(conn);
+
+            let open_main_item =
+                MenuItem::with_id(app, "open-main", "打开 TimePrism", true, None::<&str>)?;
+
+            let toggle_pet_item =
+                MenuItem::with_id(app, "toggle-pet", "显示 / 隐藏银月", true, None::<&str>)?;
+
+            let separator = PredefinedMenuItem::separator(app)?;
+
+            let quit_item =
+                MenuItem::with_id(app, "quit", "退出 TimePrism", true, None::<&str>)?;
+
+            let tray_menu = Menu::with_items(
+                app,
+                &[
+                    &open_main_item,
+                    &toggle_pet_item,
+                    &separator,
+                    &quit_item,
+                ],
+            )?;
+
+            let mut tray_builder = TrayIconBuilder::with_id("main")
+                .tooltip("TimePrism")
+                .menu(&tray_menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "open-main" => {
+                        window_service::reveal_main_window(app);
+                    }
+                    "toggle-pet" => {
+                        if let Err(err) = window_service::toggle_pet_window(app) {
+                            eprintln!("tray warning: failed to toggle pet window: {err}");
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        window_service::reveal_main_window(tray.app_handle());
+                    }
+                });
+
+            if let Some(icon) = app.default_window_icon() {
+                tray_builder = tray_builder.icon(icon.clone());
+            }
+
+            tray_builder.build(app)?;
 
             let main_window = create_configured_window(app.handle(), "main")
                 .map_err(std::io::Error::other)?;
