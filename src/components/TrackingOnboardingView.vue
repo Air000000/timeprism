@@ -13,7 +13,9 @@ const props = defineProps<{
   <main class="onboarding-shell">
     <section class="onboarding-card" aria-labelledby="tracking-onboarding-title">
       <header class="onboarding-header">
-        <div class="brand-mark" aria-hidden="true">TP</div>
+        <div class="brand-mark" aria-hidden="true">
+          <img src="/brand/timeprism-icon.png" alt="" />
+        </div>
         <div class="brand-copy">
           <span class="eyebrow">TimePrism · {{ props.tx("本地优先", "Local-first") }}</span>
           <h1 id="tracking-onboarding-title">
@@ -152,17 +154,18 @@ const props = defineProps<{
 .brand-mark {
   width: 62px;
   height: 62px;
-  border-radius: 19px;
   display: grid;
   place-items: center;
-  color: #f3fbff;
-  background: linear-gradient(145deg, #2ab6a8 0%, #3b74d2 100%);
-  box-shadow: 0 12px 26px rgba(41, 126, 173, 0.24);
-  font-family: Arial, sans-serif;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
+  filter: drop-shadow(0 8px 16px rgba(41, 126, 173, 0.18));
 }
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 
 .brand-copy {
   display: grid;

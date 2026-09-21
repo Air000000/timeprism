@@ -1,4 +1,8 @@
-<h1 align="center">TimePrism</h1>
+<p align="center">
+  <img src="public/brand/timeprism-logo.png"
+       alt="TimePrism"
+       width="520">
+</p>
 
 <p align="center">
   <strong>不必时刻盯着计时器，也能看清电脑时间究竟花在了哪里。</strong>
@@ -134,29 +138,11 @@ Windows Release 工作流会检查 Node / Cargo / Tauri 版本同步、前端类
 <a id="architecture"></a>
 ## 架构
 
-~~~text
-                     TimePrism 桌面端
-
-       +----------------+  +---------------+  +----------------+
-       |  Main WebView  |  |   银月桌宠     |  |   Pet Panel    |
-       +--------+-------+  +-------+-------+  +--------+-------+
-                |                  |                   |
-                +------------------+-------------------+
-                                   |
-                                   v
-                  Vue views / composables / src/lib
-                                   |
-                                   v
-                        typed Tauri command layer
-                                   |
-                                   v
-             +---------------- Rust backend ----------------+
-             |                                               |
-             |   services   ->   domain   ->   db/SQLite     |
-             |      |                                        |
-             |      +------ Windows / Tauri APIs             |
-             +-----------------------------------------------+
-~~~
+<p align="center">
+  <img src="docs/media/timeprism-architecture-zh.png"
+       alt="TimePrism 运行时架构"
+       width="100%">
+</p>
 
 前端把交互状态拆分到 Vue 组件与 composables 中，<code>src/api/commands/*</code> 负责提供类型化的 Tauri command 调用。
 
