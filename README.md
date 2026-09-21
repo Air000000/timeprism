@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Air000000/timeprism/releases/tag/v0.1.0"><strong>下载 v0.1.0</strong></a> ·
+  <a href="https://github.com/Air000000/timeprism/releases/tag/v0.1.1"><strong>下载 v0.1.1</strong></a> ·
   <a href="#product">产品</a> ·
   <a href="#engineering-highlights">工程亮点</a> ·
   <a href="#architecture">架构</a> ·
@@ -48,11 +48,11 @@ TimePrism 采用了另一种思路：后台采样当前前台应用，在写入�
 | --- | --- | --- |
 | 后台采样前台应用，不要求手动开关计时器。 | 核心数据存储在本地 SQLite，正常持久化前先经过隐私处理。 | Idle 时段由用户确认，可归因到之前的应用，也可标记为学习 / 休息 / 离开，或稍后处理。 |
 
-> **当前版本：** 正式版 <strong>v0.1.0</strong> 已提供 NSIS 安装程序和 MSI 安装包。TimePrism 目前尚未进行 Windows 代码签名，因此 SmartScreen 可能提示“未知发布者”。
+> **当前版本：** 正式版 <strong>v0.1.1</strong> 已提供 NSIS 安装程序和 MSI 安装包。TimePrism 目前尚未进行 Windows 代码签名，因此 SmartScreen 可能提示“未知发布者”。
 
 <!--
 SHOWCASE MEDIA SLOT
-完成经过隐私检查的 v0.1.0 实机截图后，在这里插入 docs/media/timeprism-demo.gif，
+完成经过隐私检查的 v0.1.1 实机截图后，在这里插入 docs/media/timeprism-demo.gif，
 并按照 docs/media/README.md 加入两行截图表格。
 在媒体文件真正提交前，不要提前引用不存在的图片。
 -->
@@ -161,7 +161,7 @@ cargo test
 
 测试覆盖数据库初始化与迁移、追踪状态持久化、隐私规则、Idle attribution / provenance、提醒周期、分析边界、桌宠窗口缩放以及首页目标编辑链路。
 
-v0.1.0 的最终 Windows 安装包也在发布 Draft Release 之前进行过真实安装和 smoke test。
+v0.1.1 的最终 Windows 安装包也在发布 Draft Release 之前进行过真实安装和 smoke test。
 
 CI 和 smoke test 是这个项目的回归证据，但不等同于“已经达到生产级加固”的宣称。
 
@@ -171,7 +171,7 @@ CI 和 smoke test 是这个项目的回归证据，但不等同于“已经达�
 TimePrism 按 local-first 原则设计：
 
 - 核心使用记录保存在本地 SQLite；
-- v0.1.0 不需要云同步和账号；
+- v0.1.1 不需要云同步和账号；
 - 隐私处理发生在正常使用记录持久化之前；
 - 浏览器标题处理策略可配置；
 - 仅白名单模式可以限制哪些应用被记录；
@@ -183,7 +183,7 @@ TimePrism 按 local-first 原则设计：
 
 ## 下载
 
-当前 Windows 正式版本为 [TimePrism v0.1.0](https://github.com/Air000000/timeprism/releases/tag/v0.1.0)。
+当前 Windows 正式版本为 [TimePrism v0.1.1](https://github.com/Air000000/timeprism/releases/tag/v0.1.1)。
 
 Release 包含：
 
@@ -276,7 +276,7 @@ timeprism/
 
 ## 当前范围
 
-v0.1.0 明确以 Windows-first 为目标。云同步 / 账号体系、完整的跨平台前台捕获，以及导出 / 备份 / 恢复流程不属于这一版本已经完成的范围。
+v0.1.1 明确以 Windows-first 为目标。云同步 / 账号体系、完整的跨平台前台捕获，以及导出 / 备份 / 恢复流程不属于这一版本已经完成的范围。
 
 ## License
 

@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Air000000/timeprism/releases/tag/v0.1.0"><strong>Download v0.1.0</strong></a> ·
+  <a href="https://github.com/Air000000/timeprism/releases/tag/v0.1.1"><strong>Download v0.1.1</strong></a> ·
   <a href="#product">Product</a> ·
   <a href="#engineering-highlights">Engineering</a> ·
   <a href="#architecture">Architecture</a> ·
@@ -48,11 +48,11 @@ The core workflow runs locally on Windows. No account or cloud service is requir
 | --- | --- | --- |
 | Foreground activity is sampled in the background instead of relying on manual timers. | Core data is stored in local SQLite and privacy rules are applied before normal persistence. | Idle periods are explicitly confirmed so time can be attributed to the previous app, marked Learn/Break/Away, or deferred. |
 
-> **Current release:** <strong>v0.1.0</strong> is available as both an NSIS setup executable and MSI installer. TimePrism is currently unsigned, so Windows SmartScreen may show an unknown-publisher warning.
+> **Current release:** <strong>v0.1.1</strong> is available as both an NSIS setup executable and MSI installer. TimePrism is currently unsigned, so Windows SmartScreen may show an unknown-publisher warning.
 
 <!--
 SHOWCASE MEDIA SLOT
-After sanitized v0.1.0 captures exist, insert ../media/timeprism-demo.gif here,
+After sanitized v0.1.1 captures exist, insert ../media/timeprism-demo.gif here,
 then add the two-row screenshot grid described in ../media/README.md.
 Do not reference missing media files before they are committed.
 -->
@@ -157,7 +157,7 @@ cargo test
 
 The test suite covers database initialization and migration, persisted tracking state, privacy rules, idle attribution/provenance, reminder recurrence, analytics boundaries, pet window sizing, and Home goal wiring.
 
-For v0.1.0, the final Windows installer was also installed and smoke-tested before the draft Release was published.
+For v0.1.1, the final Windows installer was also installed and smoke-tested before the draft Release was published.
 
 CI and smoke tests are regression evidence for this project; they are not a claim of production-grade hardening.
 
@@ -167,7 +167,7 @@ CI and smoke tests are regression evidence for this project; they are not a clai
 TimePrism is intentionally local-first:
 
 - core usage records are stored locally in SQLite;
-- there is no cloud sync or account requirement in v0.1.0;
+- there is no cloud sync or account requirement in v0.1.1;
 - privacy processing happens before normal usage persistence;
 - browser title handling is configurable;
 - whitelist-only capture can restrict what is stored;
@@ -179,7 +179,7 @@ See [Database & Privacy](../DATABASE_AND_PRIVACY.md) for implementation details.
 
 ## Download
 
-The current Windows release is [TimePrism v0.1.0](https://github.com/Air000000/timeprism/releases/tag/v0.1.0).
+The current Windows release is [TimePrism v0.1.1](https://github.com/Air000000/timeprism/releases/tag/v0.1.1).
 
 Release assets include:
 
@@ -272,7 +272,7 @@ Start with [docs/README.md](../README.md). Key references include:
 
 ## Current Scope
 
-v0.1.0 is intentionally Windows-first. Cloud sync/accounts, complete cross-platform foreground capture, and export/backup/restore workflows are outside the finished scope of this release.
+v0.1.1 is intentionally Windows-first. Cloud sync/accounts, complete cross-platform foreground capture, and export/backup/restore workflows are outside the finished scope of this release.
 
 ## License
 
